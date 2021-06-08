@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en" ng-app="client">
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  
+  <title>Ghidra</title>
+
+  <link type="text/css" rel="stylesheet" href="css/bootstrap.min.css"/>
+  <link type="text/css" rel="stylesheet" href="css/bootstrap-vue.min.css"/>
+  <script src="js/vue.min.js"></script>
+  <script src="js/bootstrap-vue.min.js"></script>
+	
+  <style type="text/css" media="screen">[v-cloak] {display: none;}</style>
+</head>
+
+<body style="background: #111; color: #fff;">
+  <div id="app" v-cloak>
+  
+    <!-------------------------------------------------------------------------------------------->
+    
+    <b-jumbotron style="text-align:center; background-color: inherit;">
+      <b-img src="images/GHIDRA_1.png" style="width: 50%" alt="Ghidra"></b-img>
+      <hr>
+      <b-container>
+      
+        <!-- Ghidra description -->
+        <b-row class="justify-content-center">
+          <b-col class="col-md-8">
+            <p>A software reverse engineering (SRE) suite of tools developed by NSA's Research Directorate in support of the Cybersecurity mission</p>
+          </b-col>
+        </b-row>
+        
+        <!-- Download button -->
+        <b-row class="justify-content-center">
+          <b-col class="col-md-8">
+            <p style="margin-top: 1rem;">
+              <b-button :href='project_url + "/releases/download/" + release.tag + "/" + release.asset' variant="danger" size="lg">Download {{release.name}}</b-button>
+            </p>
+          </b-col>
+        </b-row>
+
+        <!-- Latest | Releases | Source | SHA-256 -->
+        <b-row class="justify-content-center">
+          <b-col class="col-md-8">
+            <b-badge :href='project_url + "/releases/latest"' variant="light">Latest</b-badge>
+            <b-badge :href='project_url + "/releases"' variant="light">Releases</b-badge>
+            <b-badge :href='project_url' variant="light">Source</b-badge>
+            <b-badge v-b-toggle.collapse-sha256 variant="light">SHA-256</b-badge>
+            <b-collapse id="collapse-sha256" class="mt-2">
+              <b-card>
+                <code style="color:#000;">{{release.sha256}} - {{release.asset}}</code>
+              </b-card>
+            </b-collapse>
+          </b-col>
+        </b-row>
+        
+      </b-container>
+    </b-jumbotron>
+    
+    <!-------------------------------------------------------------------------------------------->
+    
+    <b-container>
+      <b-row>
+      
+        <!-- Getting Started -->
+        <b-col class="col-md-4">        
+          <h2 style="color: #e87936">Getting Started</h2>
+          <p class="sr-only">Want to know more about supported platforms, minimum requirements, how to install, launch and use Ghidra?</p>
+          <div style="position: relative; max-width: 100%; height: auto; margin-bottom: 1rem;">
+            <iframe title="Getting Started Video" id="embeddedSmartPlayerInstance" src="GhidraGettingStartedVideo/GhidraGettingStartedVideo_player.html?embedIFrameId=embeddedSmartPlayerInstance" scrolling="no" frameborder="0" webkitAllowFullScreen mozallowfullscreen allowFullScreen></iframe>
+          </div>
+          <div>
+            <b-button :href='html_url + "/blob/" + release.tag + "/GhidraDocs/InstallationGuide.html"' variant="outline-light" style="margin-bottom: 5px;">Installation Guide</b-button>
+            <b-button :href='html_url + "/blob/" + release.tag + "/GhidraDocs/CheatSheet.html"' variant="outline-light" style="margin-bottom: 5px;">Quick Ref Trifold</b-button>
+          </div>
+        </b-col>
+        
+        <!-- Getting Help -->
+        <b-col class="col-md-4">
+          <h2 style="color: #e87936">Getting Help</h2>
+          <p>Ghidra provides context-sensitive help on menu items, dialogs, buttons and tool windows.  To access the help, press <kbd>F1</kbd> or <kbd>Help</kbd> on any menu item or dialog.</p>
+          <div>
+            <b-button :href='project_url + "/wiki"' variant="outline-light" style="margin-bottom: 5px;">Visit our Wiki</b-button>
+            <b-button :href='project_url + "/issues"' variant="outline-light" style="margin-bottom: 5px;">Issue Tracker</b-button>
+          </div>
+        </b-col>
+        
+        <!-- Join the Community -->
+        <b-col class="col-md-4">
+          <h2 style="color: #e87936">Join the Community</h2>
+          <p>Ghidra is one of many open source software (OSS) projects developed within the <a href="https://code.nsa.gov" class="text-warning">National Security Agency</a>. Complete source code for Ghidra along with build instructions have been added to the repository.  Please read the updated CONTRIBUTING guide to find out more about how you can join the community.</p>
+          <div>
+            <b-button :href='project_url' variant="outline-light">GitHub Repository</b-button>
+          </div>
+        </b-col>
+        
+      </b-row>
+    </b-container>
+
+    <!-------------------------------------------------------------------------------------------->
+
+    <footer style="font-size: 80%; text-align: center; margin-top: 2rem;">
+      <div>
+        <b-link class="text-light" style="text-decoration: underline;" href="https://www.nsa.gov">NSA Home Page</b-link>
+        |
+        <b-link class="text-light" style="text-decoration: underline;" href="https://www.nsa.gov/terms-of-use#privacy">Privacy Policy</b-link>
+      </div>
+    </footer>    
+  </div>
+  
+  <!---------------------------------------------------------------------------------------------->
+  
+  <script>
+    var app = new Vue({
+      el: '#app',
+      data: {
+        release: {
+          name: "Ghidra v9.2.4",
+          tag: "Ghidra_9.2.4_build",
+          asset: "ghidra_9.2.4_PUBLIC_20210427.zip",
+          sha256: "c1f18cdb12e2e1c0313e7becf7f0387226937ac67ad6c6e5056fa889229f969a"
+        },
+        project_url: "https://github.com/NationalSecurityAgency/ghidra",
+        html_url: "https://htmlpreview.github.io/?https://github.com/NationalSecurityAgency/ghidra"
+      }
+    });
+  </script>
+  
+</body>
+</html>

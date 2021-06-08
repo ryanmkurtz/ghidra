@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>Ghidra</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+    <style type="text/css" media="screen">
+      body {
+        background: #111;
+        color: #FFF;
+      }
+
+      .jumbotron {
+        background-color: inherit;
+      }
+
+      .btn-ghidra {
+        background-color: #DF2A2E;
+        border-color: #DF2A2E;
+        color: #FFF;
+      }
+
+      .btn-ghidra:hover {
+        background-color: #af0f13;
+        color: #FFF;
+      }
+
+      .btn-ghidra:active,
+      .btn-ghidra:focus {
+        background-color: #ce181c;
+        border-color: #af0f13;
+        box-shadow: 0 0 0 0.2rem rgba(220,53,69,.5);
+      }
+
+      h2 {
+        color: #E87936
+      }
+
+      @media screen and (min-width: 768px) {
+        .tscplayer_inline {
+      	   width: 100%;
+        }
+      }
+
+      .aspect-ratio {
+        position: relative;
+        max-width: 100%;
+        height: auto;
+        margin-bottom: 1rem;
+      }
+
+      .aspect-ratio > * {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+      }
+
+      .aspect-ratio-16-9 {
+        padding-top: 56.25% !important;
+      }
+
+      footer {
+        font-size: 80%;
+        text-align: center;
+        margin-top: 2rem;
+      }
+
+      footer a {
+        text-decoration: underline;
+      }
+
+    </style>
+  </head>
+
+  <body>
+
+    <!--main role="main"-->
+    <main role="main">
+      <!-- Main jumbotron for a primary marketing message or call to action -->
+      <div class="jumbotron" style="text-align:center">
+	      <img style="width: 50%" src="images/GHIDRA_1.png" alt="Ghidra" />
+        <h1 class="sr-only">Ghidra</h1>
+        <hr>
+        <div class="container">
+
+          <div class="row">
+            <p class="col col-md-8 offset-md-2">A software reverse engineering (SRE) suite of tools developed by NSA's <span style="white-space: nowrap;">Research Directorate</span> in support of the Cybersecurity mission</p>
+          </div>
+
+          <div class="row">
+            <div class="col col-md-8 offset-md-2">
+              <p style="margin-top: 1rem;"><a class="btn btn-ghidra btn-lg" href="https://github.com/NationalSecurityAgency/ghidra/releases" role="button">Download from GitHub</a></p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+      <div class="container">
+        <!-- Example row of columns -->
+        <div class="row">
+          <div class="col-md-4">
+            <h2>Getting Started</h2>
+            <p class="sr-only">Want to know more about supported platforms, minimum requirements, how to install, launch and use Ghidra?</p>
+            <div class="aspect-ratio aspect-ratio-16-9">
+              <iframe title="Getting Started Video" class="tscplayer_inline" id="embeddedSmartPlayerInstance" src="GhidraGettingStartedVideo/GhidraGettingStartedVideo_player.html?embedIFrameId=embeddedSmartPlayerInstance" scrolling="no" frameborder="0" webkitAllowFullScreen mozallowfullscreen allowFullScreen></iframe>
+            </div>
+            <p><a class="btn btn-outline-light btn-sm" href="https://github.com/NationalSecurityAgency/ghidra/blob/stable/GhidraDocs/InstallationGuide.md" role="button">Installation Guide</a></p>
+            <p><a class="btn btn-outline-light btn-sm" href="https://htmlpreview.github.io/?https://github.com/NationalSecurityAgency/ghidra/blob/stable/GhidraDocs/CheatSheet.html" role="button">Quick Ref Trifold</a></p>
+          </div>
+          <div class="col-md-4">
+            <h2>Getting Help</h2>
+            <p>Ghidra provides context-sensitive help on menu items, dialogs, buttons and tool windows.  To access the help, press <kbd>F1</kbd> or <kbd>Help</kbd> on any menu item or dialog. </p>
+            <p><a class="btn btn-outline-light btn-sm" href="https://github.com/NationalSecurityAgency/ghidra/wiki" role="button">Visit our Wiki</a></p>
+            <p><a class="btn btn-outline-light btn-sm" href="https://github.com/NationalSecurityAgency/ghidra/issues" role="button">Issue Tracker</a></p>
+          </div>
+          <div class="col-md-4">
+            <h2>Join the Community</h2>
+            <p>Ghidra is one of many open source software (OSS) projects developed within the <a href="https://code.nsa.gov" class="text-warning">National Security Agency</a>. Complete source code for Ghidra along with build instructions have been added to the repository.  Please read the updated CONTRIBUTING guide to find out more about how you can join the community.</p>
+            <p><a class="btn btn-outline-light btn-sm" href="https://github.com/NationalSecurityAgency/ghidra" role="button">GitHub Repository</a></p>
+          </div>
+        </div>
+      </div> <!-- /container -->
+    </main>
+    <!--/main-->
+
+    <footer>
+      <div class="container">
+        <p><a class="text-light" href="https://www.nsa.gov">NSA Home Page</a> | <a class="text-light" href="https://www.nsa.gov/Site-Policies">Site Policies and Terms of Use</a></p>
+      </div>
+    </footer>
+
+  </body>
+</html>

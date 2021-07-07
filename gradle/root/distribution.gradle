@@ -480,10 +480,12 @@ task createInstallationZip(type: Zip) { t ->
 	dependsOn "assembleDistribution_$currentPlatform"
 	
 	if (project.hasProperty("allPlatforms")) {
-		dependsOn ":assembleDistribution_win32"
-		dependsOn ":assembleDistribution_win64"
-		dependsOn ":assembleDistribution_linux64"
-		dependsOn ":assembleDistribution_osx64"
+		dependsOn ":assembleDistribution_win_x86_32"
+		dependsOn ":assembleDistribution_win_x86_64"
+		dependsOn ":assembleDistribution_linux_x86_64"
+		dependsOn ":assembleDistribution_linux_arm_64"
+		dependsOn ":assembleDistribution_macos_x86_64"
+		dependsOn ":assembleDistribution_macos_arm_64"
 	}
 
 	if (project.hasProperty("allPlatforms")) {

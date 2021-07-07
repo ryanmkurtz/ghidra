@@ -115,10 +115,10 @@ rootProject.OS_NAMES.each { platform ->
 	}	
 }
 
-// For Win64 build, we have to also include any Win32 binaries in the final zip.
-rootProject.assembleDistribution_win64 {
-	from (this.project.projectDir.toString() + "/build/os/win32") {
-		into getZipPath(this.project)	+ "/os/win32"
+// For win_x86_64 build, we have to also include any win_x86_32 binaries in the final zip.
+rootProject.assembleDistribution_win_x86_64 {
+	from (this.project.projectDir.toString() + "/build/os/win_x86_32") {
+		into getZipPath(this.project)	+ "/os/win_x86_32"
 	}
 }
 

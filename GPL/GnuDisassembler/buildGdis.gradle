@@ -19,11 +19,11 @@ def binutilsUnpackDir = file("${project.buildDir}/${binutils}/")
  
 model {
 	platforms {
-		linux64 {
+		linux_x86_64 {
 			architecture 'x86_64'
 			operatingSystem 'linux'
 		}
-		osx64 {
+		macos_x86_64 {
 			architecture 'x86_64'
 			operatingSystem 'osx'
 		}

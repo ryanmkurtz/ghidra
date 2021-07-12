@@ -61,14 +61,22 @@ model {
 		}
 		if (isCurrentLinux()) {
 			gcc(Gcc) {
-				target("linux_x86_64")
-				target("linux_arm_64")
+				if (isCurrentX86()) {
+					target("linux_x86_64")
+				}
+				if (isCurrentArm()) {
+					target("linux_arm_64")
+				}
 			}
 		}
 		if (isCurrentMac()) {
 			clang(Clang) {
-				target("macos_x86_64")
-				target("macos_arm_64")
+				if (isCurrentX86()) {
+					target("macos_x86_64")
+				}
+				if (isCurrentArm()) {
+					target("macos_arm_64")
+				}
 			}
 		}
 	}

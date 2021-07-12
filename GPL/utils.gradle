@@ -103,6 +103,32 @@ ext.isCurrentWindows = {
 	return isWindows(getCurrentPlatformName())
 }
 
+/*********************************************************************************
+ * Returns true if the given platform is x86.
+ *********************************************************************************/
+ext.isX86 = { platform ->
+	return platform.contains("x86")
+}
+/*********************************************************************************
+ * Returns true if the current platform is x86.
+ *********************************************************************************/
+ext.isCurrentX86 = {
+	return isX86(getCurrentPlatformName())
+}
+
+/*********************************************************************************
+ * Returns true if the given platform is ARM.
+ *********************************************************************************/
+ext.isArm = { platform ->
+	return platform.contains("arm")
+}
+/*********************************************************************************
+ * Returns true if the current platform is ARM.
+ *********************************************************************************/
+ext.isCurrentArm = {
+	return isArm(getCurrentPlatformName())
+}
+
 /******************************************************************************************
  *	Helper method that returns a file that is the same relative location in the bin repo
  *  as the given project is in its repo.

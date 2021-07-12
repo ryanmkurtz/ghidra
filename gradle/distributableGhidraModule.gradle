@@ -207,7 +207,6 @@ plugins.withType(CPlugin) {
 	rootProject.OS_NAMES.each { platform ->
 		rootProject.tasks.findAll {it.name == "assembleDistribution_$platform"}.each { t -> 
 			t.dependsOn this.assemble
-	//		t.dependsOn this.project.name+":buildNatives_$platform" 
 		}
 	}
 }

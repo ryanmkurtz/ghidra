@@ -34,8 +34,7 @@ import ghidra.program.model.listing.*;
 import ghidra.program.model.mem.*;
 import ghidra.program.model.reloc.Relocation.Status;
 import ghidra.program.model.symbol.*;
-import ghidra.util.DataConverter;
-import ghidra.util.LittleEndianDataConverter;
+import ghidra.util.Msg;
 import ghidra.util.exception.CancelledException;
 import ghidra.util.exception.InvalidInputException;
 import ghidra.util.task.TaskMonitor;
@@ -52,8 +51,6 @@ public class MzLoader extends AbstractLibrarySupportLoader {
 
 	private final static String ENTRY_NAME = "entry";
 	private final static int INITIAL_SEGMENT_VAL = 0x1000;
-	private final static int FAR_RETURN_OPCODE = 0xCB;
-	private final static byte MOVW_DS_OPCODE = (byte) 0xba;
 	private static final long MIN_BYTE_LENGTH = 4;
 
 	@Override
@@ -98,7 +95,6 @@ public class MzLoader extends AbstractLibrarySupportLoader {
 
 			markupHeaders(program, fileBytes, mz, log, monitor);
 			processMemoryBlocks(program, fileBytes, space, mz, relocationFixups, log, monitor);
-			adjustSegmentStarts(program, monitor);
 			processRelocations(program, space, mz, relocationFixups, log, monitor);
 			processEntryPoint(program, space, mz, log, monitor);
 			processRegisters(program, mz, log, monitor);
@@ -127,11 +123,20 @@ public class MzLoader extends AbstractLibrarySupportLoader {
 	/**
 	 * Stores a relocation's fixup information
 	 * 
-	 * @param address The {@link SegmentedAddress} of the relocation
 	 * @param fileOffset The file offset of the relocation
-	 * @param segment The fixed-up segment after the relocation is applied
+	 * @param target The target address of the relocation
 	 */
-	private record RelocationFixup(SegmentedAddress address, int fileOffset, int segment) {}
+	private record RelocationFixup(int fileOffset, SegmentedAddress target, int targetFileOffset,
+			boolean isCode) {}
+
+	/**
+	 * Stores a segment boundary as 2 adjacent addresses (where one segment ends and another begins)
+	 * 
+	 * @param a The end address of the first adjacent segment
+	 * @param b The start address of the second adjacent segment
+	 * @param isCode True if the first segment is code; false if it is data
+	 */
+	private record SegmentBoundary(SegmentedAddress a, SegmentedAddress b, boolean isCode) {}
 
 	private void markupHeaders(Program program, FileBytes fileBytes, MzExecutable mz,
 			MessageLog log, TaskMonitor monitor) {
@@ -171,128 +176,158 @@ public class MzLoader extends AbstractLibrarySupportLoader {
 	private void processMemoryBlocks(Program program, FileBytes fileBytes,
 			SegmentedAddressSpace space, MzExecutable mz, Set<RelocationFixup> relocationFixups,
 			MessageLog log, TaskMonitor monitor) throws Exception {
-		monitor.setMessage("Processing memory blocks...");
+		monitor.setMessage("Building memory map...");
 
 		OldDOSHeader header = mz.getHeader();
-		BinaryReader reader = mz.getBinaryReader();
 
-		// Use relocations to discover what segments are in use.
-		// We also know about our desired load module segment, so add that too.	
-		Set<SegmentedAddress> knownSegments = new TreeSet<>();
-		relocationFixups.forEach(rf -> knownSegments.add(space.getAddress(rf.segment, 0)));
-		knownSegments.add(space.getAddress(INITIAL_SEGMENT_VAL, 0));
+		List<RelocationFixup> orderedFixups = new ArrayList<>(relocationFixups);
+		orderedFixups.sort((a, b) -> {
+			int segment1 = a.target().getSegment();
+			int segment2 = b.target().getSegment();
+			if (segment1 == segment2) {
+				int offset1 = a.target().getSegmentOffset();
+				int offset2 = b.target().getSegmentOffset();
+				return Integer.valueOf(offset1).compareTo(offset2);
+			}
+			return Integer.valueOf(segment1).compareTo(segment2);
+		});
+		orderedFixups.forEach(rf -> Msg.debug(this, rf));
 
-		// Allocate an initialized memory block for each segment we know about
-		int endOffset = pagesToBytes(header.e_cp() - 1) + header.e_cblp();
-		MemoryBlock lastBlock = null;
-		List<SegmentedAddress> orderedSegments = new ArrayList<>(knownSegments);
-		for (int i = 0; i < orderedSegments.size(); i++) {
-			SegmentedAddress segmentAddr = orderedSegments.get(i);
+		int blockFileOffset = paragraphsToBytes(header.e_cparhdr());
+		SegmentedAddress blockStart = space.getAddress(INITIAL_SEGMENT_VAL, 0);
+		for (int i = 0;; i++) {
+			SegmentBoundary boundary =
+				findSegmentBoundary(orderedFixups, (SegmentedAddress) blockStart.add(1), mz);
 
-			int segmentFileOffset = addressToFileOffset(
-				(segmentAddr.getSegment() - INITIAL_SEGMENT_VAL) & 0xffff, 0, header);
-			if (segmentFileOffset < 0) {
-				log.appendMsg("Invalid segment start file location: " + segmentFileOffset);
-				continue;
+			long blockLen = boundary.a.subtract(blockStart);
+			
+			long dataRemaining = 0;
+			String blockName = "CODE_" + i;
+			boolean r = true;
+			boolean w = false;
+			boolean x = true;
+			if (boundary.b == null || !boundary.isCode) {
+				dataRemaining = 0x10000 - blockLen;
+				blockName = "DATA";
+				w = true;
+				x = false;
 			}
 
-			int numBytes = 0;
-			if (i + 1 < orderedSegments.size()) {
-				SegmentedAddress end = orderedSegments.get(i + 1);
-				int nextSegmentFileOffset = addressToFileOffset(
-					(end.getSegment() - INITIAL_SEGMENT_VAL) & 0xffff, 0, header);
-				numBytes = nextSegmentFileOffset - segmentFileOffset;
-			}
-			else {
-				// last segment length
-				numBytes = endOffset - segmentFileOffset;
-			}
-			if (numBytes <= 0) {
-				log.appendMsg("No file data available for defined segment at: " + segmentAddr);
-				continue;
-			}
-			int numUninitBytes = 0;
-			if (segmentFileOffset + numBytes > endOffset) {
-				int calcNumBytes = numBytes;
-				numBytes = endOffset - segmentFileOffset;
-				numUninitBytes = calcNumBytes - numBytes;
-			}
-			if (numBytes > 0) {
-				MemoryBlock block = MemoryBlockUtils.createInitializedBlock(program, false,
-					"CODE_" + i, segmentAddr, fileBytes, segmentFileOffset, numBytes, "", "mz",
-					true, true, true, log);
-				if (block != null) {
-					lastBlock = block;
+			MemoryBlock lastBlock =
+				MemoryBlockUtils.createInitializedBlock(program, false, blockName, blockStart,
+					fileBytes, blockFileOffset, blockLen, "", "mz", r, w, x, log);
+
+			if (boundary.b == null) {
+				if (dataRemaining > 0) {
+					MemoryBlockUtils.createUninitializedBlock(program, false, blockName,
+						lastBlock.getEnd().add(1), dataRemaining, "", "mz", r, w, x, log);
 				}
+				break;
 			}
-			if (numUninitBytes > 0) {
-				MemoryBlock block =
-					MemoryBlockUtils.createUninitializedBlock(program, false, "CODE_" + i + "u",
-						segmentAddr.add(numBytes), numUninitBytes, "", "mz", true, true, false,
-						log);
-				if (block != null) {
-					lastBlock = block;
-				}
-			}
-		}
-		if (endOffset < reader.length()) {
-			int extraByteCount = (int) reader.length() - endOffset;
-			log.appendMsg(
-				String.format("File contains 0x%x extra bytes starting at file offset 0x%x",
-					extraByteCount, endOffset));
-		}
 
-		// Allocate an uninitialized memory block for extra minimum required data space
-		if (lastBlock != null) {
-			int extraAllocSize = paragraphsToBytes(header.e_minalloc());
-			if (extraAllocSize > 0) {
-				MemoryBlockUtils.createUninitializedBlock(program, false, "DATA",
-					lastBlock.getEnd().add(1), extraAllocSize, "", "mz", true, true, false, log);
-
-			}
+			blockStart = boundary.b;
+			blockFileOffset = (int) (blockFileOffset + blockLen);
 		}
 	}
 
-	private void adjustSegmentStarts(Program program, TaskMonitor monitor) throws Exception {
-		monitor.setMessage("Adjusting segments...");
+	private SegmentBoundary findSegmentBoundary(List<RelocationFixup> orderedFixups,
+			SegmentedAddress startAddr, MzExecutable mz) throws Exception {
 
-		if (!program.hasExclusiveAccess()) {
-			return;
-		}
+		OldDOSHeader header = mz.getHeader();
+		BinaryReader reader = mz.getBinaryReader();
+		
+		SegmentedAddress searchAddr = startAddr;
+		RelocationFixup nextFixup = null;
+		int stopOffset = fileSize(header);
+		boolean isCode = true;
 
-		Memory memory = program.getMemory();
-		MemoryBlock[] blocks = memory.getBlocks();
-
-		for (int i = 1; i < blocks.length; i++) {
-			monitor.checkCanceled();
-			MemoryBlock block = blocks[i];
-			if (!block.isInitialized()) {
-				continue;
-			}
-			//scan the first 0x10 bytes of this block
-			//if a FAR RETURN exists, then move that code
-			//to the preceding block...
-			int mIndex = 15;
-			if (block.getSize() <= 16) {
-				mIndex = (int) block.getSize() - 2;
-			}
-			for (; mIndex >= 0; mIndex--) {
-				monitor.checkCanceled();
-				Address offAddr = block.getStart().add(mIndex);
-				int val = block.getByte(offAddr);
-				val &= 0xff;
-				if (val == FAR_RETURN_OPCODE) {
-					// split here and join to previous
-					Address splitAddr = offAddr.add(1);
-					String oldName = block.getName();
-					memory.split(block, splitAddr);
-					memory.join(blocks[i - 1], blocks[i]);
-					blocks = memory.getBlocks();
-					blocks[i].setName(oldName);
+		for (int i = 0; i < orderedFixups.size(); i++) {
+			RelocationFixup current = orderedFixups.get(i);
+			if (current.target.getSegment() > startAddr.getSegment()) {
+				if (i + 1 < orderedFixups.size() &&
+					orderedFixups.get(i + 1).target.getSegment() == current.target.getSegment()) {
+					continue;
+				}
+				stopOffset = Math.min(current.targetFileOffset, stopOffset);
+				nextFixup = current;
+				if (i > 0) {
+					RelocationFixup prev = orderedFixups.get(i - 1);
+					if (prev.target.getSegment() == startAddr.getSegment()) {
+						searchAddr = prev.target;
+						isCode = prev.isCode;
+					}
 					break;
 				}
 			}
 		}
+
+		// Search for end of segments
+		int startOffset = addressToFileOffset(searchAddr.getSegment() - INITIAL_SEGMENT_VAL,
+			searchAddr.getSegmentOffset(), header);
+		int i = startOffset;
+		SegmentedAddress a = null;
+		SegmentedAddress b = null;
+		do {
+			i = findTerminator(i, stopOffset, reader);
+			a = (SegmentedAddress) searchAddr.add(i - startOffset);
+			if (nextFixup != null) {
+				int difference = nextFixup.targetFileOffset - i;
+				if (nextFixup.target.getSegmentOffset() >= difference) {
+					b = (SegmentedAddress) nextFixup.target.subtract(difference);
+					break;
+				}
+			}
+		}
+		while (i < stopOffset);
+
+		return new SegmentBoundary(a, b, isCode);
+
+	}
+
+	private int findTerminator(int startOffset, int stopOffset, BinaryReader reader)
+			throws IOException {
+		final byte RETF_N = (byte) 0xca;
+		final byte RETF = (byte) 0xcb;
+		final byte IRET = (byte) 0xcf;
+		final byte PUSH_BP = (byte) 0x55;
+		final byte POP_BP = (byte) 0x5d;
+
+		reader.setPointerIndex(startOffset);
+		
+		int i = startOffset;
+		while (i < stopOffset) {
+			switch (reader.readByte(i)) {
+				case RETF_N: {
+					byte prev = reader.readByte(i - 1);
+					i += 3;
+					byte next = i < stopOffset ? reader.readByte(i) : -1;
+					if (prev == POP_BP || next == PUSH_BP) {
+						return i;
+					}
+				}
+				case RETF: {
+					byte prev = reader.readByte(i - 1);
+					i += 1;
+					byte next = i < stopOffset ? reader.readByte(i) : -1;
+					if (prev == POP_BP || next == PUSH_BP) {
+						return i;
+					}
+				}
+				case IRET: {
+					byte prev = reader.readByte(i - 1);
+					i += 1;
+					byte next = i < stopOffset ? reader.readByte(i) : -1;
+					if (prev == POP_BP || next == PUSH_BP) {
+						return i;
+					}
+				}
+				default: {
+					i++;
+				}
+			}
+		}
+
+		return stopOffset;
 	}
 
 	private void processRelocations(Program program, SegmentedAddressSpace space, MzExecutable mz,
@@ -302,11 +337,19 @@ public class MzLoader extends AbstractLibrarySupportLoader {
 		Memory memory = program.getMemory();
 
 		for (RelocationFixup relocationFixup : relocationFixups) {
-			SegmentedAddress relocationAddress = relocationFixup.address();
 			Status status = Status.FAILURE;
+			List<Address> relocationAddresses =
+				memory.locateAddressesForFileOffset(relocationFixup.fileOffset());
+			if (relocationAddresses.isEmpty()) {
+				log.appendMsg("Memory block not found for file offset: " +
+					relocationFixup.fileOffset() + ".  Skipping relocation");
+				continue;
+			}
+			SegmentedAddress relocationAddress = (SegmentedAddress) relocationAddresses.get(0);
+			int relocatedSegment = relocationFixup.target().getSegment();
 			try {
-				memory.setShort(relocationAddress, (short) relocationFixup.segment());
 				status = Status.APPLIED;
+				memory.setShort(relocationAddress, (short) relocatedSegment);
 			}
 			catch (MemoryAccessException e) {
 				log.appendMsg(String.format("Failed to apply relocation: %s (%s)",
@@ -316,7 +359,9 @@ public class MzLoader extends AbstractLibrarySupportLoader {
 			// Add to relocation table
 			program.getRelocationTable()
 					.add(relocationAddress, status, 0, new long[] { relocationAddress.getSegment(),
-						relocationAddress.getSegmentOffset() }, 2, null);
+						relocationAddress.getSegmentOffset(), relocatedSegment }, 2, null);
+
+
 		}
 	}
 
@@ -328,7 +373,7 @@ public class MzLoader extends AbstractLibrarySupportLoader {
 
 		int ipValue = Short.toUnsignedInt(header.e_ip());
 
-		Address addr = space.getAddress(INITIAL_SEGMENT_VAL, ipValue);
+		Address addr = space.getAddress((INITIAL_SEGMENT_VAL + header.e_cs() & 0xffff), ipValue);
 		SymbolTable symbolTable = program.getSymbolTable();
 
 		try {
@@ -350,27 +395,15 @@ public class MzLoader extends AbstractLibrarySupportLoader {
 			return;
 		}
 
-		// TODO: can better do this in an analyzer on the entry point
-		//       might work in some cases.
-		DataConverter converter = LittleEndianDataConverter.INSTANCE;
 		boolean shouldSetDS = false;
 		long dsValue = 0;
-		try {
-			for (MemoryBlock block : program.getMemory().getBlocks()) {
-				if (block.contains(entry.getAddress())) {
-					byte instByte = block.getByte(entry.getAddress());
-					if (instByte == MOVW_DS_OPCODE) { //is instruction "movw %dx,$0x1234"
-						byte[] dsBytes = new byte[2];
-						block.getBytes(entry.getAddress().addWrap(1), dsBytes);
-						dsValue = converter.getShort(dsBytes);
-						shouldSetDS = true;
-					}
-					break;
-				}
+		for (MemoryBlock block : program.getMemory().getBlocks()) {
+			if (!block.isExecute()) {
+				SegmentedAddress blockAddr = (SegmentedAddress) block.getStart();
+				dsValue = Integer.toUnsignedLong(blockAddr.getSegment());
+				shouldSetDS = true;
+				break;
 			}
-		}
-		catch (MemoryAccessException e) {
-			//unable to set the DS register..
 		}
 
 		OldDOSHeader header = mz.getHeader();
@@ -424,6 +457,9 @@ public class MzLoader extends AbstractLibrarySupportLoader {
 	 */
 	private Set<RelocationFixup> getRelocationFixups(SegmentedAddressSpace space,
 			MzExecutable mz, MessageLog log, TaskMonitor monitor) throws CancelledException {
+		final byte CALLF = (byte) 0x9a;
+		final byte JMPF = (byte) 0xea;
+
 		Set<RelocationFixup> fixups = new HashSet<>();
 
 		OldDOSHeader header = mz.getHeader();
@@ -441,10 +477,29 @@ public class MzLoader extends AbstractLibrarySupportLoader {
 				space.getAddress((relativeSegment + INITIAL_SEGMENT_VAL) & 0xffff, off);
 
 			try {
-				int value = Short.toUnsignedInt(reader.readShort(relocationFileOffset));
-				int relocatedSegment = (value + INITIAL_SEGMENT_VAL) & 0xffff;
-				fixups.add(
-					new RelocationFixup(relocationAddress, relocationFileOffset, relocatedSegment));
+				int relativeTargetSegment = Short.toUnsignedInt(reader.readShort(relocationFileOffset));
+				int targetSegment = (relativeTargetSegment + INITIAL_SEGMENT_VAL) & 0xffff;
+				int targetOffset;
+				int targetFileOffset;
+				boolean isCode;
+
+				byte value = reader.readByte(relocationFileOffset - 3);
+				if (value == CALLF || value == JMPF) {
+					targetOffset = Short.toUnsignedInt(reader.readShort(relocationFileOffset - 2));
+					targetFileOffset =
+						addressToFileOffset(relativeTargetSegment, targetOffset, header);
+					isCode = true;
+				}
+				else {
+					boolean isMov = value == 0x6; // really 2-byte move: C7 06
+					targetOffset = 0;
+					targetFileOffset =
+						addressToFileOffset(relativeTargetSegment, targetOffset, header);
+					isCode = isMov || targetSegment == INITIAL_SEGMENT_VAL;
+				}
+
+				fixups.add(new RelocationFixup(relocationFileOffset,
+					space.getAddress(targetSegment, targetOffset), targetFileOffset, isCode));
 			}
 			catch (AddressOutOfBoundsException | IOException e) {
 				log.appendMsg(String.format("Failed to process relocation: %s (%s)",
@@ -465,6 +520,16 @@ public class MzLoader extends AbstractLibrarySupportLoader {
 	 */
 	private int addressToFileOffset(int segment, int offset, OldDOSHeader header) {
 		return (segment << 4) + offset + paragraphsToBytes(header.e_cparhdr());
+	}
+
+	/**
+	 * Gets the size of the MZ file in bytes
+	 * 
+	 * @param header The header
+	 * @return The size of the MZ file in bytes
+	 */
+	private int fileSize(OldDOSHeader header) {
+		return pagesToBytes(header.e_cp() - 1) + header.e_cblp();
 	}
 
 	/**

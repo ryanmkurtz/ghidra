@@ -24,8 +24,9 @@ import org.eclipse.debug.internal.ui.DebugUIPlugin;
 import org.eclipse.debug.internal.ui.launchConfigurations.LaunchConfigurationManager;
 import org.eclipse.debug.internal.ui.launchConfigurations.LaunchHistory;
 import org.eclipse.debug.ui.IDebugUIConstants;
+import org.eclipse.jdt.core.IClasspathEntry;
 import org.eclipse.jdt.core.IJavaProject;
-import org.eclipse.jdt.launching.IJavaLaunchConfigurationConstants;
+import org.eclipse.jdt.launching.*;
 
 import ghidra.GhidraLauncher;
 
@@ -82,6 +83,7 @@ public class GhidraLaunchUtils {
 			javaProject.getProject().getName());
 		setMainTypeName(wc);
 		setMemory(wc, runConfigMemory);
+		setClasspath(wc);
 		setFavorites(wc);
 		return wc;
 	}
@@ -164,6 +166,27 @@ public class GhidraLaunchUtils {
 			}
 			wc.setAttribute(ATTR_VM_ARGUMENTS, vmArgs + "-Xmx" + memory);
 		}
+		return wc;
+	}
+
+	/**
+	 * Removes all project jars from the classpath except Utility.jar.
+	 * 
+	 * @param wc The launch configuration working copy to modify.
+	 * @return The modified working copy.
+	 * @throws CoreException if there was an Eclipse-related issue modifying the classpath.
+	 */
+	public static ILaunchConfigurationWorkingCopy setClasspath(ILaunchConfigurationWorkingCopy wc)
+			throws CoreException {
+		List<String> newList = new ArrayList<>();
+		for (IRuntimeClasspathEntry entry : JavaRuntime.computeUnresolvedRuntimeClasspath(wc)) {
+			if (entry.getClasspathEntry().getEntryKind() != IClasspathEntry.CPE_LIBRARY ||
+				entry.getPath().toOSString().endsWith("Utility.jar")) {
+				newList.add(entry.getMemento());
+			}
+		}
+		wc.setAttribute(IJavaLaunchConfigurationConstants.ATTR_CLASSPATH, newList);
+		wc.setAttribute(IJavaLaunchConfigurationConstants.ATTR_DEFAULT_CLASSPATH, false);
 		return wc;
 	}
 

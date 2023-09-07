@@ -47,7 +47,7 @@ public class GhidraLaunchTabGroup extends AbstractLaunchConfigurationTabGroup {
 		List<ILaunchConfigurationTab> tabs = new ArrayList<>();
 		tabs.add(getJavaMainTab());
 		tabs.add(getUserDefinedArgumentsTab());
-		tabs.add(new JavaClasspathTab());
+		tabs.add(getJavaClasspathTab());
 		tabs.add(new EnvironmentTab());
 		tabs.add(getCommonTab());
 
@@ -165,6 +165,28 @@ public class GhidraLaunchTabGroup extends AbstractLaunchConfigurationTabGroup {
 			@Override
 			public String getName() {
 				return "Arguments";
+			}
+		};
+	}
+
+	/**
+	 * Gets the {@link JavaClasspathTab} to use, with all Ghidra jars removed except Utility.jar.
+	 * 
+	 * @return The {@link JavaClasspathTab} to use, with all Ghidra jars removed except 
+	 *   Utility.jar.
+	 */
+	private JavaClasspathTab getJavaClasspathTab() {
+		return new JavaClasspathTab() {
+			@Override
+			public void initializeFrom(ILaunchConfiguration config) {
+				try {
+					ILaunchConfigurationWorkingCopy wc = config.getWorkingCopy();
+					GhidraLaunchUtils.setClasspath(wc);
+					super.initializeFrom(wc.doSave());
+				}
+				catch (CoreException e) {
+					EclipseMessageUtils.error("Failed to initialize the java classpath tab.", e);
+				}
 			}
 		};
 	}

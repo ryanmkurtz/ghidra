@@ -33,6 +33,7 @@ public enum MSProductType {
 		this.desc = d;
 	}
 
+	@Override
 	public String toString() {
 		return desc;
 	}

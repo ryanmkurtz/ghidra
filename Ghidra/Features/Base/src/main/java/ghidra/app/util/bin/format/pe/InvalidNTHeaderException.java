@@ -25,4 +25,5 @@ package ghidra.app.util.bin.format.pe;
  * 
  */
 public class InvalidNTHeaderException extends Exception {
+	// No special implementation
 }

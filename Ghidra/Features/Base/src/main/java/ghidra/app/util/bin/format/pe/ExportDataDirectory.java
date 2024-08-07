@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import ghidra.app.util.bin.BinaryReader;
+import ghidra.app.util.bin.StructConverter;
 import ghidra.app.util.importer.MessageLog;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.address.AddressSpace;
@@ -28,7 +29,6 @@ import ghidra.program.model.listing.Data;
 import ghidra.program.model.listing.Program;
 import ghidra.program.model.symbol.*;
 import ghidra.program.model.util.CodeUnitInsertionException;
-import ghidra.util.Conv;
 import ghidra.util.Msg;
 import ghidra.util.exception.DuplicateNameException;
 import ghidra.util.task.TaskMonitor;
@@ -52,7 +52,7 @@ import ghidra.util.task.TaskMonitor;
  * };
  * </pre>
  */
-public class ExportDataDirectory extends DataDirectory {
+public class ExportDataDirectory extends DataDirectory implements StructConverter {
 	private final static String NAME = "IMAGE_DIRECTORY_ENTRY_EXPORT";
 	/**
 	 * The size of the <code>IMAGE_EXPORT_DIRECTORY</code> in bytes.
@@ -144,12 +144,12 @@ public class ExportDataDirectory extends DataDirectory {
 
 	@Override
 	public void markup(Program program, boolean isBinary, TaskMonitor monitor, MessageLog log,
-			NTHeader ntHeader)
+			NTHeader nt)
 			throws DuplicateNameException, CodeUnitInsertionException, IOException {
 
 		monitor.setMessage("[" + program.getName() + "]: exports...");
 
-		Address addr = PeUtils.getMarkupAddress(program, isBinary, ntHeader, virtualAddress);
+		Address addr = PeUtils.getMarkupAddress(program, isBinary, nt, virtualAddress);
 		if (!program.getMemory().contains(addr)) {
 			return;
 		}
@@ -303,8 +303,8 @@ public class ExportDataDirectory extends DataDirectory {
 					continue;
 				}
 
-				long addr =
-					Conv.intToLong(entryPointRVA) + ntHeader.getOptionalHeader().getImageBase();
+				long addr = Integer.toUnsignedLong(entryPointRVA) +
+					ntHeader.getOptionalHeader().getImageBase();
 
 				if (!ntHeader.getOptionalHeader().is64bit()) {
 					addr &= 0xffffffffL;

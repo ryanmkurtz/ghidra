@@ -20,7 +20,6 @@ import java.io.IOException;
 import ghidra.app.util.bin.BinaryReader;
 import ghidra.app.util.bin.StructConverter;
 import ghidra.program.model.data.*;
-import ghidra.util.Conv;
 import ghidra.util.Msg;
 import ghidra.util.exception.DuplicateNameException;
 
@@ -76,13 +75,13 @@ public class TLSDirectory implements StructConverter {
 			index += BinaryReader.SIZEOF_LONG;
 		}
 		else {
-			startAddressOfRawData = reader.readInt(index) & Conv.INT_MASK;
+			startAddressOfRawData = reader.readUnsignedInt(index);
 			index += BinaryReader.SIZEOF_INT;
-			endAddressOfRawData = reader.readInt(index) & Conv.INT_MASK;
+			endAddressOfRawData = reader.readUnsignedInt(index);
 			index += BinaryReader.SIZEOF_INT;
-			addressOfIndex = reader.readInt(index) & Conv.INT_MASK;
+			addressOfIndex = reader.readUnsignedInt(index);
 			index += BinaryReader.SIZEOF_INT;
-			addressOfCallBacks = reader.readInt(index) & Conv.INT_MASK;
+			addressOfCallBacks = reader.readUnsignedInt(index);
 			index += BinaryReader.SIZEOF_INT;
 		}
 		Msg.info(this, "TLS callbacks at " + Long.toHexString(addressOfCallBacks));
@@ -137,9 +136,7 @@ public class TLSDirectory implements StructConverter {
         return characteristics;
     }
 
-    /**
-     * @see ghidra.app.util.bin.StructConverter#toDataType()
-     */
+	@Override
     public DataType toDataType() throws DuplicateNameException {
         StructureDataType struct = new StructureDataType(getName(), 0);
 

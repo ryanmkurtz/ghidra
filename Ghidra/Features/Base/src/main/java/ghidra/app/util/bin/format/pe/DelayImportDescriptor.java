@@ -22,7 +22,6 @@ import ghidra.app.util.bin.BinaryReader;
 import ghidra.app.util.bin.StructConverter;
 import ghidra.program.model.data.*;
 import ghidra.program.model.symbol.SymbolUtilities;
-import ghidra.util.Conv;
 import ghidra.util.Msg;
 import ghidra.util.exception.DuplicateNameException;
 
@@ -176,17 +175,17 @@ public class DelayImportDescriptor implements StructConverter {
 	private void readFields(BinaryReader reader, int index) throws IOException {
 		grAttrs = reader.readInt(index);
 		index += BinaryReader.SIZEOF_INT;
-		szName = reader.readInt(index) & Conv.INT_MASK;
+		szName = reader.readUnsignedInt(index);
 		index += BinaryReader.SIZEOF_INT;
-		phmod = reader.readInt(index) & Conv.INT_MASK;
+		phmod = reader.readUnsignedInt(index);
 		index += BinaryReader.SIZEOF_INT;
-		pIAT = reader.readInt(index) & Conv.INT_MASK;
+		pIAT = reader.readUnsignedInt(index);
 		index += BinaryReader.SIZEOF_INT;
-		pINT = reader.readInt(index) & Conv.INT_MASK;
+		pINT = reader.readUnsignedInt(index);
 		index += BinaryReader.SIZEOF_INT;
-		pBoundIAT = reader.readInt(index) & Conv.INT_MASK;
+		pBoundIAT = reader.readUnsignedInt(index);
 		index += BinaryReader.SIZEOF_INT;
-		pUnloadIAT = reader.readInt(index) & Conv.INT_MASK;
+		pUnloadIAT = reader.readUnsignedInt(index);
 		index += BinaryReader.SIZEOF_INT;
 		dwTimeStamp = reader.readInt(index);
 		index += BinaryReader.SIZEOF_INT;

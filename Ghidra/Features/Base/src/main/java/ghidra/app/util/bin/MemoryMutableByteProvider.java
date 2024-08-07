@@ -15,11 +15,11 @@
  */
 package ghidra.app.util.bin;
 
+import java.io.IOException;
+
 import ghidra.program.model.address.Address;
 import ghidra.program.model.address.AddressSpace;
 import ghidra.program.model.mem.Memory;
-
-import java.io.IOException;
 
 /**
  * A Byte Provider implementation based on Memory.
@@ -28,6 +28,7 @@ public class MemoryMutableByteProvider extends MemoryByteProvider implements Mut
 	/**
 	 * Constructs a new provider for a specific address space.
 	 * @param memory the memory
+	 * @param space the address space
 	 */
 	public MemoryMutableByteProvider(Memory memory, AddressSpace space) {
 		super(memory, space);

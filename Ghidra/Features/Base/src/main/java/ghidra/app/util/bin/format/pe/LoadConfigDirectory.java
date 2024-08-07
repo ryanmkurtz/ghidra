@@ -20,13 +20,13 @@ import java.io.IOException;
 import ghidra.app.util.bin.BinaryReader;
 import ghidra.app.util.bin.StructConverter;
 import ghidra.program.model.data.*;
-import ghidra.util.Conv;
 import ghidra.util.exception.DuplicateNameException;
 
 /**
  * A class to represent the <code>IMAGE_LOAD_CONFIG_DIRECTORY</code>
  * data structure which is defined in <b><code>winnt.h</code></b>.
  */
+@SuppressWarnings("unused")
 public class LoadConfigDirectory implements StructConverter {
 	public final static String NAME32 = "IMAGE_LOAD_CONFIG_DIRECTORY32";
 	public final static String NAME64 = "IMAGE_LOAD_CONFIG_DIRECTORY64";
@@ -370,7 +370,7 @@ public class LoadConfigDirectory implements StructConverter {
 		if (is64bit) {
 			return reader.readNextLong();
 		}
-		return reader.readNextInt() & Conv.INT_MASK;
+		return reader.readNextUnsignedInt();
 	}
 
 	/**
@@ -437,8 +437,8 @@ public class LoadConfigDirectory implements StructConverter {
 		@Override
 		public String toString() {
 			StringBuilder sb = new StringBuilder();
-			sb.append("flags=0x" + Integer.toHexString(Conv.shortToInt(flags)));
-			sb.append(", catalog=0x" + Integer.toHexString(Conv.shortToInt(catalog)));
+			sb.append("flags=0x" + Integer.toHexString(Short.toUnsignedInt(flags)));
+			sb.append(", catalog=0x" + Integer.toHexString(Short.toUnsignedInt(catalog)));
 			sb.append(", catalogOffset=0x" + Integer.toHexString(catalogOffset));
 			sb.append(", reserved=0x" + Integer.toHexString(reserved));
 			return sb.toString();

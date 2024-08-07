@@ -20,7 +20,7 @@ import java.io.IOException;
 import ghidra.app.util.bin.BinaryReader;
 import ghidra.app.util.importer.MessageLog;
 import ghidra.program.model.address.Address;
-import ghidra.program.model.data.*;
+import ghidra.program.model.data.DataType;
 import ghidra.program.model.listing.Program;
 import ghidra.program.model.mem.MemoryAccessException;
 import ghidra.program.model.util.CodeUnitInsertionException;
@@ -67,11 +67,11 @@ public class COMDescriptorDataDirectory extends DataDirectory {
 
 	@Override
 	public void markup(Program program, boolean isBinary, TaskMonitor monitor, MessageLog log,
-			NTHeader ntHeader) throws DuplicateNameException, CodeUnitInsertionException,
+			NTHeader nt) throws DuplicateNameException, CodeUnitInsertionException,
 			IOException, MemoryAccessException {
 
 		monitor.setMessage("[" + program.getName() + "]: com descriptor(s)...");
-		Address addr = PeUtils.getMarkupAddress(program, isBinary, ntHeader, virtualAddress);
+		Address addr = PeUtils.getMarkupAddress(program, isBinary, nt, virtualAddress);
 		if (!program.getMemory().contains(addr)) {
 			return;
 		}
@@ -80,18 +80,7 @@ public class COMDescriptorDataDirectory extends DataDirectory {
 		PeUtils.createData(program, addr, dt, log);
 
 		if (hasParsed) {
-			header.markup(program, isBinary, monitor, log, ntHeader);
+			header.markup(program, isBinary, monitor, log, nt);
 		}
-	}
-
-	/**
-	 * @see ghidra.app.util.bin.StructConverter#toDataType()
-	 */
-	@Override
-	public DataType toDataType() throws DuplicateNameException {
-		StructureDataType struct = new StructureDataType(NAME, 0);
-		struct.add(new ArrayDataType(BYTE, size, 1), "COM", null);
-		struct.setCategoryPath(new CategoryPath("/PE"));
-		return struct;
 	}
 }

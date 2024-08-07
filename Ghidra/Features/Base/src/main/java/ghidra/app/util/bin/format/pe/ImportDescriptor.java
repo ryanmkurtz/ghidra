@@ -211,9 +211,7 @@ public class ImportDescriptor implements StructConverter, ByteArrayConverter {
 		return timeDateStamp != NOT_BOUND;
 	}
 
-    /**
-     * @see ghidra.app.util.bin.StructConverter#toDataType()
-     */
+	@Override
     public DataType toDataType() throws DuplicateNameException {
         UnionDataType union = new UnionDataType("union");
         union.add(DWORD, "Characteristics",    null);
@@ -230,9 +228,7 @@ public class ImportDescriptor implements StructConverter, ByteArrayConverter {
         return struct;
     }
 
-    /**
-     * @see ghidra.app.util.bin.ByteArrayConverter#toBytes(ghidra.util.DataConverter)
-     */
+	@Override
 	public byte [] toBytes(DataConverter dc) {
 		byte [] bytes = new byte[SIZEOF];
 

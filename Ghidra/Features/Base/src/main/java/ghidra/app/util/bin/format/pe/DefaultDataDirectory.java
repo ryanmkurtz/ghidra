@@ -18,13 +18,14 @@ package ghidra.app.util.bin.format.pe;
 import java.io.IOException;
 
 import ghidra.app.util.bin.BinaryReader;
+import ghidra.app.util.bin.StructConverter;
 import ghidra.app.util.importer.MessageLog;
 import ghidra.program.model.data.*;
 import ghidra.program.model.listing.Program;
 import ghidra.util.exception.DuplicateNameException;
 import ghidra.util.task.TaskMonitor;
 
-public class DefaultDataDirectory extends DataDirectory {
+public class DefaultDataDirectory extends DataDirectory implements StructConverter {
 
 	DefaultDataDirectory(NTHeader ntHeader, BinaryReader reader) throws IOException {
 		processDataDirectory(ntHeader, reader);
@@ -43,16 +44,16 @@ public class DefaultDataDirectory extends DataDirectory {
 
 	@Override
 	public void markup(Program program, boolean isBinary, TaskMonitor monitor, MessageLog log,
-			NTHeader ntHeader) {
+			NTHeader nt) {
 		//do nothing
 	}
 
 	@Override
-    public DataType toDataType() throws DuplicateNameException, IOException {
-        StructureDataType ddstruct = new StructureDataType(DataDirectory.TITLE,0);
-        ddstruct.add(DWORD, "VirtualAddress", null);
-        ddstruct.add(DWORD, "Size", null);
-        ddstruct.setCategoryPath(new CategoryPath("/PE"));
-        return ddstruct;
+	public DataType toDataType() throws DuplicateNameException, IOException {
+		StructureDataType ddstruct = new StructureDataType(DataDirectory.TITLE, 0);
+		ddstruct.add(DWORD, "VirtualAddress", null);
+		ddstruct.add(DWORD, "Size", null);
+		ddstruct.setCategoryPath(new CategoryPath("/PE"));
+		return ddstruct;
 	}
 }

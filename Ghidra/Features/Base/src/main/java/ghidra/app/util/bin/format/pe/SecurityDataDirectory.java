@@ -25,7 +25,7 @@ import ghidra.app.util.bin.ByteArrayConverter;
 import ghidra.app.util.importer.MessageLog;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.address.AddressSpace;
-import ghidra.program.model.data.*;
+import ghidra.program.model.data.DataType;
 import ghidra.program.model.listing.Program;
 import ghidra.program.model.util.CodeUnitInsertionException;
 import ghidra.util.DataConverter;
@@ -63,8 +63,7 @@ public class SecurityDataDirectory extends DataDirectory implements ByteArrayCon
 
 	@Override
 	public void markup(Program program, boolean isBinary, TaskMonitor monitor, MessageLog log,
-			NTHeader ntHeader)
-			throws DuplicateNameException, CodeUnitInsertionException, IOException {
+			NTHeader nt) throws DuplicateNameException, CodeUnitInsertionException, IOException {
 
 		if (!isBinary) {//certificates are never mapped into running program...
 			return;
@@ -124,36 +123,17 @@ public class SecurityDataDirectory extends DataDirectory implements ByteArrayCon
         list.toArray(certificates);
         return true;
     }
-	
-    /**
-     * @see ghidra.app.util.bin.StructConverter#toDataType()
-     */
-    @Override
-    public DataType toDataType() throws DuplicateNameException {
-        StructureDataType struct = new StructureDataType(NAME, 0);
-        for (SecurityCertificate certificate : certificates) {
-            struct.add(certificate.toDataType());
-        }
-        struct.setCategoryPath(new CategoryPath("/PE"));
-        return struct;
-    }
 
-	/**
-	 * @see ghidra.app.util.bin.ByteArrayConverter#toBytes(ghidra.util.DataConverter)
-	 */
 	@Override
 	public byte [] toBytes(DataConverter dc) {
 		try {
 			return reader.readByteArray( virtualAddress, size );
 		}
 		catch ( IOException e) {
+			return new byte[size];//TODO: need to implement!
 		}
-		return new byte[size];//TODO: need to implement!
 	}
 
-	/**
-	 * @see ghidra.app.util.bin.format.pe.DataDirectory#writeBytes(java.io.RandomAccessFile, ghidra.util.DataConverter, ghidra.app.util.bin.format.pe.PortableExecutable)
-	 */
 	@Override
     public void writeBytes(RandomAccessFile raf, DataConverter dc, PortableExecutable template) 
 		throws IOException {
@@ -186,9 +166,6 @@ public class SecurityDataDirectory extends DataDirectory implements ByteArrayCon
 		virtualAddress += offset;
 	}
 
-	/**
-	 * virtualAddress is always a binary offset
-	 */
 	public Address getMarkupAddress(Program program, boolean isBinary) {
 		AddressSpace space = program.getAddressFactory().getDefaultAddressSpace();
 		return space.getAddress( virtualAddress);

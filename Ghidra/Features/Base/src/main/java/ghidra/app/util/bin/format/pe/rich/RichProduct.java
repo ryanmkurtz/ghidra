@@ -38,6 +38,7 @@ public class RichProduct {
 		return productType;
 	}
 
+	@Override
 	public String toString() {
 		return getProductVersion() + " -- " + getProductType();
 	}

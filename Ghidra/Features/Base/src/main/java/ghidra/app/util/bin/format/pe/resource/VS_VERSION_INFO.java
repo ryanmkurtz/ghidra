@@ -87,6 +87,7 @@ public class VS_VERSION_INFO implements StructConverter {
 		reader.setPointerIndex(oldIndex);
 	}
 
+	@Override
 	public DataType toDataType() throws DuplicateNameException {
 		StructureDataType struct = new StructureDataType(NAME, 0);
 		struct.add(WORD, "StructLength", null);

@@ -22,12 +22,10 @@ import java.util.List;
 import ghidra.app.util.bin.BinaryReader;
 import ghidra.app.util.importer.MessageLog;
 import ghidra.program.model.address.Address;
-import ghidra.program.model.data.*;
 import ghidra.program.model.listing.Program;
 import ghidra.program.model.mem.MemoryAccessException;
 import ghidra.program.model.util.CodeUnitInsertionException;
 import ghidra.util.Msg;
-import ghidra.util.exception.DuplicateNameException;
 import ghidra.util.task.TaskMonitor;
 
 public class ImportAddressTableDataDirectory extends DataDirectory {
@@ -56,10 +54,10 @@ public class ImportAddressTableDataDirectory extends DataDirectory {
 
 	@Override
 	public void markup(Program program, boolean isBinary, TaskMonitor monitor, MessageLog log,
-			NTHeader ntHeader) throws CodeUnitInsertionException, MemoryAccessException {
+			NTHeader nt) throws CodeUnitInsertionException, MemoryAccessException {
 
 		monitor.setMessage(program.getName()+": IAT...");
-		Address addr = PeUtils.getMarkupAddress(program, isBinary, ntHeader, virtualAddress);
+		Address addr = PeUtils.getMarkupAddress(program, isBinary, nt, virtualAddress);
 		if (!program.getMemory().contains(addr)) {
 			return;
 		}
@@ -100,16 +98,5 @@ public class ImportAddressTableDataDirectory extends DataDirectory {
 			tmp -= thunk.getStructSize();
     	}
     	return true;
-    }
-
-    /**
-     * @see ghidra.app.util.bin.StructConverter#toDataType()
-     */
-    @Override
-    public DataType toDataType() throws DuplicateNameException {
-        StructureDataType struct = new StructureDataType(NAME, 0);
-        struct.add(new ArrayDataType(BYTE, size, 1), "IAT", null);
-        struct.setCategoryPath(new CategoryPath("/PE"));
-        return struct;
     }
 }

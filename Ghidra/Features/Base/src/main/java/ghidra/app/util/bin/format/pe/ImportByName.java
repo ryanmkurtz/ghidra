@@ -70,9 +70,7 @@ public class ImportByName implements StructConverter, ByteArrayConverter {
         return name;
     }
 
-	/**
-	 * @see ghidra.app.util.bin.StructConverter#toDataType()
-	 */
+	@Override
 	public DataType toDataType() throws DuplicateNameException {
 		int len = name.length()+1;
 		StructureDataType struct = new StructureDataType(NAME+"_"+len, 0);
@@ -82,9 +80,7 @@ public class ImportByName implements StructConverter, ByteArrayConverter {
 		return struct;
 	}
 
-	/**
-	 * @see ghidra.app.util.bin.ByteArrayConverter#toBytes(ghidra.util.DataConverter)
-	 */
+	@Override
 	public byte [] toBytes(DataConverter dc) {
 		byte [] bytes = new byte[getSizeOf()];
 		dc.getBytes(hint, bytes, 0);

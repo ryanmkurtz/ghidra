@@ -16,15 +16,13 @@
  */
 package ghidra.app.util.bin.format.pe;
 
-import ghidra.util.Conv;
-
 /**
  * 
  */
 class MachineName {
 
 	static String getName(short machine) {
-		return getName(machine & Conv.SHORT_MASK);
+		return getName(Short.toUnsignedInt(machine));
 	}
 
 	static String getName(int machine) {

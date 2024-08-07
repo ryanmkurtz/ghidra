@@ -16,9 +16,9 @@
  */
 package ghidra.app.util.bin;
 
-import ghidra.util.DataConverter;
-
 import java.io.IOException;
+
+import ghidra.util.DataConverter;
 
 /**
  * An interface to convert from a object to a
@@ -31,6 +31,7 @@ public interface ByteArrayConverter {
 	 * of this interface.
 	 * @param dc the data converter to use
 	 * @return a byte array representing this object
+	 * @throws IOException if an IO-related error occurs
 	 */
 	public byte [] toBytes(DataConverter dc) throws IOException;
 }

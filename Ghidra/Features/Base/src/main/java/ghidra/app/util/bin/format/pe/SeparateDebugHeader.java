@@ -15,15 +15,13 @@
  */
 package ghidra.app.util.bin.format.pe;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
-import java.io.IOException;
 
 import ghidra.app.util.bin.BinaryReader;
 import ghidra.app.util.bin.ByteProvider;
 import ghidra.app.util.bin.format.pe.debug.DebugDirectoryParser;
-import ghidra.util.Conv;
 import ghidra.util.Msg;
 
 /**
@@ -72,7 +70,6 @@ public class SeparateDebugHeader implements OffsetValidator {
 	private int[] reserved = new int[2];
 
 	private SectionHeader[] sections;
-	private String[] exportedNames;
 	private DebugDirectoryParser parser;
 
 	/**
@@ -126,7 +123,6 @@ public class SeparateDebugHeader implements OffsetValidator {
 			}
 			exportedNameslist.add(str);
 		}
-		exportedNames = exportedNameslist.toArray(String[]::new);
 
 		ptr += exportedNamesSize;
 
@@ -256,8 +252,8 @@ public class SeparateDebugHeader implements OffsetValidator {
 	@Override
 	public boolean checkPointer(long ptr) {
 		for (int i = 0; i < sections.length; ++i) {
-			long rawSize = sections[i].getSizeOfRawData() & Conv.INT_MASK;
-			long rawPtr = sections[i].getPointerToRawData() & Conv.INT_MASK;
+			long rawSize = Integer.toUnsignedLong(sections[i].getSizeOfRawData());
+			long rawPtr = Integer.toUnsignedLong(sections[i].getPointerToRawData());
 
 			if (ptr >= rawPtr && ptr <= rawPtr + rawSize) { // <= allows data after the last section, which is OK
 				return true;

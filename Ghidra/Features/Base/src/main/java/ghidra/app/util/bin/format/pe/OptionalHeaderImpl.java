@@ -26,7 +26,8 @@ import ghidra.program.model.data.*;
 import ghidra.program.model.listing.Program;
 import ghidra.program.model.mem.Memory;
 import ghidra.program.model.mem.MemoryAccessException;
-import ghidra.util.*;
+import ghidra.util.DataConverter;
+import ghidra.util.Msg;
 import ghidra.util.exception.DuplicateNameException;
 import ghidra.util.task.TaskMonitor;
 
@@ -166,7 +167,7 @@ public class OptionalHeaderImpl implements OptionalHeader {
 
 	@Override
 	public long getAddressOfEntryPoint() {
-		return Conv.intToLong(addressOfEntryPoint);
+		return Integer.toUnsignedLong(addressOfEntryPoint);
 	}
 
 	@Override
@@ -181,7 +182,7 @@ public class OptionalHeaderImpl implements OptionalHeader {
 
 	@Override
 	public long getSizeOfInitializedData() {
-		return Conv.intToLong(sizeOfInitializedData);
+		return Integer.toUnsignedLong(sizeOfInitializedData);
 	}
 
 	@Override
@@ -191,7 +192,7 @@ public class OptionalHeaderImpl implements OptionalHeader {
 
 	@Override
 	public long getSizeOfUninitializedData() {
-		return Conv.intToLong(sizeOfUninitializedData);
+		return Integer.toUnsignedLong(sizeOfUninitializedData);
 	}
 
 	@Override
@@ -201,17 +202,17 @@ public class OptionalHeaderImpl implements OptionalHeader {
 
 	@Override
 	public long getBaseOfCode() {
-		return Conv.intToLong(baseOfCode);
+		return Integer.toUnsignedLong(baseOfCode);
 	}
 
 	@Override
 	public long getBaseOfData() {
-		return Conv.intToLong(baseOfData);
+		return Integer.toUnsignedLong(baseOfData);
 	}
 
 	@Override
 	public long getSizeOfImage() {
-		return Conv.intToLong(sizeOfImage);
+		return Integer.toUnsignedLong(sizeOfImage);
 	}
 
 	@Override
@@ -221,7 +222,7 @@ public class OptionalHeaderImpl implements OptionalHeader {
 
 	@Override
 	public long getSizeOfHeaders() {
-		return Conv.intToLong(sizeOfHeaders);
+		return Integer.toUnsignedLong(sizeOfHeaders);
 	}
 
 	@Override
@@ -231,7 +232,7 @@ public class OptionalHeaderImpl implements OptionalHeader {
 
 	@Override
 	public long getNumberOfRvaAndSizes() {
-		return Conv.intToLong(numberOfRvaAndSizes);
+		return Integer.toUnsignedLong(numberOfRvaAndSizes);
 	}
 
 	@Override
@@ -531,10 +532,10 @@ public class OptionalHeaderImpl implements OptionalHeader {
 			sizeOfHeapCommit = reader.readNextLong();
 		}
 		else {
-			sizeOfStackReserve = reader.readNextInt() & Conv.INT_MASK;
-			sizeOfStackCommit = reader.readNextInt() & Conv.INT_MASK;
-			sizeOfHeapReserve = reader.readNextInt() & Conv.INT_MASK;
-			sizeOfHeapCommit = reader.readNextInt() & Conv.INT_MASK;
+			sizeOfStackReserve = reader.readNextUnsignedInt();
+			sizeOfStackCommit = reader.readNextUnsignedInt();
+			sizeOfHeapReserve = reader.readNextUnsignedInt();
+			sizeOfHeapCommit = reader.readNextUnsignedInt();
 		}
 
 		loaderFlags = reader.readNextInt();

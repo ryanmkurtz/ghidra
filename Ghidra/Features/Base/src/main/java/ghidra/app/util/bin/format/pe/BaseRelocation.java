@@ -159,9 +159,7 @@ public class BaseRelocation implements StructConverter, ByteArrayConverter {
         return typeOffsetList.get(index).type;
     }
 
-    /**
-     * @see ghidra.app.util.bin.StructConverter#toDataType()
-     */
+	@Override
     public DataType toDataType() throws DuplicateNameException {
         StructureDataType struct = new StructureDataType(NAME, 0);
 
@@ -174,9 +172,7 @@ public class BaseRelocation implements StructConverter, ByteArrayConverter {
         return struct;
     }
 
-	/**
-	 * @see ghidra.app.util.bin.ByteArrayConverter#toBytes(ghidra.util.DataConverter)
-	 */
+	@Override
 	public byte[] toBytes(DataConverter dc) {
 		byte [] bytes = new byte[sizeOfBlock];
 		int pos = 0;

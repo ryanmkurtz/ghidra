@@ -107,6 +107,7 @@ public interface StructConverter {
 	 *         the implementor of this interface
 	 * 
 	 * @throws DuplicateNameException when a datatype of the same name already exists
+	 * @throws IOException if an IO-related error occurs
 	 * 
 	 * @see ghidra.program.model.data.StructureDataType
 	 */

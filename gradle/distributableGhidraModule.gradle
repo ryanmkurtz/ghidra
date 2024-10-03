@@ -91,8 +91,18 @@ rootProject.assembleDistribution {
 	//
 	fileTree.each { File file ->
 		String filePath = getGlobalFilePathSubDirName(file)
-		from (file) {
-			into filePath
+		
+		if (file.name.toLowerCase().endsWith(".md")) {
+			rootProject.assembleMarkdownToHtml {
+				from (file) {
+					into filePath
+				}
+			}
+		}
+		else {
+			from (file) {
+				into filePath
+			}
 		}
 	}
 }

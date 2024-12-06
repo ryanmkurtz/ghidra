@@ -44,9 +44,10 @@ public abstract class SwiftNode {
 	 *   0)
 	 * @param mangled The mangled string associated with this {@link SwiftNode}
 	 * @param originalDemangled The natively demangled string
+	 * @param is64bit Whether or not the mangled string is from a 64-bit program
 	 */
 	public record NodeProperties(SwiftDemangledNodeKind kind, String text, String index,
-			int depth, String mangled, String originalDemangled) {}
+			int depth, String mangled, String originalDemangled, boolean is64bit) {}
 
 	/**
 	 * Gets a new {@link SwiftNode} with the given with the given {@link NodeProperties}

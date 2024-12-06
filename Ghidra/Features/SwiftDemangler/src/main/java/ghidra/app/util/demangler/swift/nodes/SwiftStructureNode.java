@@ -57,15 +57,17 @@ public class SwiftStructureNode extends SwiftNode {
 
 		String mangled = properties.mangled();
 		String orig = properties.originalDemangled();
+		String intDataType =
+			properties.is64bit() ? DemangledDataType.INT64 : DemangledDataType.INT32;
 		if (SwiftDataTypeUtils.isSwiftNamespace(namespace)) {
 			DemangledDataType type = switch (name) {
 				case "Bool" -> new SwiftPrimitive(mangled, orig, DemangledDataType.BOOL);
-				case "Int" -> new SwiftPrimitive(mangled, orig, DemangledDataType.INT);
+				case "Int" -> new SwiftPrimitive(mangled, orig, intDataType);
 				case "Int8" -> new SwiftPrimitive(mangled, orig, DemangledDataType.INT8);
 				case "Int16" -> new SwiftPrimitive(mangled, orig, DemangledDataType.INT16);
 				case "Int32" -> new SwiftPrimitive(mangled, orig, DemangledDataType.INT32);
 				case "Int64" -> new SwiftPrimitive(mangled, orig, DemangledDataType.INT64);
-				case "UInt" -> new SwiftPrimitive(mangled, orig, DemangledDataType.INT, true);
+				case "UInt" -> new SwiftPrimitive(mangled, orig, intDataType, true);
 				case "UInt8" -> new SwiftPrimitive(mangled, orig, DemangledDataType.INT8, true);
 				case "UInt16" -> new SwiftPrimitive(mangled, orig, DemangledDataType.INT16, true);
 				case "UInt32" -> new SwiftPrimitive(mangled, orig, DemangledDataType.INT32, true);

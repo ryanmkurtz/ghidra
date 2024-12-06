@@ -79,9 +79,10 @@ public class SwiftDemangledTree {
 	 * 
 	 * @param nativeDemangler The Swift native demangler
 	 * @param mangled The mangled string
+	 * @param is64bit Whether or not the mangled string is from a 64-bit program
 	 * @throws DemangledException If there was an issue demangling
 	 */
-	public SwiftDemangledTree(SwiftNativeDemangler nativeDemangler, String mangled)
+	public SwiftDemangledTree(SwiftNativeDemangler nativeDemangler, String mangled, boolean is64bit)
 			throws DemangledException {
 		SwiftNativeDemangledOutput demangledOutput;
 		try {
@@ -100,12 +101,12 @@ public class SwiftDemangledTree {
 			SwiftNode node;
 			try {
 				NodeProperties properties = new NodeProperties(SwiftDemangledNodeKind.valueOf(kind),
-					text, index, depth, mangled, demangledString);
+					text, index, depth, mangled, demangledString, is64bit);
 				node = SwiftNode.get(properties);
 			}
 			catch (IllegalArgumentException e) {
 				NodeProperties properties = new NodeProperties(SwiftDemangledNodeKind.Unsupported,
-					text, index, depth, mangled, demangledString);
+					text, index, depth, mangled, demangledString, is64bit);
 				node = new SwiftUnsupportedNode(kind, properties);
 			}
 			if (node.getDepth() == 0) {

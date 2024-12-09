@@ -19,10 +19,9 @@ import os
 import sys
 import subprocess
 import sysconfig
-import venv
 from pathlib import Path
-from typing import List, Dict
-from sys import stderr, version
+from itertools import chain
+from typing import List, Dict, Tuple
 
 def get_application_properties(install_dir: Path) -> Dict[str, str]:
     app_properties_path: Path = install_dir / 'Ghidra' / 'application.properties'
@@ -51,6 +50,26 @@ def get_user_settings_dir(install_dir: Path) -> Path:
     if platform.system() == 'Darwin':
         return Path.home() / 'Library' / app_name / versioned_name
     return Path.home() / '.config' / app_name / versioned_name
+
+def find_supported_python_exe(install_dir: Path) -> List[str]:
+    props: Dict[str, str] = get_application_properties(install_dir)
+    prop: str = 'application.python.supported'
+    supported: List[str] = [s.strip() for s in props.get(prop, '').split(',')]
+    if '' in supported:
+        raise ValueError(f'Invalid "{prop}" value in application.properties file')
+
+    python_cmds = list(chain.from_iterable([[f'python{s}'], ['py', f'-{s}']] for s in supported))
+    python_cmds += [['python3'], ['python'], ['py']]
+
+    for cmd in python_cmds:
+        try:
+            result = subprocess.run(cmd + ["--version"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            if result.returncode == 0:
+                return cmd
+        except FileNotFoundError:
+            pass
+        
+    return None
     
 def in_venv() -> bool:
     return sys.prefix != sys.base_prefix
@@ -59,30 +78,30 @@ def is_externally_managed() -> bool:
     marker: Path = Path(sysconfig.get_path("stdlib", sysconfig.get_default_scheme())) / 'EXTERNALLY-MANAGED'
     return marker.is_file()
 
-def get_venv_exe(venv_dir: Path) -> str:
+def get_venv_exe(venv_dir: Path) -> List[str]:
     win_python_cmd: str = str(venv_dir / 'Scripts' / 'python.exe')
     linux_python_cmd: str = str(venv_dir / 'bin' / 'python3')
-    return win_python_cmd if platform.system() == 'Windows' else linux_python_cmd
+    return [win_python_cmd] if platform.system() == 'Windows' else [linux_python_cmd]
 
 def get_ghidra_venv(install_dir: Path) -> Path:
     user_settings_dir: Path = get_user_settings_dir(install_dir)
     venv_dir: Path = user_settings_dir / 'venv'
     return venv_dir
     
-def create_ghidra_venv(venv_dir: Path) -> None:
+def create_ghidra_venv(python_cmd: List[str], venv_dir: Path) -> None:
     print(f'Creating Ghidra virtual environemnt at {venv_dir}...')
-    venv.create(venv_dir, with_pip=True)
+    subprocess.run(python_cmd + ['-m', 'venv', venv_dir.absolute()])
 
-def version_tuple(v):
-   filled = []
-   for point in v.split("."):
-      filled.append(point.zfill(8))
-   return tuple(filled)
+def version_tuple(v: str) -> Tuple[str, ...]:
+    filled = []
+    for point in v.split("."):
+        filled.append(point.zfill(8))
+    return tuple(filled)
 
-def get_package_version(python_cmd: str, package: str) -> str:
+def get_package_version(python_cmd: List[str], package: str) -> str:
     version = None
-    result = subprocess.Popen([python_cmd, '-m', 'pip', 'show', package], stdout=subprocess.PIPE, text=True)
-    for line in result.stdout.readlines():
+    result = subprocess.run(python_cmd + ['-m', 'pip', 'show', package], capture_output=True, text=True)
+    for line in result.stdout.splitlines():
         line = line.strip()
         print(line)
         key, value = line.split(':', 1)
@@ -90,14 +109,14 @@ def get_package_version(python_cmd: str, package: str) -> str:
             version = value.strip()
     return version
     
-def install(install_dir: Path, python_cmd: str, pip_args: List[str], offer_venv: bool) -> bool:
+def install(install_dir: Path, python_cmd: List[str], pip_args: List[str], offer_venv: bool) -> List[str]:
     install_choice: str = input('Do you wish to install PyGhidra (y/n)? ')
     if install_choice.lower() in ('y', 'yes'):
         if offer_venv:
             ghidra_venv_choice: str = input('Install into new Ghidra virtual environment (y/n)? ')
             if ghidra_venv_choice.lower() in ('y', 'yes'):
                 venv_dir = get_ghidra_venv(install_dir)
-                create_ghidra_venv(venv_dir)
+                create_ghidra_venv(python_cmd, venv_dir)
                 python_cmd = get_venv_exe(venv_dir)
             elif ghidra_venv_choice.lower() in ('n', 'no'):
                 system_venv_choice: str = input('Install into system environment (y/n)? ')
@@ -107,24 +126,24 @@ def install(install_dir: Path, python_cmd: str, pip_args: List[str], offer_venv:
             else:
                 print('Please answer yes or no.')
                 return None 
-        subprocess.check_call([python_cmd] + pip_args)
+        subprocess.check_call(python_cmd + pip_args)
         return python_cmd
     elif not install_choice.lower() in ('n', 'no'):
         print('Please answer yes or no.')
     return None     
 
-def upgrade(python_cmd: str, pip_args: List[str], dist_dir: Path, current_pyghidra_version: str) -> bool:
+def upgrade(python_cmd: List[str], pip_args: List[str], dist_dir: Path, current_pyghidra_version: str) -> bool:
     included_pyghidra: Path = next(dist_dir.glob('pyghidra-*.whl'), None)
     if included_pyghidra is None:
-         print('Warning: included pyghidra wheel was not found', file=sys.stderr)
-         return
+        print('Warning: included pyghidra wheel was not found', file=sys.stderr)
+        return
     included_version = included_pyghidra.name.split('-')[1]
     current_version = current_pyghidra_version
     if version_tuple(included_version) > version_tuple(current_version):
         choice: str = input(f'Do you wish to upgrade PyGhidra {current_version} to {included_version} (y/n)? ')
         if choice.lower() in ('y', 'yes'):
             pip_args.append('-U')
-            subprocess.check_call([python_cmd] + pip_args)
+            subprocess.check_call(python_cmd + pip_args)
             return True
         else:
             print('Skipping upgrade')
@@ -140,13 +159,17 @@ def main() -> None:
     args, remaining = parser.parse_known_args()
     
     # Setup variables
-    python_cmd: str = sys.executable
     install_dir: Path = Path(args.install_dir)
     pyghidra_dir: Path = install_dir / 'Ghidra' / 'Features' / 'PyGhidra'
     dist_dir: Path = pyghidra_dir / 'pypkg' / 'dist'
     dev_venv_dir = install_dir / 'build' / 'venv'
     release_venv_dir = get_ghidra_venv(install_dir)
-
+    python_cmd: List[str] = find_supported_python_exe(install_dir)
+    
+    if python_cmd is None:
+        print('Supported version of Python not found.')
+        sys.exit(1)
+    
     # If headless, force console mode
     if args.headless:
         args.console = True
@@ -176,7 +199,7 @@ def main() -> None:
             print(f'Using Ghidra virtual environment: {release_venv_dir}')
         elif is_externally_managed():
             print('Externally managed environment detected!')
-            create_ghidra_venv(release_venv_dir)
+            create_ghidra_venv(python_cmd, release_venv_dir)
             python_cmd = get_venv_exe(release_venv_dir)
         else:
             offer_venv = True
@@ -192,7 +215,7 @@ def main() -> None:
             upgrade(python_cmd, pip_args, dist_dir, current_pyghidra_version)
 
     # Launch PyGhidra
-    py_args: List[str] = [python_cmd, '-m', 'pyghidra.ghidra_launch', '--install-dir', str(install_dir)]
+    py_args: List[str] = python_cmd + ['-m', 'pyghidra.ghidra_launch', '--install-dir', str(install_dir)]
     if args.headless:
         py_args += ['ghidra.app.util.headless.AnalyzeHeadless']
     else:
@@ -201,7 +224,7 @@ def main() -> None:
         subprocess.call(py_args + remaining)
     else:
         creation_flags = getattr(subprocess, 'CREATE_NO_WINDOW', 0)
-        subprocess.Popen(py_args + remaining, creationflags=creation_flags, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        subprocess.run(py_args + remaining, creationflags=creation_flags, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
  
 if __name__ == "__main__":
     main()

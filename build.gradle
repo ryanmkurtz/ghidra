@@ -219,8 +219,17 @@ def checkPip(List<String> pyCmd, boolean shouldPrint) {
 }
 
 def findPython3(boolean shouldPrint) {
-	def pyCmds = SUPPORTED_PY_VERSIONS.collectMany { [["python$it"], ["py", "-$it"]] }
-	pyCmds += [['py'], ['python3'], ['python']]
+	def supportedVersions = "${rootProject.PYTHON_SUPPORTED}".split(",").collect {
+		try {
+			GradleVersion.version(it.trim()).getVersion()
+		}
+		catch (IllegalArgumentException e) {
+			throw new GradleException("Invalid supported Python version list specified in application.properties.\n" + e.message);
+		}	
+	}
+
+	def pyCmds = supportedVersions.collectMany { [["python$it"], ["py", "-$it"]] }
+	pyCmds += [['python3'], ['python'], ['py']]
 	for (pyCmd in pyCmds) {	
 		def pyVer = checkPythonVersion(pyCmd)
 		def pyExe = getPythonExecutable(pyCmd)

@@ -62,25 +62,76 @@ class PyDevUtilsInternal {
 	}
 
 	/**
-	 * Gets a list of discovered Jython 2.7 interpreter names.
+	 * Gets a list of discovered PyGhidra interpreter names.
 	 *  
-	 * @return a list of discovered Jython 2.7 interpreter names.
+	 * @return a list of discovered PyGhidra interpreter names.
 	 * @throws NoClassDefFoundError if PyDev is not installed or it does not support this operation.
 	 * @throws NoSuchMethodError if PyDev is not installed or it does not support this operation.
 	 */
-	public static List<String> getJython27InterpreterNames()
+	public static List<String> getPyGhidraInterpreterNames()
+			throws NoClassDefFoundError, NoSuchMethodError {
+
+		List<String> interpreters = new ArrayList<>();
+		IInterpreterManager iMan = InterpreterManagersAPI.getPythonInterpreterManager(true);
+
+		for (IInterpreterInfo info : iMan.getInterpreterInfos()) {
+			ISystemModulesManager modulesManager = info.getModulesManager();
+			if (info.getInterpreterType() == IPythonNature.INTERPRETER_TYPE_PYTHON &&
+				!modulesManager.getAllModulesStartingWith("pyghidra.__main__").isEmpty()) {
+				interpreters.add(info.getName());
+			}
+		}
+
+		return interpreters;
+	}
+
+	/**
+	 * Gets a list of discovered Jython interpreter names.
+	 *  
+	 * @return a list of discovered Jython interpreter names.
+	 * @throws NoClassDefFoundError if PyDev is not installed or it does not support this operation.
+	 * @throws NoSuchMethodError if PyDev is not installed or it does not support this operation.
+	 */
+	public static List<String> getJythonInterpreterNames()
 			throws NoClassDefFoundError, NoSuchMethodError {
 
 		List<String> interpreters = new ArrayList<>();
 		IInterpreterManager iMan = InterpreterManagersAPI.getJythonInterpreterManager(true);
 
 		for (IInterpreterInfo info : iMan.getInterpreterInfos()) {
-			if (info.getInterpreterType() == IPythonNature.INTERPRETER_TYPE_JYTHON && info.getVersion().equals("2.7")) {
+			if (info.getInterpreterType() == IPythonNature.INTERPRETER_TYPE_JYTHON &&
+				info.getVersion().equals("2.7")) {
 				interpreters.add(info.getName());
 			}
 		}
 
 		return interpreters;
+	}
+
+	/**
+	 * Adds the given PyGhidra interpreter to PyDev.
+	 * 
+	 * @param interpreterName The name of the interpreter to add.
+	 * @param interpreterFile The interpreter to add.
+	 * @param pypredefDir The pypredef directory to use (could be null if not supported)
+	 * @throws NoClassDefFoundError if PyDev is not installed or it does not support this operation.
+	 * @throws NoSuchMethodError if PyDev is not installed or it does not support this operation.
+	 */
+	public static void addPyGhidraInterpreter(String interpreterName, File interpreterFile,
+			File pypredefDir) throws NoClassDefFoundError, NoSuchMethodError {
+		IProgressMonitor monitor = new NullProgressMonitor();
+		IInterpreterManager iMan = InterpreterManagersAPI.getPythonInterpreterManager(true);
+		IInterpreterInfo iInfo =
+			iMan.createInterpreterInfo(interpreterFile.getAbsolutePath(), monitor, false);
+		iInfo.setName(interpreterName);
+		if (iInfo instanceof InterpreterInfo ii && pypredefDir != null) {
+			ii.addPredefinedCompletionsPath(pypredefDir.getAbsolutePath());
+		}
+		IInterpreterInfo[] interpreterInfos = iMan.getInterpreterInfos();
+		IInterpreterInfo[] newInterpreterInfos =
+			Arrays.copyOf(interpreterInfos, interpreterInfos.length + 1);
+		newInterpreterInfos[interpreterInfos.length] = iInfo;
+		iMan.setInfos(newInterpreterInfos, null, monitor);
 	}
 
 	/**
@@ -134,10 +185,11 @@ class PyDevUtilsInternal {
 		PythonNature.removeNature(javaProject.getProject(), monitor);
 
 		if (jythonInterpreterName != null) {
-			String libs = classpathEntries.stream().map(e -> e.getPath().toOSString()).collect(
-				Collectors.joining("|"));
+			String libs = classpathEntries.stream()
+					.map(e -> e.getPath().toOSString())
+					.collect(Collectors.joining("|"));
 			PythonNature.addNature(javaProject.getProject(), monitor,
-				IPythonNature.JYTHON_VERSION_2_7, null, libs, jythonInterpreterName, null);
+				IPythonNature.JYTHON_VERSION_INTERPRETER, null, libs, jythonInterpreterName, null);
 		}
 	}
 

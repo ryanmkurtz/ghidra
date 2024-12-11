@@ -38,23 +38,41 @@ import ghidradev.Activator;
  */
 public class PyDevUtils {
 
-	public final static String MIN_SUPPORTED_VERSION = "6.3.1";
-	public final static String MAX_SUPPORTED_VERSION = "9.3.0";
+	public final static String MIN_SUPPORTED_VERSION = "9.3.0";
+	public final static String MAX_JYTHON_SUPPORTED_VERSION = "9.3.0";
 
 	/**
-	 * Checks to see if a supported version of PyDev is installed.
-	 * 
-	 * @return True if a supported version of PyDev is installed; otherwise, false.
+	 * {@return true if a supported version of PyDev is installed for use with PyGhidra; otherwise, 
+	 * false}
 	 */
-	public static boolean isSupportedPyDevInstalled() {
+	public static boolean isSupportedPyGhidraPyDevInstalled() {
 		Version min = Version.valueOf(MIN_SUPPORTED_VERSION);
-		Version max = Version.valueOf(MAX_SUPPORTED_VERSION);
+		try {
+			Version version = PyDevUtilsInternal.getPyDevVersion();
+			if (version != null) {
+				return version.compareTo(min) >= 0;
+			}
+		}
+		catch (NoClassDefFoundError e) {
+			// Fall through to return false
+		}
+
+		return false;
+	}
+
+	/**
+	 * {@return true if a supported version of PyDev is installed for use with Jython; otherwise, 
+	 * false}
+	 */
+	public static boolean isSupportedJythonPyDevInstalled() {
+		Version min = Version.valueOf(MIN_SUPPORTED_VERSION);
+		Version max = Version.valueOf(MAX_JYTHON_SUPPORTED_VERSION);
 		try {
 			Version version = PyDevUtilsInternal.getPyDevVersion();
 			if (version != null) {
 				// Make sure the installed version of PyDev is new enough to support the following
 				// operation.
-				getJython27InterpreterNames();
+				getJythonInterpreterNames();
 				return version.compareTo(min) >= 0 && version.compareTo(max) <= 0;
 			}
 		}
@@ -66,15 +84,51 @@ public class PyDevUtils {
 	}
 
 	/**
-	 * Gets a list of discovered Jython 2.7 interpreter names.
+	 * Gets a list of discovered PyGhidra interpreter names.
 	 *  
-	 * @return a list of discovered Jython 2.7 interpreter names.
+	 * @return a list of discovered PyGhidra interpreter names.
 	 * @throws OperationNotSupportedException if PyDev is not installed or it does not support this 
 	 *   operation.
 	 */
-	public static List<String> getJython27InterpreterNames() throws OperationNotSupportedException {
+	public static List<String> getPyGhidraInterpreterNames() throws OperationNotSupportedException {
 		try {
-			return PyDevUtilsInternal.getJython27InterpreterNames();
+			return PyDevUtilsInternal.getPyGhidraInterpreterNames();
+		}
+		catch (NoClassDefFoundError | NoSuchMethodError e) {
+			throw new OperationNotSupportedException(e.getMessage());
+		}
+	}
+
+	/**
+	 * Gets a list of discovered Jython interpreter names.
+	 *  
+	 * @return a list of discovered Jython interpreter names.
+	 * @throws OperationNotSupportedException if PyDev is not installed or it does not support this 
+	 *   operation.
+	 */
+	public static List<String> getJythonInterpreterNames() throws OperationNotSupportedException {
+		try {
+			return PyDevUtilsInternal.getJythonInterpreterNames();
+		}
+		catch (NoClassDefFoundError | NoSuchMethodError e) {
+			throw new OperationNotSupportedException(e.getMessage());
+		}
+	}
+
+	/**
+	 * Adds the given PyGhidra interpreter to PyDev.
+	 * 
+	 * @param interpreterName The name of the interpreter to add.
+	 * @param interpreterFile The interpreter file to add.
+	 * @param pypredefDir The pypredef directory to use (could be null if not supported)
+	 * @throws OperationNotSupportedException if PyDev is not installed or it does not support this 
+	 *   operation.
+	 */
+	public static void addPyGhidraInterpreter(String interpreterName, File interpreterFile,
+			File pypredefDir) throws OperationNotSupportedException {
+		try {
+			PyDevUtilsInternal.addPyGhidraInterpreter(interpreterName, interpreterFile,
+				pypredefDir);
 		}
 		catch (NoClassDefFoundError | NoSuchMethodError e) {
 			throw new OperationNotSupportedException(e.getMessage());
@@ -149,6 +203,15 @@ public class PyDevUtils {
 	 */
 	public static String getJythonPreferencePageId() {
 		return "org.python.pydev.ui.pythonpathconf.interpreterPreferencesPageJython";
+	}
+
+	/**
+	 * Gets the PyDev Python preference page ID.
+	 *  
+	 * @return the PyDev Python preference page ID.
+	 */
+	public static String getPythonPreferencePageId() {
+		return "org.python.pydev.ui.pythonpathconf.interpreterPreferencesPagePython";
 	}
 
 	/**

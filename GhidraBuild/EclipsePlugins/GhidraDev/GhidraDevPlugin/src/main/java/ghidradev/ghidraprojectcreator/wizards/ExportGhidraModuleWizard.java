@@ -40,7 +40,7 @@ import org.eclipse.ui.INewWizard;
 import org.eclipse.ui.IWorkbench;
 
 import ghidra.GhidraApplicationLayout;
-import ghidra.launch.JavaConfig;
+import ghidra.launch.AppConfig;
 import ghidradev.EclipseMessageUtils;
 import ghidradev.ghidraprojectcreator.utils.GhidraProjectUtils;
 import ghidradev.ghidraprojectcreator.wizards.pages.ChooseGhidraModuleProjectWizardPage;
@@ -123,7 +123,7 @@ public class ExportGhidraModuleWizard extends Wizard implements INewWizard {
 			// TODO: It's more correct to get this from the project's classpath, since Ghidra's
 			// saved Java home can change from launch to launch.  
 			GhidraApplicationLayout ghidraLayout = new GhidraApplicationLayout(new File(ghidraInstallDirPath));
-			File javaHomeDir = new JavaConfig(
+			File javaHomeDir = new AppConfig(
 				ghidraLayout.getApplicationInstallationDir().getFile(false)).getSavedJavaHome();
 			if(javaHomeDir == null) {
 				throw new IOException("Failed to get the Java home associated with the project.  " +

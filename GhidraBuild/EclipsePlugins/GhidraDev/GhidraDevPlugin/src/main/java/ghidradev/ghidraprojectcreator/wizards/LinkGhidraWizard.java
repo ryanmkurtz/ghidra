@@ -31,7 +31,7 @@ import org.eclipse.jface.viewers.ISelection;
 import org.eclipse.jface.wizard.Wizard;
 
 import ghidra.GhidraApplicationLayout;
-import ghidra.launch.JavaConfig;
+import ghidra.launch.AppConfig;
 import ghidradev.ghidraprojectcreator.utils.GhidraProjectUtils;
 import ghidradev.ghidraprojectcreator.wizards.pages.*;
 
@@ -98,9 +98,9 @@ public class LinkGhidraWizard extends Wizard {
 			monitor.beginTask("Linking " + project.getName(), 2);
 
 			GhidraApplicationLayout ghidraLayout = new GhidraApplicationLayout(ghidraInstallDir);
-			JavaConfig javaConfig =
-				new JavaConfig(ghidraLayout.getApplicationInstallationDir().getFile(false));
-			GhidraProjectUtils.linkGhidraToProject(javaProject, ghidraLayout, javaConfig,
+			AppConfig appConfig =
+				new AppConfig(ghidraLayout.getApplicationInstallationDir().getFile(false));
+			GhidraProjectUtils.linkGhidraToProject(javaProject, ghidraLayout, appConfig,
 				jythonInterpreterName, monitor);
 			monitor.worked(1);
 

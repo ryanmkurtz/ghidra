@@ -81,8 +81,8 @@ task pyDevUnpack(type:Copy) {
 		!pyDevDestDir.exists()
 	}
 	
-	File depsFile = file("${DEPS_DIR}/GhidraDev/PyDev 6.3.1.zip")
-	File binRepoFile = file("${BIN_REPO}/GhidraBuild/EclipsePlugins/GhidraDev/buildDependencies/PyDev 6.3.1.zip")
+	File depsFile = file("${DEPS_DIR}/GhidraDev/PyDev 9.3.0.zip")
+	File binRepoFile = file("${BIN_REPO}/GhidraBuild/EclipsePlugins/GhidraDev/buildDependencies/PyDev 9.3.0.zip")
 
 	// First check if the file is in the dependencies repo.  If not, check in the bin repo.
 	def pyDevZipTree = depsFile.exists() ? zipTree(depsFile) : zipTree(binRepoFile)

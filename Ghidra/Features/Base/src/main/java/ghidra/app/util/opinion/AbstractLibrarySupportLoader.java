@@ -487,6 +487,7 @@ public abstract class AbstractLibrarySupportLoader extends AbstractProgramLoader
 			getLibraryDestinationFolderPath(project, projectFolderPath, options);
 		DomainFolder libraryDestFolder =
 			getLibraryDestinationSearchFolder(project, libraryDestFolderPath, options);
+		Map<GFile, List<GFile>> libraryListingCache = new HashMap<>();
 
 		boolean success = false;
 		try {
@@ -521,7 +522,7 @@ public abstract class AbstractLibrarySupportLoader extends AbstractProgramLoader
 							libraryName));
 						Loaded<Program> loadedLibrary = loadLibraryFromSearchPaths(libraryName,
 							provider, customSearchPaths, libraryDestFolderPath, unprocessed, depth,
-							desiredLoadSpec, options, log, consumer, monitor);
+							libraryListingCache, desiredLoadSpec, options, log, consumer, monitor);
 						if (loadedLibrary != null) {
 							loaded = true;
 							loadedPrograms.add(loadedLibrary);
@@ -532,7 +533,7 @@ public abstract class AbstractLibrarySupportLoader extends AbstractProgramLoader
 							searchPaths.size(), searchPaths.size() > 1 ? "s" : "", libraryName));
 						Loaded<Program> loadedLibrary = loadLibraryFromSearchPaths(libraryName,
 							provider, searchPaths, libraryDestFolderPath, unprocessed, depth,
-							desiredLoadSpec, options, log, consumer, monitor);
+							libraryListingCache, desiredLoadSpec, options, log, consumer, monitor);
 						if (loadedLibrary != null) {
 							if (loadLibraries) {
 								loaded = true;
@@ -584,6 +585,7 @@ public abstract class AbstractLibrarySupportLoader extends AbstractProgramLoader
 	 *   determined.
 	 * @param unprocessed The {@link Queue} of {@link UnprocessedLibrary unprocessed libraries}
 	 * @param depth The load depth of the library to load
+	 * @param libraryListingCache The cached library listings
 	 * @param desiredLoadSpec The desired {@link LoadSpec}
 	 * @param options The load options
 	 * @param log The log
@@ -597,8 +599,9 @@ public abstract class AbstractLibrarySupportLoader extends AbstractProgramLoader
 	private Loaded<Program> loadLibraryFromSearchPaths(String libraryName,
 			ByteProvider provider, List<FileSystemSearchPath> fsSearchPaths,
 			String libraryDestFolderPath, Queue<UnprocessedLibrary> unprocessed, int depth,
-			LoadSpec desiredLoadSpec, List<Option> options, MessageLog log, Object consumer,
-			TaskMonitor monitor) throws CancelledException, IOException {
+			Map<GFile, List<GFile>> libraryListingCache, LoadSpec desiredLoadSpec,
+			List<Option> options, MessageLog log, Object consumer, TaskMonitor monitor)
+			throws CancelledException, IOException {
 
 		libraryName = libraryName.trim();
 		Program library = null;
@@ -615,8 +618,8 @@ public abstract class AbstractLibrarySupportLoader extends AbstractProgramLoader
 
 		boolean success = false;
 		try {
-			List<FSRL> candidateLibraryFsrls =
-				findLibrary(getCheckedPath(libraryName), fsSearchPaths, log, monitor);
+			List<FSRL> candidateLibraryFsrls = findLibrary(getCheckedPath(libraryName),
+				fsSearchPaths, libraryListingCache, log, monitor);
 			if (candidateLibraryFsrls.isEmpty()) {
 				log.appendMsg("Library not found.");
 				return null;
@@ -723,13 +726,15 @@ public abstract class AbstractLibrarySupportLoader extends AbstractProgramLoader
 	 * @param libraryPath The library {@link Path}.  This will be either an absolute path, a
 	 *   relative path, or just a filename.
 	 * @param fsSearchPaths A {@link List} of {@link FileSystemSearchPath}s that will be searched
+	 * @param libraryListingCache The cached library listings
 	 * @param log The log
 	 * @param monitor A cancelable task monitor
 	 * @return A {@link List} of {@link GFile files} that match the requested library path
 	 * @throws CancelledException if the user cancelled the operation
 	 */
 	private List<FSRL> findLibrary(Path libraryPath, List<FileSystemSearchPath> fsSearchPaths,
-			MessageLog log, TaskMonitor monitor) throws CancelledException {
+			Map<GFile, List<GFile>> libraryListingCache, MessageLog log, TaskMonitor monitor)
+			throws CancelledException {
 		
 		List<FSRL> results = new ArrayList<>();
 		FileSystemService fsService = FileSystemService.getInstance();
@@ -751,7 +756,7 @@ public abstract class AbstractLibrarySupportLoader extends AbstractProgramLoader
 							? fsSearchPath.fsPath().resolve(libraryParentPath)
 							: ObjectUtils.firstNonNull(fsSearchPath.fsPath(), libraryParentPath);
 				FSRL resolvedFsrl = resolveLibraryFile(fsSearchPath.fsRef().getFilesystem(),
-					combinedParentPath, libraryName);
+					combinedParentPath, libraryName, libraryListingCache);
 				if (resolvedFsrl != null) {
 					results.add(resolvedFsrl);
 					continue;
@@ -762,7 +767,7 @@ public abstract class AbstractLibrarySupportLoader extends AbstractProgramLoader
 				//    assumed to be in searchPaths for this case (otherwise case 1 would find it)
 				if (libraryParentPath != null && libraryParentPath.isAbsolute()) {
 					resolvedFsrl = resolveLibraryFile(fsService.getLocalFS(), libraryParentPath,
-						libraryName);
+						libraryName, libraryListingCache);
 					if (resolvedFsrl != null) {
 						results.add(resolvedFsrl);
 						continue;
@@ -774,7 +779,7 @@ public abstract class AbstractLibrarySupportLoader extends AbstractProgramLoader
 				//    searchPath.  Not sure if this case is still necessary but supporting for
 				//    legacy support.
 				resolvedFsrl = resolveLibraryFile(fsSearchPath.fsRef().getFilesystem(),
-					fsSearchPath.fsPath(), libraryName);
+					fsSearchPath.fsPath(), libraryName, libraryListingCache);
 				if (resolvedFsrl != null) {
 					results.add(resolvedFsrl);
 					continue;
@@ -1176,11 +1181,13 @@ public abstract class AbstractLibrarySupportLoader extends AbstractProgramLoader
 	 * @param libraryParentPath The {@link Path} of the library's parent directory, relative to the
 	 *   given file system (could be null)
 	 * @param libraryName The library name
+	 * @param libraryListingCache The cached library listings 
+	 *   (see {@link #getCachedListing(GFile, Map)}
 	 * @return The library resolved to an existing {@link FSRL}, or null if it did not resolve
 	 * @throws IOException If an IO-related problem occurred
 	 */
-	protected FSRL resolveLibraryFile(GFileSystem fs, Path libraryParentPath, String libraryName)
-			throws IOException {
+	protected FSRL resolveLibraryFile(GFileSystem fs, Path libraryParentPath, String libraryName,
+			Map<GFile, List<GFile>> libraryListingCache) throws IOException {
 		GFile libraryParentDir = fs.lookup(
 			libraryParentPath != null ? FilenameUtils.separatorsToUnix(libraryParentPath.toString())
 					: null);
@@ -1188,7 +1195,7 @@ public abstract class AbstractLibrarySupportLoader extends AbstractProgramLoader
 			FilenameUtils.getExtension(libraryName).equals("");
 		if (libraryParentDir != null) {
 			Comparator<String> libNameComparator = getLibraryNameComparator();
-			for (GFile file : fs.getListing(libraryParentDir)) {
+			for (GFile file : getCachedListing(libraryParentDir, libraryListingCache)) {
 				if (file.isDirectory()) {
 					continue;
 				}
@@ -1202,6 +1209,29 @@ public abstract class AbstractLibrarySupportLoader extends AbstractProgramLoader
 			}
 		}
 		return null;
+	}
+
+	/**
+	 * Gets the cached listing of the given directory. If the given cache does not contain the 
+	 * listing, it will be generated add added to the cache.
+	 * <p>
+	 * This method exists because its been observed that getting directory listings on Windows
+	 * can be painfully slow at times, and this class tends to need the same listing over and over
+	 * again as new libraries are looked up.
+	 * 
+	 * @param dir The directory to get the listing of
+	 * @param cache The listing cache
+	 * @return The listing
+	 * @throws IOException If there was an IO-related error getting the listing
+	 */
+	protected List<GFile> getCachedListing(GFile dir, Map<GFile, List<GFile>> cache)
+			throws IOException {
+		List<GFile> listing = cache.get(dir);
+		if (listing == null) {
+			listing = dir.getFilesystem().getListing(dir);
+			cache.put(dir, listing);
+		}
+		return listing;
 	}
 
 	/**

@@ -33,6 +33,7 @@ public class GFileLocal implements GFile {
 	private String path;
 	private File f;
 	private GFile parent;
+	private boolean isDirectory;
 
 	/**
 	 * Create new GFileLocal instance.
@@ -49,6 +50,7 @@ public class GFileLocal implements GFile {
 		this.path = path;
 		this.f = f;
 		this.parent = parent;
+		this.isDirectory = f.isDirectory(); // save this up front...can be slow on Windows
 	}
 
 	@Override
@@ -78,7 +80,7 @@ public class GFileLocal implements GFile {
 
 	@Override
 	public boolean isDirectory() {
-		return f.isDirectory();
+		return isDirectory;
 	}
 
 	@Override

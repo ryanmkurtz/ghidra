@@ -190,20 +190,20 @@ public class MachoLoader extends AbstractLibrarySupportLoader {
 	 * {@inheritDoc}
 	 */
 	@Override
-	protected FSRL resolveLibraryFile(GFileSystem fs, Path libraryParentPath, String libraryName)
-			throws IOException {
+	protected FSRL resolveLibraryFile(GFileSystem fs, Path libraryParentPath, String libraryName,
+			Map<GFile, List<GFile>> libraryListingCache) throws IOException {
 		GFile libraryParentDir =
 			fs.lookup(libraryParentPath != null ? libraryParentPath.toString() : null);
 		if (libraryParentDir != null) {
-			for (GFile file : fs.getListing(libraryParentDir)) {
+			for (GFile file : getCachedListing(libraryParentDir, libraryListingCache)) {
 				if (file.isDirectory() && file.getName().equals("Versions")) {
 					Path versionsPath = libraryParentPath.resolve(file.getName());
-					List<GFile> versionListion = fs.getListing(file);
-					if (!versionListion.isEmpty()) {
-						GFile specificVersionDir = versionListion.get(0);
+					for (GFile specificVersionDir : getCachedListing(file,
+						libraryListingCache)) {
 						if (specificVersionDir.isDirectory()) {
 							return resolveLibraryFile(fs,
-								versionsPath.resolve(specificVersionDir.getName()), libraryName);
+								versionsPath.resolve(specificVersionDir.getName()), libraryName,
+								libraryListingCache);
 						}
 					}
 				}

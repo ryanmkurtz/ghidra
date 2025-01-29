@@ -176,7 +176,7 @@ def _setup_script(project: "GhidraProject", program: "Program"):
             location = ProgramLocation(program, mem.getMinAddress())
     state = GhidraState(None, project, program, location, None, None)
     script = PyGhidraScript()
-    script.set(state, TaskMonitor.DUMMY, PrintWriter(System.out))
+    script.set(state, TaskMonitor.DUMMY, PrintWriter(System.out), PrintWriter(System.err))
     return script
 
 

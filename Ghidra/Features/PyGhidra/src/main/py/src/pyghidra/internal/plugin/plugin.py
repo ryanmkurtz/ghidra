@@ -160,11 +160,12 @@ class PyConsole(InteractiveConsole):
         self._out = console.getOutWriter()
         self._err = console.getErrWriter()
         self._writer = self._out
+        self._error_writer = self._err
         self._thread = None
         self._interact_thread = None
         self._script = self.locals._script
         state = self._script.getState()
-        self._script.set(state, self._out)
+        self._script.set(state, self._out, self._err)
         self._state = ConsoleState.RESET
         self._completer = PythonCodeCompleter(self)
 

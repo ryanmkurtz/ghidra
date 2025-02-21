@@ -20,6 +20,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 
 import ghidra.app.util.bin.BinaryReader;
 import ghidra.program.model.data.*;
@@ -131,5 +132,19 @@ public class OmfUtils {
 		}
 		
 		return records;
+	}
+
+	/**
+	 * Returns a {@link Stream} of {@link OmfRecord records} that match the given class type
+	 * 
+	 * @param <T> The class type
+	 * @param records The {@link List} of all {@link OmfRecord records}
+	 * @param classType The class type to match on
+	 * @return A {@link Stream} of matching (@link OmfRecord records}
+	 */
+	public static <T> Stream<T> filterRecords(List<OmfRecord> records, Class<T> classType) {
+		return records.stream()
+				.filter(classType::isInstance)
+				.map(classType::cast);
 	}
 }

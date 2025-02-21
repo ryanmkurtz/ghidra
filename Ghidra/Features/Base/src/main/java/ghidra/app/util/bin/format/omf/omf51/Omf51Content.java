@@ -24,7 +24,7 @@ import ghidra.util.exception.DuplicateNameException;
 
 public class Omf51Content extends OmfRecord {
 
-	private byte segId;
+	private int segId;
 	private int offset;
 	private byte[] dataBytes;
 
@@ -40,7 +40,7 @@ public class Omf51Content extends OmfRecord {
 
 	@Override
 	public void parseData() throws IOException, OmfException {
-		segId = dataReader.readNextByte();
+		segId = dataReader.readNextUnsignedByte();
 		offset = dataReader.readNextUnsignedShort();
 		dataBytes = dataReader.readNextByteArray((int) (dataEnd - dataReader.getPointerIndex()));
 	}
@@ -48,7 +48,7 @@ public class Omf51Content extends OmfRecord {
 	/**
 	 * {@return the segment ID}
 	 */
-	public byte getSegId() {
+	public int getSegId() {
 		return segId;
 	}
 

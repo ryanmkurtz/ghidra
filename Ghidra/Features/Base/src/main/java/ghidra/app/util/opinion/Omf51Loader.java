@@ -15,6 +15,7 @@
  */
 package ghidra.app.util.opinion;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.*;
 
@@ -23,7 +24,7 @@ import ghidra.app.util.Option;
 import ghidra.app.util.bin.ByteProvider;
 import ghidra.app.util.bin.StructConverter;
 import ghidra.app.util.bin.format.omf.*;
-import ghidra.app.util.bin.format.omf.omf51.Omf51RecordFactory;
+import ghidra.app.util.bin.format.omf.omf51.*;
 import ghidra.app.util.importer.MessageLog;
 import ghidra.program.database.mem.FileBytes;
 import ghidra.program.model.address.Address;
@@ -79,10 +80,67 @@ public class Omf51Loader extends AbstractProgramWrapperLoader {
 		AbstractOmfRecordFactory factory = new Omf51RecordFactory(provider);
 		try {
 			List<OmfRecord> records = OmfUtils.readRecords(factory);
+			processMemoryBlocks(program, fileBytes, records, log, monitor);
 			markupRecords(program, fileBytes, records, log, monitor);
 		}
-		catch (OmfException e) {
+		catch (Exception e) {
 			throw new IOException(e);
+		}
+	}
+
+	private void processMemoryBlocks(Program program, FileBytes fileBytes, List<OmfRecord> records,
+			MessageLog log, TaskMonitor monitor) throws Exception {
+		List<Omf51SegmentDefs> allSegmentDefs = records.stream()
+				.filter(Omf51SegmentDefs.class::isInstance)
+				.map(Omf51SegmentDefs.class::cast)
+				.toList();
+		List<Omf51Content> contents = records.stream()
+				.filter(Omf51Content.class::isInstance)
+				.map(Omf51Content.class::cast)
+				.toList();
+		
+		int relOffset = 0x1000;
+
+		for (Omf51SegmentDefs segmentDefs : allSegmentDefs) {
+			Map<Integer, Omf51Segment> segmentMap = segmentDefs.getSegmentMap();
+			for (Omf51Content content : contents) {
+				Omf51Segment segment = segmentMap.get(content.getSegId());
+				if (segment == null) {
+					continue;
+				}
+				AddressSpace space = getAddressSpace(program, segment);
+				if (space == null) {
+					throw new Exception("Unsupported address space for: " + segment);
+				}
+				Address addr;
+				String blockName;
+				if (content.getSegId() == 0) {
+					// Absolute segment
+					blockName = "<ABSOLUTE>";
+					addr = space.getAddress(segment.base() + content.getOffset());
+				}
+				else {
+					// Relocatable segment
+					blockName = segment.name().str();
+					if (blockName.isBlank()) {
+						blockName = "<UNKNOWN>";
+					}
+					addr = space.getAddress(relOffset + content.getOffset());
+					relOffset += 0x1000;
+					switch (segment.relType()) {
+						// TODO
+					}
+				}
+				if (blockName.isEmpty()) {
+					blockName = "<NONAME>";
+				}
+				MemoryBlockUtils.createInitializedBlock(program, false, blockName, addr,
+					new ByteArrayInputStream(content.getDataBytes()), segment.size(), "", "",
+					true, true, true, log, monitor);
+				if (segment.getType() == Omf51Segment.CODE) {
+					AbstractProgramLoader.markAsFunction(program, blockName, addr);
+				}
+			}
 		}
 	}
 
@@ -112,6 +170,18 @@ public class Omf51Loader extends AbstractProgramWrapperLoader {
 		catch (Exception e) {
 			log.appendMsg("Failed to markup records: " + e.getMessage());
 		}
+	}
+
+	private AddressSpace getAddressSpace(Program program, Omf51Segment segmentDef) {
+		String name = switch (segmentDef.getType()) {
+			case Omf51Segment.CODE -> "CODE";
+			case Omf51Segment.XDATA -> "EXTMEM";
+			case Omf51Segment.DATA -> "INTMEM";
+			case Omf51Segment.IDATA -> "INTMEM";
+			case Omf51Segment.BIT -> "BITS";
+			default -> null;
+		};
+		return name != null ? program.getAddressFactory().getAddressSpace(name) : null;
 	}
 
 	@Override

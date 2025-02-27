@@ -34,7 +34,7 @@ import ghidra.util.task.TaskMonitor;
 public class DynamicLibraryCommand extends LoadCommand {
 	private DynamicLibrary dylib;
 
-	DynamicLibraryCommand(BinaryReader reader) throws IOException {
+	public DynamicLibraryCommand(BinaryReader reader) throws IOException {
 		super(reader);
 		dylib = new DynamicLibrary(reader, this);
 	}

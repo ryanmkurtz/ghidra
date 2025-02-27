@@ -39,6 +39,7 @@ public class Loaded<T extends DomainObject> {
 
 	private DomainFile domainFile;
 	private boolean ignoreSave;
+	private boolean discard;
 
 	/**
 	 * Creates a new {@link Loaded} object
@@ -212,6 +213,27 @@ public class Loaded<T extends DomainObject> {
 		}
 		return domainFile;
 	}
+
+	/**
+	 * Checks to see if this {@link Loaded} {@link DomainObject} should be discarded (not saved)
+	 * 
+	 * @return True if this {@link Loaded} {@link DomainObject} should be discarded; otherwise, 
+	 *   false
+	 */
+	public boolean getDiscard() {
+		return discard;
+	}
+
+	/**
+	 * Sets whether or not this {@link Loaded} {@link DomainObject} should be discarded (not saved)
+	 * 
+	 * @param discard True if this {@link Loaded} {@link DomainObject} should be discarded;
+	 *   otherwise, false
+	 */
+	public void setDiscard(boolean discard) {
+		this.discard = discard;
+	}
+
 
 	/**
 	 * Deletes the loaded {@link DomainObject}'s associated {@link DomainFile} that was

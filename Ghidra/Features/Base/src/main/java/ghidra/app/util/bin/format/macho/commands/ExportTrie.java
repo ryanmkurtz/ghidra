@@ -122,6 +122,7 @@ public class ExportTrie {
 			if ((flags & EXPORT_SYMBOL_FLAGS_REEXPORT) != 0) {
 				ulebOffsets.add(reader.getPointerIndex() - base);
 				other = reader.readNext(LEB128::unsigned); // dylib ordinal
+				stringOffsets.add(reader.getPointerIndex() - base);
 				importName = reader.readNextAsciiString();
 			}
 			else {

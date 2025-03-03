@@ -97,6 +97,10 @@ public class UniversalBinaryFileSystem extends GFileSystemBase {
 
 		int index = list.indexOf(file);
 
+		if (index == -1) {
+			return null;
+		}
+
 		List<FatArch> architectures = header.getArchitectures();
 
 		FatArch architecture = architectures.get(index);

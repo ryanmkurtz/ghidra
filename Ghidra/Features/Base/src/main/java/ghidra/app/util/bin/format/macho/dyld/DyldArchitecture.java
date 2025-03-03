@@ -114,6 +114,18 @@ public final class DyldArchitecture {
 		return is64bit;
 	}
 
+	public boolean isX86() {
+		return this == X86 || this == X86_64 || this == X86_64h;
+	}
+
+	public boolean isPowerPC() {
+		return this == POWERPC;
+	}
+
+	public boolean isARM() {
+		return !isX86() && !isPowerPC();
+	}
+
 	@Override
 	public String toString() {
 		return signature;

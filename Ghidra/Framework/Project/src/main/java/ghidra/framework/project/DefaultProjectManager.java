@@ -33,7 +33,8 @@ import ghidra.framework.model.*;
 import ghidra.framework.preferences.Preferences;
 import ghidra.framework.protocol.ghidra.GhidraURL;
 import ghidra.framework.store.LockException;
-import ghidra.util.*;
+import ghidra.util.Msg;
+import ghidra.util.NotOwnerException;
 import ghidra.util.exception.NotFoundException;
 import utilities.util.FileUtilities;
 
@@ -119,12 +120,12 @@ public class DefaultProjectManager implements ProjectManager {
 
 	@Override
 	public Project openProject(ProjectLocator projectLocator, boolean doRestore, boolean resetOwner)
-			throws NotFoundException, NotOwnerException, LockException {
+			throws NotFoundException, NotOwnerException, LockException, IOException {
 
 		if (currentProject != null) {
-			Msg.error(this,
-				"Current project must be closed before establishing a new active project");
-			return null;
+			String msg = "Current project must be closed before establishing a new active project";
+			Msg.error(this, msg);
+			throw new IOException(msg);
 		}
 
 		if (!projectLocator.getMarkerFile().exists()) {
@@ -141,7 +142,6 @@ public class DefaultProjectManager implements ProjectManager {
 
 		try {
 			currentProject = new DefaultProject(this, projectLocator, resetOwner);
-			AppInfo.setActiveProject(currentProject);
 			if (doRestore) {
 				currentProject.restore();
 			}
@@ -152,17 +152,17 @@ public class DefaultProjectManager implements ProjectManager {
 			return currentProject;
 		}
 		catch (LockException e) {
-			return null;
-		}
-		catch (ReadOnlyException e) {
-			Msg.showError(LOG, null, "Read-only Project!",
-				"Cannot open project for update: " + projectLocator);
+			Msg.showError(LOG, null, "Locked Project!",
+				"Cannot open locked project: " + projectLocator);
+			throw e;
 		}
 		catch (IOException e) {
 			Msg.showError(LOG, null, "Open Project Failed!",
 				"Could not open project " + projectLocator + "\n \nCAUSE: " + e.getMessage());
+			throw e;
 		}
 		finally {
+			AppInfo.setActiveProject(currentProject);
 			if (currentProject == null) {
 				File dirFile = projectLocator.getProjectDir();
 				if (!dirFile.exists() || !dirFile.isDirectory()) {
@@ -170,8 +170,6 @@ public class DefaultProjectManager implements ProjectManager {
 				}
 			}
 		}
-		AppInfo.setActiveProject(null);
-		return null;
 	}
 
 	/**

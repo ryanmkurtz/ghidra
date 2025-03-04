@@ -114,7 +114,7 @@ public abstract class AbstractToolSavingTest extends AbstractGhidraHeadedIntegra
 				testEnv.getProject().save();
 				testEnv.closeAndReopenProject();
 			}
-			catch (IOException e) {
+			catch (Exception e) {
 				AssertionFailedError afe = new AssertionFailedError();
 				afe.initCause(e);
 				throw afe;

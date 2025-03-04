@@ -111,9 +111,10 @@ public interface ProjectManager {
 	 * not found.
 	 * @throws NotOwnerException if the project owner is not the user
 	 * @throws LockException if the project is already opened by another user
+	 * @throws IOException if there was an IO-related error
 	 */
 	public Project openProject(ProjectLocator projectLocator, boolean doRestore, boolean resetOwner)
-			throws NotFoundException, NotOwnerException, LockException;
+			throws NotFoundException, NotOwnerException, LockException, IOException;
 
 	/**
 	 * Delete the project in the given location.

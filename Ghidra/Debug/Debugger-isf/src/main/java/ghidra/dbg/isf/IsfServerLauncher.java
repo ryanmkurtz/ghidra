@@ -16,7 +16,6 @@
 package ghidra.dbg.isf;
 
 import java.io.File;
-import java.io.IOException;
 
 import ghidra.GhidraApplicationLayout;
 import ghidra.GhidraLaunchable;
@@ -46,7 +45,7 @@ public class IsfServerLauncher implements GhidraLaunchable {
 		server.startServer();
 	}
 
-	GhidraProject parseArgs(String[] args) throws IOException {
+	GhidraProject parseArgs(String[] args) throws Exception {
 		if (args != null && args.length < 1) {
 			usage();
 			return null;

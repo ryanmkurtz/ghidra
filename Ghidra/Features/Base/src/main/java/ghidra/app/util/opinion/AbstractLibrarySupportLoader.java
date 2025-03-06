@@ -66,6 +66,9 @@ public abstract class AbstractLibrarySupportLoader extends AbstractProgramLoader
 	public static final String LIBRARY_DEST_FOLDER_OPTION_NAME = "Library Destination Folder";
 	static final String LIBRARY_DEST_FOLDER_OPTION_DEFAULT = "";
 
+	public static final String MIRROR_LAYOUT_OPTION_NAME = "Mirror Library Disk Layout";
+	static final boolean MIRROR_LAYOUT_OPTION_DEFAULT = true;
+
 	public static final String LOAD_ONLY_LIBRARIES_OPTION_NAME = "Only Load Libraries"; // hidden
 	static final boolean LOAD_ONLY_LIBRARIES_OPTION_DEFAULT = false;
 
@@ -226,6 +229,8 @@ public abstract class AbstractLibrarySupportLoader extends AbstractProgramLoader
 			Loader.COMMAND_LINE_ARG_PREFIX + "-libraryLoadDepth"));
 		list.add(new DomainFolderOption(LIBRARY_DEST_FOLDER_OPTION_NAME,
 			Loader.COMMAND_LINE_ARG_PREFIX + "-libraryDestinationFolder"));
+		list.add(new Option(MIRROR_LAYOUT_OPTION_NAME, MIRROR_LAYOUT_OPTION_DEFAULT, Boolean.class,
+			Loader.COMMAND_LINE_ARG_PREFIX + "-libraryMirrorLayout"));
 		list.add(new Option(LOAD_ONLY_LIBRARIES_OPTION_NAME, Boolean.class,
 			LOAD_ONLY_LIBRARIES_OPTION_DEFAULT,
 			Loader.COMMAND_LINE_ARG_PREFIX + "-loadOnlyLibraries", null, null, true));
@@ -241,6 +246,7 @@ public abstract class AbstractLibrarySupportLoader extends AbstractProgramLoader
 				String name = option.getName();
 				if (name.equals(LINK_EXISTING_OPTION_NAME) ||
 					name.equals(LOAD_LIBRARY_OPTION_NAME) ||
+					name.equals(MIRROR_LAYOUT_OPTION_NAME) ||
 					name.equals(LOAD_ONLY_LIBRARIES_OPTION_NAME)) {
 					if (!Boolean.class.isAssignableFrom(option.getValueClass())) {
 						return "Invalid type for option: " + name + " - " + option.getValueClass();
@@ -321,6 +327,17 @@ public abstract class AbstractLibrarySupportLoader extends AbstractProgramLoader
 	protected boolean isLoadLibraries(List<Option> options) {
 		return OptionUtils.getOption(LOAD_LIBRARY_OPTION_NAME, options,
 			LOAD_LIBRARY_OPTION_DEFAULT);
+	}
+
+	/**
+	 * Checks to see if library organization mirrors filesystem layout
+	 * 
+	 * @param options a {@link List} of {@link Option}s
+	 * @return True if library organization mirrors filesystem layout; false if flat layout
+	 */
+	protected boolean isMirroredLayout(List<Option> options) {
+		return OptionUtils.getOption(MIRROR_LAYOUT_OPTION_NAME, options,
+			MIRROR_LAYOUT_OPTION_DEFAULT);
 	}
 
 	/**
@@ -658,6 +675,10 @@ public abstract class AbstractLibrarySupportLoader extends AbstractProgramLoader
 					if (isAbsolute) {
 						folderPath = joinPaths(folderPath, FilenameUtils.getFullPath(library));
 					}
+					else if (isMirroredLayout(options)) {
+						String fsrlToPath = candidateLibraryFsrl.getPath();
+						folderPath = joinPaths(folderPath, FilenameUtils.getFullPath(fsrlToPath));
+					}
 				}
 				return new Loaded<Program>(libraryProgram, simpleLibraryName, folderPath);
 			}
@@ -696,6 +717,29 @@ public abstract class AbstractLibrarySupportLoader extends AbstractProgramLoader
 			List<LibrarySearchPath> searchPaths, List<Option> options, TaskMonitor monitor)
 			throws CancelledException {
 		if (rootSearchFolder == null) {
+			return null;
+		}
+
+		if (isMirroredLayout(options)) {
+			// Perform the lookup based on file system search path layout within the project
+			for (LibrarySearchPath searchPath : searchPaths) {
+				monitor.checkCancelled();
+
+				GFileSystem fs = searchPath.fsRef().getFilesystem();
+				String fsPath = fs.getFSRL().getPath();
+				if (fs instanceof LocalFileSystemSub) {
+					String containerFsPath = fs.getFSRL().getContainer().getPath();
+					fsPath = joinPaths(containerFsPath, fsPath);
+				}
+				if (searchPath.relativeFsPath() != null) {
+					fsPath = joinPaths(fsPath, searchPath.relativeFsPath());
+				}
+				String projectPath = joinPaths(rootSearchFolder.getPathname(), fsPath, library);
+				DomainFile file = rootSearchFolder.getProjectData().getFile(projectPath);
+				if (file != null) {
+					return file;
+				}
+			}
 			return null;
 		}
 

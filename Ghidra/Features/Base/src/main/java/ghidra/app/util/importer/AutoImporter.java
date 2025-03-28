@@ -64,6 +64,7 @@ public final class AutoImporter {
 	 *   reserves the right to change it for each {@link Loaded} result. The {@link Loaded} results 
 	 *   should be queried for their true project folder paths using 
 	 *   {@link Loaded#getProjectFolderPath()}.
+	 * @param loaderArgs A {@link List} of optional {@link Loader}-specific arguments
 	 * @param consumer A consumer
 	 * @param messageLog The log
 	 * @param monitor A task monitor
@@ -78,11 +79,11 @@ public final class AutoImporter {
 	 * @throws LoadException if nothing was loaded
 	 */
 	public static LoadResults<Program> importByUsingBestGuess(File file, Project project,
-			String projectFolderPath, Object consumer, MessageLog messageLog, TaskMonitor monitor)
-			throws IOException, CancelledException, DuplicateNameException, InvalidNameException,
-			VersionException, LoadException {
-		return importByUsingBestGuess(fileToFsrl(file), project, projectFolderPath, consumer,
-			messageLog, monitor);
+			String projectFolderPath, List<Pair<String, String>> loaderArgs, Object consumer,
+			MessageLog messageLog, TaskMonitor monitor) throws IOException, CancelledException,
+			DuplicateNameException, InvalidNameException, VersionException, LoadException {
+		return importByUsingBestGuess(fileToFsrl(file), project, projectFolderPath, loaderArgs,
+			consumer, messageLog, monitor);
 	}
 
 	/**
@@ -105,6 +106,7 @@ public final class AutoImporter {
 	 *   reserves the right to change it for each {@link Loaded} result. The {@link Loaded} results 
 	 *   should be queried for their true project folder paths using 
 	 *   {@link Loaded#getProjectFolderPath()}.
+	 * @param loaderArgs A {@link List} of optional {@link Loader}-specific arguments
 	 * @param consumer A consumer
 	 * @param messageLog The log
 	 * @param monitor A task monitor
@@ -119,12 +121,12 @@ public final class AutoImporter {
 	 * @throws LoadException if nothing was loaded
 	 */
 	public static LoadResults<Program> importByUsingBestGuess(FSRL fsrl, Project project,
-			String projectFolderPath, Object consumer, MessageLog messageLog, TaskMonitor monitor)
-			throws IOException, CancelledException, DuplicateNameException, InvalidNameException,
-			VersionException, LoadException {
+			String projectFolderPath, List<Pair<String, String>> loaderArgs, Object consumer,
+			MessageLog messageLog, TaskMonitor monitor) throws IOException, CancelledException,
+			DuplicateNameException, InvalidNameException, VersionException, LoadException {
 		return importFresh(fsrl, project, projectFolderPath, consumer, messageLog, monitor,
 			LoaderService.ACCEPT_ALL, LoadSpecChooser.CHOOSE_THE_FIRST_PREFERRED, null,
-			OptionChooser.DEFAULT_OPTIONS);
+			new LoaderArgsOptionChooser(loaderArgs));
 	}
 
 	/**
@@ -147,6 +149,7 @@ public final class AutoImporter {
 	 *   reserves the right to change it for each {@link Loaded} result. The {@link Loaded} results 
 	 *   should be queried for their true project folder paths using 
 	 *   {@link Loaded#getProjectFolderPath()}.
+	 * @param loaderArgs A {@link List} of optional {@link Loader}-specific arguments
 	 * @param consumer A consumer
 	 * @param messageLog The log
 	 * @param monitor A task monitor
@@ -161,12 +164,13 @@ public final class AutoImporter {
 	 * @throws LoadException if nothing was loaded
 	 */
 	public static LoadResults<Program> importByUsingBestGuess(ByteProvider provider,
-			Project project, String projectFolderPath, Object consumer, MessageLog messageLog,
-			TaskMonitor monitor) throws IOException, CancelledException, DuplicateNameException,
-			InvalidNameException, VersionException, LoadException {
+			Project project, String projectFolderPath, List<Pair<String, String>> loaderArgs,
+			Object consumer, MessageLog messageLog, TaskMonitor monitor)
+			throws IOException, CancelledException, DuplicateNameException, InvalidNameException,
+			VersionException, LoadException {
 		return importFresh(provider, project, projectFolderPath, consumer, messageLog, monitor,
 			LoaderService.ACCEPT_ALL, LoadSpecChooser.CHOOSE_THE_FIRST_PREFERRED, null,
-			OptionChooser.DEFAULT_OPTIONS);
+			new LoaderArgsOptionChooser(loaderArgs));
 	}
 
 	/**
@@ -251,10 +255,10 @@ public final class AutoImporter {
 			List<Pair<String, String>> loaderArgs, Object consumer, MessageLog messageLog,
 			TaskMonitor monitor) throws IOException, CancelledException, DuplicateNameException,
 			InvalidNameException, VersionException, LoadException {
-		SingleLoaderFilter loaderFilter = new SingleLoaderFilter(loaderClass, loaderArgs);
+		SingleLoaderFilter loaderFilter = new SingleLoaderFilter(loaderClass);
 		return importFresh(fsrl, project, projectFolderPath, consumer, messageLog, monitor,
 			loaderFilter, LoadSpecChooser.CHOOSE_THE_FIRST_PREFERRED, null,
-			new LoaderArgsOptionChooser(loaderFilter));
+			new LoaderArgsOptionChooser(loaderArgs));
 	}
 
 	/**
@@ -277,6 +281,7 @@ public final class AutoImporter {
 	 *   reserves the right to change it for each {@link Loaded} result. The {@link Loaded} results 
 	 *   should be queried for their true project folder paths using 
 	 *   {@link Loaded#getProjectFolderPath()}.
+	 * @param loaderArgs A {@link List} of optional {@link Loader}-specific arguments
 	 * @param language The desired {@link Language}
 	 * @param compilerSpec The desired {@link CompilerSpec compiler specification}
 	 * @param consumer A consumer
@@ -293,11 +298,12 @@ public final class AutoImporter {
 	 * @throws LoadException if nothing was loaded
 	 */
 	public static LoadResults<Program> importByLookingForLcs(File file, Project project,
-			String projectFolderPath, Language language, CompilerSpec compilerSpec, Object consumer,
-			MessageLog messageLog, TaskMonitor monitor) throws IOException, CancelledException,
-			DuplicateNameException, InvalidNameException, VersionException, LoadException {
-		return importByLookingForLcs(fileToFsrl(file), project, projectFolderPath, language,
-			compilerSpec, consumer, messageLog, monitor);
+			String projectFolderPath, List<Pair<String, String>> loaderArgs, Language language,
+			CompilerSpec compilerSpec, Object consumer, MessageLog messageLog, TaskMonitor monitor)
+			throws IOException, CancelledException, DuplicateNameException, InvalidNameException,
+			VersionException, LoadException {
+		return importByLookingForLcs(fileToFsrl(file), project, projectFolderPath, loaderArgs,
+			language, compilerSpec, consumer, messageLog, monitor);
 	}
 
 	/**
@@ -320,6 +326,7 @@ public final class AutoImporter {
 	 *   reserves the right to change it for each {@link Loaded} result. The {@link Loaded} results 
 	 *   should be queried for their true project folder paths using 
 	 *   {@link Loaded#getProjectFolderPath()}.
+	 * @param loaderArgs A {@link List} of optional {@link Loader}-specific arguments
 	 * @param language The desired {@link Language}
 	 * @param compilerSpec The desired {@link CompilerSpec compiler specification}
 	 * @param consumer A consumer
@@ -336,12 +343,13 @@ public final class AutoImporter {
 	 * @throws LoadException if nothing was loaded
 	 */
 	public static LoadResults<Program> importByLookingForLcs(FSRL fsrl, Project project,
-			String projectFolderPath, Language language, CompilerSpec compilerSpec, Object consumer,
-			MessageLog messageLog, TaskMonitor monitor) throws IOException, CancelledException,
-			DuplicateNameException, InvalidNameException, VersionException, LoadException {
+			String projectFolderPath, List<Pair<String, String>> loaderArgs, Language language,
+			CompilerSpec compilerSpec, Object consumer, MessageLog messageLog, TaskMonitor monitor)
+			throws IOException, CancelledException, DuplicateNameException, InvalidNameException,
+			VersionException, LoadException {
 		return importFresh(fsrl, project, projectFolderPath, consumer, messageLog, monitor,
 			LoaderService.ACCEPT_ALL, new LcsHintLoadSpecChooser(language, compilerSpec), null,
-			OptionChooser.DEFAULT_OPTIONS);
+			new LoaderArgsOptionChooser(loaderArgs));
 	}
 
 	/**
@@ -430,10 +438,10 @@ public final class AutoImporter {
 			List<Pair<String, String>> loaderArgs, Language language, CompilerSpec compilerSpec,
 			Object consumer, MessageLog messageLog, TaskMonitor monitor) throws IOException,
 			CancelledException, DuplicateNameException, InvalidNameException, VersionException {
-		SingleLoaderFilter loaderFilter = new SingleLoaderFilter(loaderClass, loaderArgs);
+		SingleLoaderFilter loaderFilter = new SingleLoaderFilter(loaderClass);
 		return importFresh(fsrl, project, projectFolderPath, consumer, messageLog, monitor,
 			loaderFilter, new LcsHintLoadSpecChooser(language, compilerSpec), null,
-			new LoaderArgsOptionChooser(loaderFilter));
+			new LoaderArgsOptionChooser(loaderArgs));
 	}
 
 	private static final Predicate<Loader> BINARY_LOADER =

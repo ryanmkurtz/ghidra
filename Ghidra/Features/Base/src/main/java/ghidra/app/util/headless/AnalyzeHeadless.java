@@ -424,7 +424,8 @@ public class AnalyzeHeadless implements GhidraLaunchable {
 		options.setPostScriptsWithArgs(postScripts);
 
 		// Set loader and loader args
-		options.setLoader(loaderName, loaderArgs);
+		options.setLoader(loaderName);
+		options.setLoaderArgs(loaderArgs);
 
 		// Set user-specified language and compiler spec
 		options.setLanguageAndCompiler(languageId, compilerSpecId);

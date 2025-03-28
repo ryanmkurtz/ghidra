@@ -15,15 +15,12 @@
  */
 package ghidra.app.util.importer;
 
-import java.util.List;
 import java.util.function.Predicate;
 
-import generic.stl.Pair;
 import ghidra.app.util.opinion.Loader;
 
 public class SingleLoaderFilter implements Predicate<Loader> {
 	private final Class<? extends Loader> single;
-	private List<Pair<String, String>> loaderArgs;
 
 	/**
 	 * Create a new single loader filter from the given loader class.
@@ -34,35 +31,8 @@ public class SingleLoaderFilter implements Predicate<Loader> {
 		this.single = single;
 	}
 
-	/**
-	 * Create a new single loader filter from the given loader class and loader command line
-	 * argument list.
-	 * 
-	 * @param single The loader class used for this filter.
-	 * @param loaderArgs The loader arguments used for this filter.  Could be null if there
-	 *                   are not arguments.
-	 */
-	public SingleLoaderFilter(Class<? extends Loader> single,
-			List<Pair<String, String>> loaderArgs) {
-		this.single = single;
-		this.loaderArgs = loaderArgs;
-	}
-
-	/**
-	 * Gets the loader arguments tied to the loader in this filter.
-	 * 
-	 * @return The loader arguments tied to the loader in this filter.  Could be null if there
-	 *         are no arguments. 
-	 */
-	public List<Pair<String, String>> getLoaderArgs() {
-		return loaderArgs;
-	}
-
 	@Override
 	public boolean test(Loader loader) {
-		if (loader.getClass().equals(single)) {
-			return true;
-		}
-		return false;
+		return loader.getClass().equals(single);
 	}
 }

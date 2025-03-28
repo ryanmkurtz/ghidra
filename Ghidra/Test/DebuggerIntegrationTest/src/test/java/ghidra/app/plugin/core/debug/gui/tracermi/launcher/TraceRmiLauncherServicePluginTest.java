@@ -15,9 +15,8 @@
  */
 package ghidra.app.plugin.core.debug.gui.tracermi.launcher;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assume.assumeTrue;
+import static org.junit.Assert.*;
+import static org.junit.Assume.*;
 
 import java.nio.file.Paths;
 import java.util.*;
@@ -81,7 +80,7 @@ public class TraceRmiLauncherServicePluginTest extends AbstractGhidraHeadedDebug
 	public void testGetClassName() throws Exception {
 		ResourceFile rf = Application.getModuleDataFile("TestResources", "HelloWorld.class");
 		LoadResults<Program> results = AutoImporter.importByUsingBestGuess(rf.getFile(false),
-			env.getProject(), "/", this, new MessageLog(), monitor);
+			env.getProject(), "/", List.of(), this, new MessageLog(), monitor);
 		program = results.getPrimaryDomainObject();
 		AutoAnalysisManager analyzer = AutoAnalysisManager.getAnalysisManager(program);
 		analyzer.reAnalyzeAll(null);

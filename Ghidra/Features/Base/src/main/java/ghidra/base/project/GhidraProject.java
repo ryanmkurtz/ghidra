@@ -18,8 +18,7 @@ package ghidra.base.project;
 import java.io.*;
 import java.net.MalformedURLException;
 import java.nio.channels.OverlappingFileLockException;
-import java.util.HashMap;
-import java.util.Iterator;
+import java.util.*;
 
 import ghidra.app.plugin.core.analysis.AutoAnalysisManager;
 import ghidra.app.util.importer.*;
@@ -598,7 +597,7 @@ public class GhidraProject {
 			InvalidNameException, VersionException, IOException {
 		MessageLog messageLog = new MessageLog();
 		LoadResults<Program> loadResults = AutoImporter.importByLookingForLcs(file, project, null,
-			language, compilerSpec, this, messageLog, MONITOR);
+			List.of(), language, compilerSpec, this, messageLog, MONITOR);
 		Program program = loadResults.getPrimaryDomainObject();
 		loadResults.releaseNonPrimary(this);
 		initializeProgram(program, false);
@@ -618,7 +617,7 @@ public class GhidraProject {
 			VersionException, IOException {
 		MessageLog messageLog = new MessageLog();
 		LoadResults<Program> loadResults = AutoImporter.importByUsingSpecificLoaderClass(file,
-			project, null, loaderClass, null, this, messageLog, MONITOR);
+			project, null, loaderClass, List.of(), this, messageLog, MONITOR);
 		Program program = loadResults.getPrimaryDomainObject();
 		loadResults.releaseNonPrimary(this);
 		initializeProgram(program, false);
@@ -629,11 +628,11 @@ public class GhidraProject {
 			CompilerSpec compilerSpec) throws CancelledException, DuplicateNameException,
 			InvalidNameException, VersionException, IOException {
 		MessageLog messageLog = new MessageLog();
-		SingleLoaderFilter loaderFilter = new SingleLoaderFilter(loaderClass, null);
+		SingleLoaderFilter loaderFilter = new SingleLoaderFilter(loaderClass);
 		LcsHintLoadSpecChooser opinionChoose = new LcsHintLoadSpecChooser(language, compilerSpec);
 		LoadResults<Program> loadResults =
 			AutoImporter.importFresh(file, project, null, this, messageLog, MONITOR, loaderFilter,
-				opinionChoose, null, new LoaderArgsOptionChooser(loaderFilter));
+				opinionChoose, null, OptionChooser.DEFAULT_OPTIONS);
 		loadResults.releaseNonPrimary(this);
 		return loadResults.getPrimaryDomainObject();
 	}
@@ -642,7 +641,7 @@ public class GhidraProject {
 			DuplicateNameException, InvalidNameException, VersionException, IOException {
 		MessageLog messageLog = new MessageLog();
 		LoadResults<Program> loadResults = AutoImporter.importByUsingBestGuess(file, project,
-			null, this, messageLog, MONITOR);
+			null, List.of(), this, messageLog, MONITOR);
 		Program program = loadResults.getPrimaryDomainObject();
 		loadResults.releaseNonPrimary(this);
 		initializeProgram(program, false);

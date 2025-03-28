@@ -3636,7 +3636,7 @@ public abstract class GhidraScript extends FlatProgramAPI {
 	public Program importFile(File file) throws Exception {
 		try {
 			LoadResults<Program> loadResults = AutoImporter.importByUsingBestGuess(file,
-				state.getProject(), null, this, new MessageLog(), monitor);
+				state.getProject(), null, List.of(), this, new MessageLog(), monitor);
 			loadResults.releaseNonPrimary(this);
 			return loadResults.getPrimaryDomainObject();
 		}

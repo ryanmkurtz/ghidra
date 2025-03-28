@@ -15,7 +15,7 @@
  */
 package ghidraclass.debugger.screenshot;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 import java.awt.Rectangle;
 import java.awt.event.MouseEvent;
@@ -392,8 +392,9 @@ public class TutorialDebuggerScreenShots extends GhidraScreenShotGenerator
 		try {
 			long snap = flatDbg.getCurrentSnap();
 			MessageLog log = new MessageLog();
-			LoadResults<Program> result = AutoImporter.importByUsingBestGuess(
-				new File(module.getName(snap)), env.getProject(), "/", this, log, monitor);
+			LoadResults<Program> result =
+				AutoImporter.importByUsingBestGuess(new File(module.getName(snap)),
+					env.getProject(), "/", List.of(), this, log, monitor);
 			result.save(env.getProject(), this, log, monitor);
 			prog = result.getPrimaryDomainObject();
 			GhidraProgramUtilities.markProgramNotToAskToAnalyze(prog);

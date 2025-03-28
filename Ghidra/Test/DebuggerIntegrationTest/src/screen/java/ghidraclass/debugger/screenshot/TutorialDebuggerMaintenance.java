@@ -16,6 +16,7 @@
 package ghidraclass.debugger.screenshot;
 
 import java.io.File;
+import java.util.List;
 
 import org.junit.*;
 
@@ -58,7 +59,7 @@ public class TutorialDebuggerMaintenance extends AbstractGhidraHeadedIntegration
 	public void testRecreateTermminesGzf() throws Throwable {
 		File termmines = Application.getModuleDataFile("TestResources", "termmines").getFile(false);
 		LoadResults<Program> results = AutoImporter.importByUsingBestGuess(termmines,
-			env.getProject(), "/", this, new MessageLog(), CONSOLE);
+			env.getProject(), "/", List.of(), this, new MessageLog(), CONSOLE);
 		program = results.getPrimaryDomainObject();
 		try (Transaction tx = program.openTransaction("Analyze")) {
 			program.setExecutablePath("/tmp/termmines");

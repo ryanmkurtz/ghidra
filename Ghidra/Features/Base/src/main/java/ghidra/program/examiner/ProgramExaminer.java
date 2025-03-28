@@ -84,8 +84,8 @@ public class ProgramExaminer {
 		LoadResults<Program> loadResults = null;
 		try {
 			try {
-				loadResults = AutoImporter.importByUsingBestGuess(provider, null, null, this,
-					messageLog, TaskMonitor.DUMMY);
+				loadResults = AutoImporter.importByUsingBestGuess(provider, null, null, List.of(),
+					this, messageLog, TaskMonitor.DUMMY);
 				program = loadResults.getPrimaryDomainObject();
 			}
 			catch (LoadException e) {

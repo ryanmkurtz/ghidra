@@ -1652,11 +1652,11 @@ public class HeadlessAnalyzer {
 		if (options.loaderClass == null) {
 			// User did not specify a loader
 			if (options.language == null) {
-				return AutoImporter.importByUsingBestGuess(fsrl, project, folderPath, this,
-					messageLog, TaskMonitor.DUMMY);
+				return AutoImporter.importByUsingBestGuess(fsrl, project, folderPath,
+					options.loaderArgs, this, messageLog, TaskMonitor.DUMMY);
 			}
-			return AutoImporter.importByLookingForLcs(fsrl, project, folderPath, options.language,
-				options.compilerSpec, this, messageLog, TaskMonitor.DUMMY);
+			return AutoImporter.importByLookingForLcs(fsrl, project, folderPath, options.loaderArgs,
+				options.language, options.compilerSpec, this, messageLog, TaskMonitor.DUMMY);
 		}
 
 		// User specified a loader

@@ -29,8 +29,8 @@ public class LoaderArgsOptionChooser implements OptionChooser {
 
 	private List<Pair<String, String>> loaderArgs;
 
-	public LoaderArgsOptionChooser(SingleLoaderFilter loaderFilter) {
-		this.loaderArgs = loaderFilter.getLoaderArgs();
+	public LoaderArgsOptionChooser(List<Pair<String, String>> loaderArgs) {
+		this.loaderArgs = loaderArgs;
 	}
 
 	@Override
@@ -58,8 +58,7 @@ public class LoaderArgsOptionChooser implements OptionChooser {
 					}
 				}
 				if (!foundIt) {
-					Msg.error(AutoImporter.class, "Loader does not support " + arg + " argument");
-					return null;
+					Msg.warn(AutoImporter.class, "Skipping unsupported " + arg + " argument");
 				}
 			}
 		}

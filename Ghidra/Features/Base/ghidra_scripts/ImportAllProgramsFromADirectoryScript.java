@@ -18,6 +18,7 @@
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 
 import ghidra.app.script.GhidraScript;
 import ghidra.app.util.importer.AutoImporter;
@@ -56,8 +57,8 @@ public class ImportAllProgramsFromADirectoryScript extends GhidraScript {
 			LoadResults<Program> loadResults = null;
 			try {
 				loadResults = AutoImporter.importByLookingForLcs(file, state.getProject(),
-					folder.getPathname(), language.getLanguage(), language.getCompilerSpec(), this,
-					log, monitor);
+					folder.getPathname(), List.of(), language.getLanguage(),
+					language.getCompilerSpec(), this, log, monitor);
 				loadResults.getPrimary().save(state.getProject(), log, monitor);
 			}
 			catch (IOException e) {

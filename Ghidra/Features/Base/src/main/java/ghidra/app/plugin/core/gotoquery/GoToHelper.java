@@ -15,7 +15,7 @@
  */
 package ghidra.app.plugin.core.gotoquery;
 
-import static ghidra.framework.main.DataTreeDialogType.OPEN;
+import static ghidra.framework.main.DataTreeDialogType.*;
 
 import java.util.Stack;
 
@@ -26,8 +26,7 @@ import ghidra.app.cmd.refs.SetExternalNameCmd;
 import ghidra.app.nav.Navigatable;
 import ghidra.app.nav.NavigationUtils;
 import ghidra.app.plugin.core.navigation.NavigationOptions;
-import ghidra.app.services.NavigationHistoryService;
-import ghidra.app.services.ProgramManager;
+import ghidra.app.services.*;
 import ghidra.app.util.NamespaceUtils;
 import ghidra.app.util.SymbolPath;
 import ghidra.app.util.query.TableService;
@@ -48,7 +47,6 @@ import ghidra.util.table.AddressArrayTableModel;
 public class GoToHelper {
 
 	private PluginTool tool;
-
 	private NavigationOptions navOptions; // needed to determine external address navigation behavior
 
 	public GoToHelper(PluginTool tool) {
@@ -105,6 +103,14 @@ public class GoToHelper {
 			}
 			ExternalLocation externalLoc =
 				program.getExternalManager().getExternalLocation(externalSym);
+
+			if (NavigationUtils.getExternalLinkageAddresses(program,
+				externalSym.getAddress()).length == 0) {
+				GoToService gotoService = tool.getService(GoToService.class);
+				if (gotoService != null) {
+					return gotoService.goToExternalLocation(externalLoc, false);
+				}
+			}
 
 			// TODO - this seems like a mistake to always pass 'false' here; please doc why we
 			//        wish to ignore the user options for when to navigate to external programs

@@ -4,9 +4,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -24,10 +24,9 @@ import ghidra.GhidraException;
 import ghidra.GhidraTestApplicationLayout;
 import ghidra.app.plugin.core.analysis.EmbeddedMediaAnalyzer;
 import ghidra.app.util.bin.*;
-import ghidra.app.util.importer.AutoImporter;
 import ghidra.app.util.importer.MessageLog;
+import ghidra.app.util.importer.ProgramLoader;
 import ghidra.app.util.opinion.LoadException;
-import ghidra.app.util.opinion.LoadResults;
 import ghidra.framework.*;
 import ghidra.program.model.data.*;
 import ghidra.program.model.lang.*;
@@ -81,19 +80,20 @@ public class ProgramExaminer {
 	private ProgramExaminer(ByteProvider provider) throws GhidraException {
 		initializeGhidra();
 		messageLog = new MessageLog();
-		LoadResults<Program> loadResults = null;
 		try {
 			try {
-				loadResults = AutoImporter.importByUsingBestGuess(provider, null, null, this,
-					messageLog, TaskMonitor.DUMMY);
-				program = loadResults.getPrimaryDomainObject();
+				program = ProgramLoader.builder()
+						.source(provider)
+						.log(messageLog)
+						.loadProgram(this);
 			}
 			catch (LoadException e) {
 				try {
-					program = AutoImporter
-							.importAsBinary(provider, null, null, defaultLanguage, null, this,
-								messageLog, TaskMonitor.DUMMY)
-							.getDomainObject();
+					program = ProgramLoader.builder()
+							.source(provider)
+							.language(defaultLanguage)
+							.log(messageLog)
+							.loadProgram(this);
 				}
 				catch (LoadException e1) {
 					throw new GhidraException(
@@ -106,9 +106,6 @@ public class ProgramExaminer {
 			throw new GhidraException(e);
 		}
 		finally {
-			if (loadResults != null) {
-				loadResults.releaseNonPrimary(this);
-			}
 			try {
 				provider.close();
 			}

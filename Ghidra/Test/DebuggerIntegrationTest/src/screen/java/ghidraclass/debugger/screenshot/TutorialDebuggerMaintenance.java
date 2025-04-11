@@ -4,9 +4,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,8 +20,7 @@ import java.io.File;
 import org.junit.*;
 
 import db.Transaction;
-import ghidra.app.util.importer.AutoImporter;
-import ghidra.app.util.importer.MessageLog;
+import ghidra.app.util.importer.ProgramLoader;
 import ghidra.app.util.opinion.LoadResults;
 import ghidra.base.project.GhidraProject;
 import ghidra.framework.Application;
@@ -57,8 +56,12 @@ public class TutorialDebuggerMaintenance extends AbstractGhidraHeadedIntegration
 	@Test
 	public void testRecreateTermminesGzf() throws Throwable {
 		File termmines = Application.getModuleDataFile("TestResources", "termmines").getFile(false);
-		LoadResults<Program> results = AutoImporter.importByUsingBestGuess(termmines,
-			env.getProject(), "/", this, new MessageLog(), CONSOLE);
+		LoadResults<Program> results = ProgramLoader.builder()
+				.source(termmines)
+				.project(env.getProject())
+				.monitor(CONSOLE)
+				.load(this);
+
 		program = results.getPrimaryDomainObject();
 		try (Transaction tx = program.openTransaction("Analyze")) {
 			program.setExecutablePath("/tmp/termmines");

@@ -4,9 +4,9 @@
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * 
+ *
  *      http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -31,8 +31,8 @@ import ghidra.app.plugin.core.analysis.AutoAnalysisManager;
 import ghidra.app.plugin.core.osgi.BundleHost;
 import ghidra.app.script.*;
 import ghidra.app.util.headless.HeadlessScript.HeadlessContinuationOption;
-import ghidra.app.util.importer.AutoImporter;
 import ghidra.app.util.importer.MessageLog;
+import ghidra.app.util.importer.ProgramLoader;
 import ghidra.app.util.opinion.*;
 import ghidra.formats.gfilesystem.*;
 import ghidra.framework.*;
@@ -1535,7 +1535,16 @@ public class HeadlessAnalyzer {
 
 			// Perform the load.  Note that loading 1 file may result in more than 1 thing getting
 			// loaded.
-			loadResults = loadPrograms(fsrl, folderPath);
+			loadResults = ProgramLoader.builder()
+					.source(fsrl)
+					.project(project)
+					.projectFolderPath(folderPath)
+					.language(options.language)
+					.compiler(options.compilerSpec)
+					.loaders(options.loaderClass)
+					.loaderArgs(options.loaderArgs)
+					.load(this);
+
 			Msg.info(this, "IMPORTING: Loaded " + (loadResults.size() - 1) + " additional files");
 
 			primary = loadResults.getPrimary();
@@ -1642,31 +1651,6 @@ public class HeadlessAnalyzer {
 				loadResults.release(this);
 			}
 		}
-	}
-
-	private LoadResults<Program> loadPrograms(FSRL fsrl, String folderPath)
-			throws VersionException, InvalidNameException, DuplicateNameException,
-			CancelledException, IOException, LoadException {
-		MessageLog messageLog = new MessageLog();
-
-		if (options.loaderClass == null) {
-			// User did not specify a loader
-			if (options.language == null) {
-				return AutoImporter.importByUsingBestGuess(fsrl, project, folderPath, this,
-					messageLog, TaskMonitor.DUMMY);
-			}
-			return AutoImporter.importByLookingForLcs(fsrl, project, folderPath, options.language,
-				options.compilerSpec, this, messageLog, TaskMonitor.DUMMY);
-		}
-
-		// User specified a loader
-		if (options.language == null) {
-			return AutoImporter.importByUsingSpecificLoaderClass(fsrl, project, folderPath,
-				options.loaderClass, options.loaderArgs, this, messageLog, TaskMonitor.DUMMY);
-		}
-		return AutoImporter.importByUsingSpecificLoaderClassAndLcs(fsrl, project, folderPath,
-			options.loaderClass, options.loaderArgs, options.language, options.compilerSpec, this,
-			messageLog, TaskMonitor.DUMMY);
 	}
 
 	private void processWithImport(FSRL fsrl, String folderPath, Integer depth, boolean isFirstTime)

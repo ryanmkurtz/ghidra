@@ -22,8 +22,8 @@ import java.util.HashMap;
 import java.util.Iterator;
 
 import ghidra.app.plugin.core.analysis.AutoAnalysisManager;
-import ghidra.app.util.importer.*;
-import ghidra.app.util.opinion.*;
+import ghidra.app.util.importer.ProgramLoader;
+import ghidra.app.util.opinion.Loader;
 import ghidra.framework.Application;
 import ghidra.framework.client.*;
 import ghidra.framework.cmd.Command;
@@ -573,7 +573,7 @@ public class GhidraProject {
 	 * @param program
 	 *            the program on which the command is to be applied.
 	 */
-	public void execute(Command cmd, Program program) {
+	public void execute(Command<Program> cmd, Program program) {
 		AutoAnalysisManager mgr = AutoAnalysisManager.getAnalysisManager(program);
 		cmd.applyTo(program);
 		mgr.initializeOptions();
@@ -593,20 +593,22 @@ public class GhidraProject {
 		openPrograms.put(program, id);
 	}
 
-	public Program importProgram(File file, Language language,
-			CompilerSpec compilerSpec) throws CancelledException, DuplicateNameException,
-			InvalidNameException, VersionException, IOException {
-		MessageLog messageLog = new MessageLog();
-		LoadResults<Program> loadResults = AutoImporter.importByLookingForLcs(file, project, null,
-			language, compilerSpec, this, messageLog, MONITOR);
-		Program program = loadResults.getPrimaryDomainObject();
-		loadResults.releaseNonPrimary(this);
+	public Program importProgram(File file, Language language, CompilerSpec compilerSpec)
+			throws CancelledException, VersionException, IOException {
+		Program program = ProgramLoader.builder()
+				.source(file)
+				.project(project)
+				.language(language)
+				.compiler(compilerSpec)
+				.monitor(MONITOR)
+				.loadProgram(this);
+
 		initializeProgram(program, false);
 		return program;
 	}
 
-	public Program importProgram(File file, Processor processor) throws CancelledException,
-			DuplicateNameException, InvalidNameException, VersionException, IOException {
+	public Program importProgram(File file, Processor processor)
+			throws CancelledException, VersionException, IOException {
 		LanguageService svc = DefaultLanguageService.getLanguageService();
 		Language language = svc.getDefaultLanguage(processor);
 		CompilerSpec compilerSpec = language.getDefaultCompilerSpec();
@@ -614,46 +616,48 @@ public class GhidraProject {
 	}
 
 	public Program importProgram(File file, Class<? extends Loader> loaderClass)
-			throws CancelledException, DuplicateNameException, InvalidNameException,
-			VersionException, IOException {
-		MessageLog messageLog = new MessageLog();
-		LoadResults<Program> loadResults = AutoImporter.importByUsingSpecificLoaderClass(file,
-			project, null, loaderClass, null, this, messageLog, MONITOR);
-		Program program = loadResults.getPrimaryDomainObject();
-		loadResults.releaseNonPrimary(this);
+			throws CancelledException, VersionException, IOException {
+		Program program = ProgramLoader.builder()
+				.source(file)
+				.project(project)
+				.loaders(loaderClass)
+				.monitor(MONITOR)
+				.loadProgram(this);
+
 		initializeProgram(program, false);
 		return program;
 	}
 
 	public Program importProgram(File file, Class<? extends Loader> loaderClass, Language language,
-			CompilerSpec compilerSpec) throws CancelledException, DuplicateNameException,
-			InvalidNameException, VersionException, IOException {
-		MessageLog messageLog = new MessageLog();
-		SingleLoaderFilter loaderFilter = new SingleLoaderFilter(loaderClass, null);
-		LcsHintLoadSpecChooser opinionChoose = new LcsHintLoadSpecChooser(language, compilerSpec);
-		LoadResults<Program> loadResults =
-			AutoImporter.importFresh(file, project, null, this, messageLog, MONITOR, loaderFilter,
-				opinionChoose, null, new LoaderArgsOptionChooser(loaderFilter));
-		loadResults.releaseNonPrimary(this);
-		return loadResults.getPrimaryDomainObject();
-	}
-
-	public Program importProgram(File file) throws CancelledException,
-			DuplicateNameException, InvalidNameException, VersionException, IOException {
-		MessageLog messageLog = new MessageLog();
-		LoadResults<Program> loadResults = AutoImporter.importByUsingBestGuess(file, project,
-			null, this, messageLog, MONITOR);
-		Program program = loadResults.getPrimaryDomainObject();
-		loadResults.releaseNonPrimary(this);
+			CompilerSpec compilerSpec) throws CancelledException, VersionException, IOException {
+		Program program = ProgramLoader.builder()
+				.source(file)
+				.project(project)
+				.loaders(loaderClass)
+				.language(language)
+				.compiler(compilerSpec)
+				.monitor(MONITOR)
+				.loadProgram(this);
+		
 		initializeProgram(program, false);
 		return program;
 	}
 
-	public Program importProgramFast(File file) throws CancelledException, DuplicateNameException,
-			InvalidNameException, VersionException, IOException {
-		Program program = importByStealingCodeFromAutoImporterByUsingBestGuess(file);
+	public Program importProgram(File file)
+			throws CancelledException, VersionException, IOException {
+		Program program = ProgramLoader.builder()
+				.source(file)
+				.project(project)
+				.monitor(MONITOR)
+				.loadProgram(this);
+
 		initializeProgram(program, false);
 		return program;
+	}
+
+	public Program importProgramFast(File file)
+			throws CancelledException, VersionException, IOException {
+		return importProgram(file);
 	}
 
 //==================================================================================================
@@ -671,21 +675,6 @@ public class GhidraProject {
 		if (!ProjectTestUtils.deleteProject(projectDirectoryPath, projectName)) {
 			throw new IllegalStateException("Unable to delete test project");
 		}
-	}
-
-	private Program importByStealingCodeFromAutoImporterByUsingBestGuess(File file)
-			throws CancelledException, DuplicateNameException, InvalidNameException,
-			VersionException, IOException {
-
-		MessageLog messageLog = new MessageLog();
-
-		String programNameOverride = null;
-		LoadResults<Program> loadResults =
-			AutoImporter.importFresh(file, project, null, this, messageLog, MONITOR,
-				LoaderService.ACCEPT_ALL, LoadSpecChooser.CHOOSE_THE_FIRST_PREFERRED,
-				programNameOverride, OptionChooser.DEFAULT_OPTIONS);
-		loadResults.releaseNonPrimary(this);
-		return loadResults.getPrimaryDomainObject();
 	}
 
 //==================================================================================================

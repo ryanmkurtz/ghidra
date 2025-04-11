@@ -15,7 +15,7 @@
  */
 package ghidraclass.debugger.screenshot;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 import java.awt.Rectangle;
 import java.awt.event.MouseEvent;
@@ -74,8 +74,8 @@ import ghidra.app.plugin.core.terminal.TerminalProvider;
 import ghidra.app.script.GhidraState;
 import ghidra.app.services.*;
 import ghidra.app.services.DebuggerEmulationService.EmulationResult;
-import ghidra.app.util.importer.AutoImporter;
 import ghidra.app.util.importer.MessageLog;
+import ghidra.app.util.importer.ProgramLoader;
 import ghidra.app.util.opinion.LoadResults;
 import ghidra.async.AsyncTestUtils;
 import ghidra.debug.api.modules.ModuleMapProposal;
@@ -392,8 +392,13 @@ public class TutorialDebuggerScreenShots extends GhidraScreenShotGenerator
 		try {
 			long snap = flatDbg.getCurrentSnap();
 			MessageLog log = new MessageLog();
-			LoadResults<Program> result = AutoImporter.importByUsingBestGuess(
-				new File(module.getName(snap)), env.getProject(), "/", this, log, monitor);
+			LoadResults<Program> result = ProgramLoader.builder()
+					.source(new File(module.getName(snap)))
+					.project(env.getProject())
+					.log(log)
+					.monitor(monitor)
+					.load(this);
+
 			result.save(env.getProject(), this, log, monitor);
 			prog = result.getPrimaryDomainObject();
 			GhidraProgramUtilities.markProgramNotToAskToAnalyze(prog);

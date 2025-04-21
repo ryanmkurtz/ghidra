@@ -25,7 +25,7 @@ import ghidra.program.model.address.AddressFactory;
 /**
  * Chooses which {@link Loader} options to use 
  * 
- * @deprecated Use {@link Builder#loaderArgs(List)} instead
+ * @deprecated Use {@link ProgramLoader.Builder#loaderArgs(List)} instead
  */
 @Deprecated(since = "11.4", forRemoval = true)
 @FunctionalInterface
@@ -38,7 +38,7 @@ public interface OptionChooser {
 	 * @param optionChoices A {@link List} of available {@link Loader} options
 	 * @param addressFactory The address factory
 	 * @return The {@link List} of {@link Loader} options to use
-	 * @deprecated Use {@link Builder#loaderArgs(List)} instead
+	 * @deprecated Use {@link ProgramLoader.Builder#loaderArgs(List)} instead
 	 */
 	@Deprecated(since = "11.4", forRemoval = true)
 	List<Option> choose(List<Option> optionChoices, AddressFactory addressFactory);
@@ -48,7 +48,7 @@ public interface OptionChooser {
 	 * 
 	 * @return The {@link Loader} arguments associated with this {@link OptionChooser}
 	 * @throws UnsupportedOperationException if a subclass has not implemented this method
-	 * @deprecated Use {@link Builder#loaderArgs(List)} instead
+	 * @deprecated Use {@link ProgramLoader.Builder#loaderArgs(List)} instead
 	 */
 	@Deprecated(since = "11.4", forRemoval = true)
 	public default List<Pair<String, String>> getArgs() {

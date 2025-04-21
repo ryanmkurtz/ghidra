@@ -17,7 +17,6 @@ package ghidra.app.util.opinion;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.function.Predicate;
 
 import ghidra.app.util.importer.MessageLog;
 import ghidra.framework.model.*;
@@ -33,7 +32,7 @@ import ghidra.util.task.TaskMonitor;
  * 
  * @param <T> The type of {@link DomainObject}s that were loaded
  */
-public class LoadResults<T extends DomainObject> implements Iterable<Loaded<T>> {
+public class LoadResults<T extends DomainObject> implements Iterable<Loaded<T>>, AutoCloseable {
 
 	private final List<Loaded<T>> loadedList;
 
@@ -41,6 +40,8 @@ public class LoadResults<T extends DomainObject> implements Iterable<Loaded<T>> 
 	 * Creates a new {@link LoadResults} that contains the given non-empty {@link List} of 
 	 * {@link Loaded} {@link DomainObject}s.  The first entry in the {@link List} is assumed to be
 	 * the {@link #getPrimary() primary} {@link Loaded} {@link DomainObject}.
+	 * <p>
+	 * This object needs to be {@link #close() closed} when done with it.
 	 * 
 	 * @param loadedList A {@link List} of {@link Loaded} {@link DomainObject}s
 	 * @throws IllegalArgumentException if the provided {@link List} is null or empty
@@ -60,14 +61,22 @@ public class LoadResults<T extends DomainObject> implements Iterable<Loaded<T>> 
 	 * 
 	 * @param domainObject The loaded {@link DomainObject}
 	 * @param name The name of the loaded {@link DomainObject}.  If a 
-	 *   {@link #save(Project, Object, MessageLog, TaskMonitor) save} occurs, this will attempted to
-	 *   be used for the resulting {@link DomainFile}'s name.
+	 *   {@link #save(TaskMonitor) save} occurs, this will attempted to be used for the resulting 
+	 *   {@link DomainFile}'s name.
+	 * @param project If not null, the project this will get saved to during a 
+	 *   {@link #save(TaskMonitor)} operation
 	 * @param projectFolderPath The project folder path this will get saved to during a 
-	 *   {@link #save(Project, Object, MessageLog, TaskMonitor) save} operation.  If null or empty, 
-	 *   the root project folder will be used.
+	 *   {@link #save(TaskMonitor) save} operation.  If null or empty, the root project folder will
+	 *   be used.
+	 * @param consumer A reference to the object "consuming" the returned this 
+	 *   {@link LoadResults}, used to ensure the underlying {@link DomainObject}s are only closed 
+	 *   when every consumer is done with it (see {@link #close()}). NOTE:  Wrapping a 
+	 *   {@link DomainObject} in a {@link LoadResults} transfers responsibility of releasing the 
+	 *   given {@link DomainObject} to this {@link LoadResults}'s {@link #close()} method. 
 	 */
-	public LoadResults(T domainObject, String name, String projectFolderPath) {
-		this(List.of(new Loaded<T>(domainObject, name, projectFolderPath)));
+	public LoadResults(T domainObject, String name, Project project, String projectFolderPath,
+			Object consumer) {
+		this(List.of(new Loaded<T>(domainObject, name, project, projectFolderPath, consumer)));
 	}
 
 	/**
@@ -77,17 +86,41 @@ public class LoadResults<T extends DomainObject> implements Iterable<Loaded<T>> 
 	 * @return The "primary" {@link Loaded} {@link DomainObject}
 	 */
 	public Loaded<T> getPrimary() {
-		return loadedList.get(0);
+		return loadedList.getFirst();
 	}
 
 	/**
-	 * Gets the "primary" {@link DomainObject}, who's meaning is defined by each {@link Loader} 
-	 * implementation
+	 * Removes the "primary" {@link Loaded} {@link DomainObject} from this {@link LoadResults}.
+	 * <p>
+	 * NOTE: It is the responsibility of the caller to {@link Loaded#close()} the returned 
+	 * {@link Loaded} {@link DomainObject} when finished with it, since this {@link LoadResults}
+	 * will no longer have a reference to it.
 	 * 
+	 * @return The removed "primary" {@link Loaded} {@link DomainObject}
+	 */
+	public Loaded<T> removePrimary() {
+		return loadedList.removeFirst();
+	}
+
+	/**
+	 * Gets the "primary" {@link DomainObject}, whose meaning is defined by each {@link Loader} 
+	 * implementation.
+	 * <p>
+	 * NOTE: The given It is the responsibility of the caller to properly 
+	 * {@link DomainObject#release(Object) release} it when done. This
+	 * {@link DomainObject#release(Object)} does not replace the requirement to 
+	 * {@link #close()} the {@link LoadResults} object when done.
+	 * 
+	 * @param consumer A new reference to the object "consuming" the returned {@link DomainObject},
+	 *   used to ensure the underlying {@link DomainObject} is only released when every consumer is
+	 *   done with it (see {@link DomainObject#release(Object)}). NOTE: This method adds the given
+	 *   consumer to the returned {@link DomainObject}, requiring an explicit 
+	 *   {@link DomainObject#release(Object)} to be called on the return value (this entire
+	 *   {@link LoadResults} must also still be {@link #close() closed}).
 	 * @return The "primary" {@link DomainObject}
 	 */
-	public T getPrimaryDomainObject() {
-		return loadedList.get(0).getDomainObject();
+	public T getPrimaryDomainObject(Object consumer) {
+		return loadedList.getFirst().getDomainObject(consumer);
 	}
 
 	/**
@@ -101,27 +134,24 @@ public class LoadResults<T extends DomainObject> implements Iterable<Loaded<T>> 
 	}
 
 	/**
-	 * {@link Loaded#save(Project, MessageLog, TaskMonitor) Saves} each {@link Loaded} 
-	 * {@link DomainObject} to the given {@link Project}.
+	 * {@link Loaded#save(TaskMonitor) Saves} each {@link Loaded} {@link DomainObject} to the given 
+	 * {@link Project}.
 	 * <p>
 	 * NOTE: If any fail to save, none will be saved (already saved {@link DomainFile}s will be
 	 * cleaned up/deleted), and all {@link Loaded} {@link DomainObject}s will have been
-	 * {@link #release(Object) released}.
+	 * {@link #close() closed}.
 	 * 
-	 * @param project The {@link Project} to save to
-	 * @param consumer the consumer
-	 * @param messageLog The log
 	 * @param monitor A cancelable task monitor
 	 * @throws CancelledException if the operation was cancelled
 	 * @throws IOException If there was a problem saving
-	 * @see Loaded#save(Project, MessageLog, TaskMonitor)
+	 * @see Loaded#save(TaskMonitor)
 	 */
-	public void save(Project project, Object consumer, MessageLog messageLog, TaskMonitor monitor)
+	public void save(TaskMonitor monitor)
 			throws CancelledException, IOException {
 		boolean success = false;
 		try {
 			for (Loaded<T> loaded : loadedList) {
-				loaded.save(project, messageLog, monitor);
+				loaded.save(monitor);
 			}
 			success = true;
 		}
@@ -129,10 +159,10 @@ public class LoadResults<T extends DomainObject> implements Iterable<Loaded<T>> 
 			if (!success) {
 				for (Loaded<T> loaded : this) {
 					try {
-						loaded.release(consumer);
-						loaded.deleteSavedDomainFile(consumer);
+						loaded.delete();
+						loaded.close();
 					}
-					catch (IOException e1) {
+					catch (Exception e1) {
 						Msg.error(getClass(), "Failed to delete: " + loaded);
 					}
 				}
@@ -140,47 +170,20 @@ public class LoadResults<T extends DomainObject> implements Iterable<Loaded<T>> 
 		}
 	}
 
-	/**
-	 * Notify all of the {@link Loaded} {@link DomainObject}s that the specified consumer is no 
-	 * longer using them. When the last consumer invokes this method, the {@link Loaded} 
-	 * {@link DomainObject}s will be closed and will become invalid.
-	 * 
-	 * @param consumer the consumer
-	 */
-	public void release(Object consumer) {
-		loadedList.forEach(loaded -> loaded.release(consumer));
-	}
-
-	/**
-	 * Notify the filtered {@link Loaded} {@link DomainObject}s that the specified consumer is no 
-	 * longer using them. When the last consumer invokes this method, the filtered {@link Loaded} 
-	 * {@link DomainObject}s will be closed and will become invalid.
-	 * 
-	 * @param consumer the consumer
-	 * @param filter a filter to apply to the {@link Loaded} {@link DomainObject}s prior to the
-	 *   release
-	 */
-	public void release(Object consumer, Predicate<? super Loaded<T>> filter) {
-		loadedList.stream().filter(filter).forEach(loaded -> loaded.release(consumer));
-	}
-
-	/**
-	 * Notify the non-primary {@link Loaded} {@link DomainObject}s that the specified consumer is no 
-	 * longer using them. When the last consumer invokes this method, the non-primary {@link Loaded} 
-	 * {@link DomainObject}s will be closed and will become invalid.
-	 * 
-	 * @param consumer the consumer
-	 */
-	public void releaseNonPrimary(Object consumer) {
-		for (int i = 0; i < loadedList.size(); i++) {
-			if (i > 0) {
-				loadedList.get(i).release(consumer);
-			}
-		}
-	}
-
 	@Override
 	public Iterator<Loaded<T>> iterator() {
 		return loadedList.iterator();
+	}
+
+	/**
+	 * Closes this {@link LoadResults} and releases the reference on the object consuming it.
+	 * <p>
+	 * NOTE: Any {@link DomainObject}s obtained via {@link #getPrimaryDomainObject(Object)} must
+	 * still be explicitly {@link DomainObject#release(Object) released} after calling this method,
+	 * since they were obtained with their own consumers.
+	 */
+	@Override
+	public void close() {
+		loadedList.forEach(Loaded::close);
 	}
 }

@@ -23,6 +23,7 @@ import java.util.Iterator;
 
 import ghidra.app.plugin.core.analysis.AutoAnalysisManager;
 import ghidra.app.util.importer.ProgramLoader;
+import ghidra.app.util.opinion.LoadResults;
 import ghidra.app.util.opinion.Loader;
 import ghidra.framework.Application;
 import ghidra.framework.client.*;
@@ -593,20 +594,58 @@ public class GhidraProject {
 		openPrograms.put(program, id);
 	}
 
+	/**
+	 * Automatically imports the given {@link File} with the best matching {@link Loader} that
+	 * supports the given language and compiler specification.
+	 * <p>
+	 * NOTE: It is the responsibility of the caller to release the returned {@link Program} 
+	 * with {@link Program#release(Object)} when it is no longer needed, with {@code this} 
+	 * {@link GhidraProject} instance as the consumer.
+	 * 
+	 * @param file The {@link File} to import
+	 * @param language The desired {@link Language}
+	 * @param compilerSpec The desired {@link CompilerSpec compiler specification}
+	 * @return The import {@link Program}
+	 * @throws IOException if there was an IO-related problem loading
+	 * @throws CancelledException if the operation was cancelled 
+	 * @throws VersionException if there was an issue with database versions, probably due to a 
+	 *   failed language upgrade
+	 * @deprecated Use {@link ProgramLoader}
+	 */
+	@Deprecated(since = "11.4", forRemoval = true)
 	public Program importProgram(File file, Language language, CompilerSpec compilerSpec)
 			throws CancelledException, VersionException, IOException {
-		Program program = ProgramLoader.builder()
+		try (LoadResults<Program> loadResults = ProgramLoader.builder()
 				.source(file)
 				.project(project)
 				.language(language)
 				.compiler(compilerSpec)
 				.monitor(MONITOR)
-				.loadProgram(this);
-
-		initializeProgram(program, false);
-		return program;
+				.load()) {
+			Program program = loadResults.getPrimaryDomainObject(this);
+			initializeProgram(program, false);
+			return program;
+		}
 	}
 
+	/**
+	 * Automatically imports the given {@link File} with the best matching {@link Loader} that
+	 * supports the given processor.
+	 * <p>
+	 * NOTE: It is the responsibility of the caller to release the returned {@link Program} 
+	 * with {@link Program#release(Object)} when it is no longer needed, with {@code this} 
+	 * {@link GhidraProject} instance as the consumer.
+	 * 
+	 * @param file The {@link File} to import
+	 * @param processor The desired {@link Processor}
+	 * @return The import {@link Program}
+	 * @throws IOException if there was an IO-related problem loading
+	 * @throws CancelledException if the operation was cancelled 
+	 * @throws VersionException if there was an issue with database versions, probably due to a 
+	 *   failed language upgrade
+	 * @deprecated Use {@link ProgramLoader}
+	 */
+	@Deprecated(since = "11.4", forRemoval = true)
 	public Program importProgram(File file, Processor processor)
 			throws CancelledException, VersionException, IOException {
 		LanguageService svc = DefaultLanguageService.getLanguageService();
@@ -615,46 +654,118 @@ public class GhidraProject {
 		return importProgram(file, language, compilerSpec);
 	}
 
+	/**
+	 * Automatically imports the given {@link File} with the given {@link Loader}.
+	 * <p>
+	 * NOTE: It is the responsibility of the caller to release the returned {@link Program} 
+	 * with {@link Program#release(Object)} when it is no longer needed, with {@code this} 
+	 * {@link GhidraProject} instance as the consumer.
+	 * 
+	 * @param file The {@link File} to import
+	 * @param loaderClass The desired {@link Loader}
+	 * @return The import {@link Program}
+	 * @throws IOException if there was an IO-related problem loading
+	 * @throws CancelledException if the operation was cancelled 
+	 * @throws VersionException if there was an issue with database versions, probably due to a 
+	 *   failed language upgrade
+	 * @deprecated Use {@link ProgramLoader}
+	 */
+	@Deprecated(since = "11.4", forRemoval = true)
 	public Program importProgram(File file, Class<? extends Loader> loaderClass)
 			throws CancelledException, VersionException, IOException {
-		Program program = ProgramLoader.builder()
+		try (LoadResults<Program> loadResults = ProgramLoader.builder()
 				.source(file)
 				.project(project)
 				.loaders(loaderClass)
 				.monitor(MONITOR)
-				.loadProgram(this);
-
-		initializeProgram(program, false);
-		return program;
+				.load()) {
+			Program program = loadResults.getPrimaryDomainObject(this);
+			initializeProgram(program, false);
+			return program;
+		}
 	}
 
+	/**
+	 * Automatically imports the given {@link File} with the given {@link Loader}, {@link Language},
+	 * and {@link CompilerSpec compiler specification}.
+	 * <p>
+	 * NOTE: It is the responsibility of the caller to release the returned {@link Program} 
+	 * with {@link Program#release(Object)} when it is no longer needed, with {@code this} 
+	 * {@link GhidraProject} instance as the consumer.
+	 * 
+	 * @param file The {@link File} to import
+	 * @param loaderClass The desired {@link Loader}
+	 * @param language The desired {@link Language}
+	 * @param compilerSpec The desired {@link CompilerSpec compiler specification}
+	 * @return The import {@link Program}
+	 * @throws IOException if there was an IO-related problem loading
+	 * @throws CancelledException if the operation was cancelled 
+	 * @throws VersionException if there was an issue with database versions, probably due to a 
+	 *   failed language upgrade
+	 * @deprecated Use {@link ProgramLoader}
+	 */
+	@Deprecated(since = "11.4", forRemoval = true)
 	public Program importProgram(File file, Class<? extends Loader> loaderClass, Language language,
 			CompilerSpec compilerSpec) throws CancelledException, VersionException, IOException {
-		Program program = ProgramLoader.builder()
+		try (LoadResults<Program> loadResults = ProgramLoader.builder()
 				.source(file)
 				.project(project)
 				.loaders(loaderClass)
 				.language(language)
 				.compiler(compilerSpec)
 				.monitor(MONITOR)
-				.loadProgram(this);
-		
-		initializeProgram(program, false);
-		return program;
+				.load()) {
+			Program program = loadResults.getPrimaryDomainObject(this);
+			initializeProgram(program, false);
+			return program;
+		}
 	}
 
+	/**
+	 * Automatically imports the given {@link File}.
+	 * <p>
+	 * NOTE: It is the responsibility of the caller to release the returned {@link Program} 
+	 * with {@link Program#release(Object)} when it is no longer needed, with {@code this} 
+	 * {@link GhidraProject} instance as the consumer.
+	 * 
+	 * @param file The {@link File} to import
+	 * @return The import {@link Program}
+	 * @throws IOException if there was an IO-related problem loading
+	 * @throws CancelledException if the operation was cancelled 
+	 * @throws VersionException if there was an issue with database versions, probably due to a 
+	 *   failed language upgrade
+	 * @deprecated Use {@link ProgramLoader}
+	 */
+	@Deprecated(since = "11.4", forRemoval = true)
 	public Program importProgram(File file)
 			throws CancelledException, VersionException, IOException {
-		Program program = ProgramLoader.builder()
+		try (LoadResults<Program> loadResults = ProgramLoader.builder()
 				.source(file)
 				.project(project)
 				.monitor(MONITOR)
-				.loadProgram(this);
-
-		initializeProgram(program, false);
-		return program;
+				.load()) {
+			Program program = loadResults.getPrimaryDomainObject(this);
+			initializeProgram(program, false);
+			return program;
+		}
 	}
 
+	/**
+	 * Automatically imports the given {@link File}.
+	 * <p>
+	 * NOTE: It is the responsibility of the caller to release the returned {@link Program} 
+	 * with {@link Program#release(Object)} when it is no longer needed, with {@code this} 
+	 * {@link GhidraProject} instance as the consumer.
+	 * 
+	 * @param file The {@link File} to import
+	 * @return The import {@link Program}
+	 * @throws IOException if there was an IO-related problem loading
+	 * @throws CancelledException if the operation was cancelled 
+	 * @throws VersionException if there was an issue with database versions, probably due to a 
+	 *   failed language upgrade
+	 * @deprecated Use {@link ProgramLoader}
+	 */
+	@Deprecated(since = "11.4", forRemoval = true)
 	public Program importProgramFast(File file)
 			throws CancelledException, VersionException, IOException {
 		return importProgram(file);

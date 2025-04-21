@@ -151,7 +151,7 @@ public class RecursiveRecursiveMSLibImport extends GhidraScript {
 							Pair<DomainFolder, String> pair =
 								establishProgramFolder(currentLibrary, preferredName);
 
-							LoadResults<? extends DomainObject> loadResults =
+							try (LoadResults<? extends DomainObject> loadResults =
 								ProgramLoader.builder()
 										.source(coffProvider)
 										.project(state.getProject())
@@ -162,13 +162,8 @@ public class RecursiveRecursiveMSLibImport extends GhidraScript {
 											mangleNameBecauseDomainFoldersAreSoRetro(pair.second))
 										.log(log)
 										.monitor(monitor)
-										.load(this);
-
-							try {
-								loadResults.save(state.getProject(), this, log, monitor);
-							}
-							finally {
-								loadResults.release(this);
+										.load()) {
+								loadResults.save(monitor);
 							}
 						}
 					}

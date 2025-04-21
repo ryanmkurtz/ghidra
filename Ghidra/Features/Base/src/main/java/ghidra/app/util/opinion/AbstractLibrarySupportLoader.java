@@ -101,7 +101,8 @@ public abstract class AbstractLibrarySupportLoader extends AbstractProgramLoader
 			if (!shouldLoadOnlyLibraries(options)) {
 				program = doLoad(provider, loadedName, loadSpec, libraryNameList, options, consumer,
 					log, monitor);
-				loadedProgramList.add(new Loaded<>(program, loadedName, projectFolderPath));
+				loadedProgramList.add(
+					new Loaded<>(program, loadedName, project, projectFolderPath, consumer));
 				log.appendMsg("------------------------------------------------\n");
 			}
 			else if (project != null) {
@@ -115,7 +116,7 @@ public abstract class AbstractLibrarySupportLoader extends AbstractProgramLoader
 				if (program == null) {
 					throw new LoadException("Failed to acquire a Program");
 				}
-				loadedProgramList.add(new Loaded<>(program, domainFile));
+				loadedProgramList.add(new Loaded<>(program, domainFile, consumer));
 				libraryNameList.addAll(getLibraryNames(provider, program));
 			}
 
@@ -128,7 +129,7 @@ public abstract class AbstractLibrarySupportLoader extends AbstractProgramLoader
 		}
 		finally {
 			if (!success) {
-				release(loadedProgramList, consumer);
+				loadedProgramList.forEach(Loaded::close);
 			}
 		}
 	}
@@ -169,8 +170,14 @@ public abstract class AbstractLibrarySupportLoader extends AbstractProgramLoader
 		List<DomainFolder> searchFolders =
 			getLibrarySearchFolders(loadedPrograms, project, options, log);
 
-		List<LibrarySearchPath> searchPaths = getLibrarySearchPaths(
-			loadedPrograms.getFirst().getDomainObject(), loadSpec, options, log, monitor);
+		Program firstProgram = loadedPrograms.getFirst().getDomainObject(this);
+		List<LibrarySearchPath> searchPaths;
+		try {
+			searchPaths = getLibrarySearchPaths(firstProgram, loadSpec, options, log, monitor);
+		}
+		finally {
+			firstProgram.release(this);
+		}
 
 		List<Loaded<Program>> saveablePrograms =
 			loadedPrograms.stream().filter(Predicate.not(Loaded::shouldDiscard)).toList();
@@ -179,22 +186,27 @@ public abstract class AbstractLibrarySupportLoader extends AbstractProgramLoader
 		for (Loaded<Program> loadedProgram : saveablePrograms) {
 			monitor.increment();
 
-			Program program = loadedProgram.getDomainObject();
-			ExternalManager extManager = program.getExternalManager();
-			String[] extLibNames = extManager.getExternalLibraryNames();
-			if (extLibNames.length == 0 ||
-				(extLibNames.length == 1 && Library.UNKNOWN.equals(extLibNames[0]))) {
-				continue; // skip program if no libraries defined
-			}
-
-			monitor.setMessage("Resolving..." + program.getName());
-			int id = program.startTransaction("Resolving external references");
+			Program program = loadedProgram.getDomainObject(this);
 			try {
-				resolveExternalLibraries(program, saveablePrograms, searchFolders, searchPaths,
-					options, monitor, log);
+				ExternalManager extManager = program.getExternalManager();
+				String[] extLibNames = extManager.getExternalLibraryNames();
+				if (extLibNames.length == 0 ||
+					(extLibNames.length == 1 && Library.UNKNOWN.equals(extLibNames[0]))) {
+					continue; // skip program if no libraries defined
+				}
+
+				monitor.setMessage("Resolving..." + program.getName());
+				int id = program.startTransaction("Resolving external references");
+				try {
+					resolveExternalLibraries(program, saveablePrograms, searchFolders, searchPaths,
+						options, monitor, log);
+				}
+				finally {
+					program.endTransaction(id, true);
+				}
 			}
 			finally {
-				program.endTransaction(id, true);
+				program.release(this);
 			}
 		}
 	}
@@ -408,16 +420,22 @@ public abstract class AbstractLibrarySupportLoader extends AbstractProgramLoader
 	 */
 	protected List<DomainFolder> getLibrarySearchFolders(List<Loaded<Program>> loadedPrograms,
 			Project project, List<Option> options, MessageLog log) {
-		List<DomainFolder> searchFolders = new ArrayList<>();
-		String projectFolderPath = loadedPrograms.get(0).getProjectFolderPath();
-		String destPath = getLibraryDestinationFolderPath(project, projectFolderPath, options);
-		DomainFolder destSearchFolder =
-			getLibraryDestinationSearchFolder(project, destPath, options);
-		DomainFolder linkSearchFolder = getLinkSearchFolder(project,
-			loadedPrograms.getFirst().getDomainObject(), projectFolderPath, options, log);
-		Optional.ofNullable(destSearchFolder).ifPresent(searchFolders::add);
-		Optional.ofNullable(linkSearchFolder).ifPresent(searchFolders::add);
-		return searchFolders;
+		Program firstProgram = loadedPrograms.getFirst().getDomainObject(this);
+		try {
+			List<DomainFolder> searchFolders = new ArrayList<>();
+			String projectFolderPath = loadedPrograms.get(0).getProjectFolderPath();
+			String destPath = getLibraryDestinationFolderPath(project, projectFolderPath, options);
+			DomainFolder destSearchFolder =
+				getLibraryDestinationSearchFolder(project, destPath, options);
+			DomainFolder linkSearchFolder =
+				getLinkSearchFolder(project, firstProgram, projectFolderPath, options, log);
+			Optional.ofNullable(destSearchFolder).ifPresent(searchFolders::add);
+			Optional.ofNullable(linkSearchFolder).ifPresent(searchFolders::add);
+			return searchFolders;
+		}
+		finally {
+			firstProgram.release(this);
+		}
 	}
 
 	/**
@@ -559,12 +577,12 @@ public abstract class AbstractLibrarySupportLoader extends AbstractProgramLoader
 				}
 				else if (isLoadLibraries(options) || shouldSearchAllPaths(program, options, log)) {
 					Loaded<Program> loadedLibrary = loadLibraryFromSearchPaths(library, provider,
-						customSearchPaths, libraryDestFolderPath, unprocessed, depth,
+						project, customSearchPaths, libraryDestFolderPath, unprocessed, depth,
 						desiredLoadSpec, options, log, consumer, monitor);
 					if (loadedLibrary == null) {
-						loadedLibrary = loadLibraryFromSearchPaths(library, provider, searchPaths,
-							libraryDestFolderPath, unprocessed, depth, desiredLoadSpec, options,
-							log, consumer, monitor);
+						loadedLibrary = loadLibraryFromSearchPaths(library, provider, project,
+							searchPaths, libraryDestFolderPath, unprocessed, depth, desiredLoadSpec,
+							options, log, consumer, monitor);
 					}
 					if (loadedLibrary != null) {
 						boolean discarding = !loadLibraries || unprocessedLibrary.discard();
@@ -581,7 +599,7 @@ public abstract class AbstractLibrarySupportLoader extends AbstractProgramLoader
 		}
 		finally {
 			if (!success) {
-				release(loadedPrograms, consumer);
+				loadedPrograms.forEach(Loaded::close);
 			}
 			Stream.of(customSearchPaths, searchPaths)
 					.flatMap(Collection::stream)
@@ -600,6 +618,7 @@ public abstract class AbstractLibrarySupportLoader extends AbstractProgramLoader
 	 *
 	 * @param library The library to load
 	 * @param provider The {@link ByteProvider} of the program being loaded
+	 * @param project The {@link Project}. Could be null if there is no project.
 	 * @param searchPaths A {@link List} of {@link LibrarySearchPath}s that will be searched
 	 * @param libraryDestFolderPath The path of the project folder to load the libraries into. 
 	 *   Could be null if the specified project is null or a destination folder path could not be 
@@ -617,7 +636,7 @@ public abstract class AbstractLibrarySupportLoader extends AbstractProgramLoader
 	 * @throws CancelledException if the user cancelled the load
 	 */
 	private Loaded<Program> loadLibraryFromSearchPaths(String library, ByteProvider provider,
-			List<LibrarySearchPath> searchPaths, String libraryDestFolderPath,
+			Project project, List<LibrarySearchPath> searchPaths, String libraryDestFolderPath,
 			Queue<UnprocessedLibrary> unprocessed, int depth, LoadSpec desiredLoadSpec,
 			List<Option> options, MessageLog log, Object consumer, TaskMonitor monitor)
 			throws CancelledException, IOException {
@@ -662,7 +681,8 @@ public abstract class AbstractLibrarySupportLoader extends AbstractProgramLoader
 						folderPath = joinPaths(folderPath, FilenameUtils.getFullPath(library));
 					}
 				}
-				return new Loaded<Program>(libraryProgram, simpleLibraryName, folderPath);
+				return new Loaded<Program>(libraryProgram, simpleLibraryName, project, folderPath,
+					consumer);
 			}
 		}
 		finally {

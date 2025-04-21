@@ -53,26 +53,19 @@ public class ImportAllProgramsFromADirectoryScript extends GhidraScript {
 				continue;
 			}
 
-			LoadResults<Program> loadResults = null;
-			try {
-				loadResults = ProgramLoader.builder()
-						.source(file)
-						.project(state.getProject())
-						.projectFolderPath(folder.getPathname())
-						.language(language.getLanguage())
-						.compiler(language.getCompilerSpec())
-						.log(log)
-						.monitor(monitor)
-						.load(this);
-				loadResults.getPrimary().save(state.getProject(), log, monitor);
+			try (LoadResults<Program> loadResults = ProgramLoader.builder()
+					.source(file)
+					.project(state.getProject())
+					.projectFolderPath(folder.getPathname())
+					.language(language.getLanguage())
+					.compiler(language.getCompilerSpec())
+					.log(log)
+					.monitor(monitor)
+					.load()) {
+				loadResults.getPrimary().save(monitor);
 			}
 			catch (IOException e) {
 				println("Unable to import program from file " + file.getName());
-			}
-			finally {
-				if (loadResults != null) {
-					loadResults.release(this);
-				}
 			}
 
 			println(log.toString());

@@ -326,7 +326,7 @@ public class ProgramLoader {
 			this.compilerSpecId = cspec != null ? cspec.getCompilerSpecID() : null;
 			return this;
 		}
-
+		
 		/**
 		 * Sets the {@link MessageLog log} to use during import.
 		 * <p>
@@ -359,7 +359,6 @@ public class ProgramLoader {
 		 * Loads the specified {@link #source(ByteProvider)} with this {@link Builder}'s current
 		 * configuration
 		 * 
-		 * @param consumer A consumer to be used during {@link Program} load
 		 * @return The {@link LoadResults} which contains one or more {@link Loaded} 
 		 *   {@link Program}s (created but not saved)
 		 * @throws IOException if there was an IO-related problem loading
@@ -369,8 +368,33 @@ public class ProgramLoader {
 		 *   failed language upgrade
 		 * @throws LoadException if there was a problem loading
 		 */
-		public LoadResults<Program> load(Object consumer)
-				throws IOException, LanguageNotFoundException,
+		public LoadResults<Program> load() throws IOException, LanguageNotFoundException,
+				CancelledException, VersionException, LoadException {
+			return load(this);
+		}
+
+		/**
+		 * Loads the specified {@link #source(ByteProvider)} with this {@link Builder}'s current
+		 * configuration.
+		 * <p>
+		 * NOTE: This method exists to maintain compatibility with the {@link AutoImporter} class,
+		 * whose methods require consumer objects to be passed in. It should not be used by clients
+		 * (use {@link #load()} instead, which uses a built-in consumer).
+		 * 
+		 * @param consumer A reference to the object "consuming" the returned {@link LoadResults}, 
+		 *   used to ensure the underlying {@link Program}s are only closed when every consumer is 
+		 *   done with it (see {@link LoadResults#close()}).
+		 * @return The {@link LoadResults} which contains one or more {@link Loaded} 
+		 *   {@link Program}s (created but not saved)
+		 * @throws IOException if there was an IO-related problem loading
+		 * @throws LanguageNotFoundException if there was a problem getting the language		
+		 * @throws CancelledException if the operation was cancelled 
+		 * @throws VersionException if there was an issue with database versions, probably due to a 
+		 *   failed language upgrade
+		 * @throws LoadException if there was a problem loading
+		 */
+		@SuppressWarnings("unchecked")
+		LoadResults<Program> load(Object consumer) throws IOException, LanguageNotFoundException,
 				CancelledException, VersionException, LoadException {
 			try (ByteProvider p = getSourceAsProvider()) {
 
@@ -387,7 +411,7 @@ public class ProgramLoader {
 					Arrays.toString(LibrarySearchPathManager.getLibraryPaths()));
 				LoadResults<? extends DomainObject> loadResults = loadSpec.getLoader()
 						.load(p, importName, project, projectFolderPath, loadSpec, loaderOptions,
-							log, consumer, monitor);
+							log, Objects.requireNonNullElse(consumer, this), monitor);
 
 				// Optionally echo loader message log to application.log
 				if (!Loader.loggingDisabled && log.hasMessages()) {
@@ -397,13 +421,16 @@ public class ProgramLoader {
 				// Filter out and release non-Programs
 				List<Loaded<Program>> loadedPrograms = new ArrayList<>();
 				for (Loaded<? extends DomainObject> loaded : loadResults) {
-					if (loaded.getDomainObject() instanceof Program program) {
-						loadedPrograms.add(
-							new Loaded<Program>(program, loaded.getName(),
-								loaded.getProjectFolderPath()));
+					if (Program.class.isAssignableFrom(loaded.getDomainObjectType())) {
+						loadedPrograms.add((Loaded<Program>) loaded);
 					}
 					else {
-						loaded.release(consumer);
+						try {
+							loaded.close();
+						}
+						catch (Exception e) {
+							throw new IOException(e);
+						}
 					}
 				}
 				if (loadedPrograms.isEmpty()) {
@@ -411,27 +438,6 @@ public class ProgramLoader {
 				}
 				return new LoadResults<>(loadedPrograms);
 			}
-		}
-
-		/**
-		 * Loads the specified {@link #source(ByteProvider)} with this {@link Builder}'s current
-		 * configuration
-		 * 
-		 * @param consumer A consumer to be used during {@link Program} load
-		 * @return The primary loaded {@link Program} (created but not saved). All non-primary 
-		 *   {@link Program}'s that may have been loaded are automatically released.
-		 * @throws IOException if there was an IO-related problem loading
-		 * @throws LanguageNotFoundException if there was a problem getting the language
-		 * @throws CancelledException if the operation was cancelled 
-		 * @throws VersionException if there was an issue with database versions, probably due to a 
-		 *   failed language upgrade
-		 * @throws LoadException if there was a problem loading
-		 */
-		public Program loadProgram(Object consumer) throws IOException, LanguageNotFoundException,
-				CancelledException, VersionException, LoadException {
-			LoadResults<Program> loadResults = load(consumer);
-			loadResults.releaseNonPrimary(this);
-			return loadResults.getPrimaryDomainObject();
 		}
 
 		/**

@@ -22,7 +22,7 @@ import ghidra.app.util.opinion.Loader;
 /**
  * Filters on one specific loader
  * 
- * @deprecated Use {@link Builder#loaders(Class)} instead
+ * @deprecated Use {@link ProgramLoader.Builder#loaders(Class)} instead
  */
 @Deprecated(since = "11.4", forRemoval = true)
 public class SingleLoaderFilter implements Predicate<Loader> {
@@ -32,7 +32,7 @@ public class SingleLoaderFilter implements Predicate<Loader> {
 	 * Create a new single loader filter from the given loader class.
 	 * 
 	 * @param single The loader class used for this filter.
-	 * @deprecated Use {@link Builder#loaders(Class)} instead
+	 * @deprecated Use {@link ProgramLoader.Builder#loaders(Class)} instead
 	 */
 	@Deprecated(since = "11.4", forRemoval = true)
 	public SingleLoaderFilter(Class<? extends Loader> single) {

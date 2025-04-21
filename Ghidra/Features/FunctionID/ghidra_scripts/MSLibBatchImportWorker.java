@@ -69,7 +69,8 @@ import ghidra.framework.model.*;
 import ghidra.framework.store.local.LocalFileSystem;
 import ghidra.program.model.listing.Program;
 import ghidra.util.InvalidNameException;
-import ghidra.util.exception.*;
+import ghidra.util.exception.CancelledException;
+import ghidra.util.exception.VersionException;
 import ghidra.util.task.TaskMonitor;
 import utilities.util.FileUtilities;
 
@@ -171,8 +172,7 @@ public class MSLibBatchImportWorker extends GhidraScript {
 	}
 
 	private void importLibrary(DomainFolder currentLibraryFolder, File file, MessageLog log)
-			throws CancelledException, DuplicateNameException, InvalidNameException,
-			VersionException, IOException {
+			throws CancelledException, InvalidNameException, VersionException, IOException {
 		try (RandomAccessByteProvider provider = new RandomAccessByteProvider(file)) {
 			if (!CoffArchiveHeader.isMatch(provider)) {
 				return;
@@ -194,9 +194,8 @@ public class MSLibBatchImportWorker extends GhidraScript {
 
 							Pair<DomainFolder, String> pair =
 								getFolderAndUniqueFile(currentLibraryFolder, preferredName);
-							LoadResults<? extends DomainObject> loadResults = null;
-							try {
-								loadResults = ProgramLoader.builder()
+							try (LoadResults<? extends DomainObject> loadResults =
+								ProgramLoader.builder()
 										.source(coffProvider)
 										.project(state.getProject())
 										.projectFolderPath(pair.first.getPathname())
@@ -205,25 +204,24 @@ public class MSLibBatchImportWorker extends GhidraScript {
 										.name(pair.second)
 										.log(log)
 										.monitor(monitor)
-										.load(this);
+										.load()) {
 
 								for (Loaded<? extends DomainObject> loaded : loadResults) {
-									if (loaded.getDomainObject() instanceof Program program) {
-										loaded.save(state.getProject(), log, monitor);
-										println(
-											"Imported " + program.getDomainFile().getPathname());
-										DomainFile progFile = program.getDomainFile();
-
-										if (!progFile.isVersioned()) {
-											progFile.addToVersionControl(initalCheckInComment,
-												false, monitor);
+									DomainObject obj = loaded.getDomainObject(this);
+									try {
+										if (obj instanceof Program) {
+											loaded.save(monitor);
+											DomainFile progFile = obj.getDomainFile();
+											println("Imported " + progFile.getPathname());
+											if (!progFile.isVersioned()) {
+												progFile.addToVersionControl(initalCheckInComment,
+													false, monitor);
+											}
 										}
 									}
-								}
-							}
-							finally {
-								if (loadResults != null) {
-									loadResults.release(this);
+									finally {
+										obj.release(this);
+									}
 								}
 							}
 						}

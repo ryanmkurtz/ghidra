@@ -26,7 +26,7 @@ import ghidra.util.Msg;
 /**
  * An option chooser that applies loader options that were passed in as command line arguments.
  * 
- * @deprecated Use {@link Builder#loaderArgs(List)} instead
+ * @deprecated Use {@link ProgramLoader.Builder#loaderArgs(List)} instead
  */
 @Deprecated(since = "11.4", forRemoval = true)
 public class LoaderArgsOptionChooser implements OptionChooser {
@@ -37,7 +37,7 @@ public class LoaderArgsOptionChooser implements OptionChooser {
 	 * Creates a new {@link LoaderArgsOptionChooser}
 	 * 
 	 * @param loaderArgs The {@link Loader} arguments
-	 * @deprecated Use {@link Builder#loaderArgs(List)} instead
+	 * @deprecated Use {@link ProgramLoader.Builder#loaderArgs(List)} instead
 	 */
 	@Deprecated(since = "11.4", forRemoval = true)
 	public LoaderArgsOptionChooser(List<Pair<String, String>> loaderArgs) {

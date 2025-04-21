@@ -49,10 +49,10 @@ public final class AutoImporter {
 	 * <p>
 	 * Note that when the import completes, the returned {@link Loaded} {@link Program}s are not 
 	 * saved to a project.  That is the responsibility of the caller (see 
-	 * {@link LoadResults#save(Project, Object, MessageLog, TaskMonitor)}).
+	 * {@link LoadResults#save(TaskMonitor)}).
 	 * <p>
-	 * It is also the responsibility of the caller to release the returned {@link Loaded} 
-	 * {@link Program}s with {@link LoadResults#release(Object)} when they are no longer needed.
+	 * It is also the responsibility of the caller to close the returned {@link Loaded} 
+	 * {@link Program}s with {@link LoadResults#close()} when they are no longer needed.
 	 * 
 	 * @param file The {@link File} to import
 	 * @param project The {@link Project}.  Loaders can use this to take advantage of existing
@@ -63,7 +63,9 @@ public final class AutoImporter {
 	 *   reserves the right to change it for each {@link Loaded} result. The {@link Loaded} results 
 	 *   should be queried for their true project folder paths using 
 	 *   {@link Loaded#getProjectFolderPath()}.
-	 * @param consumer A consumer
+	 * @param consumer A reference to the object "consuming" the returned {@link LoadResults}, used
+	 *   to ensure the underlying {@link Program}s are only closed when every consumer is done
+	 *   with it (see {@link LoadResults#close()}).
 	 * @param messageLog The log
 	 * @param monitor A task monitor
 	 * @return The {@link LoadResults} which contains one or more {@link Loaded} {@link Program}s 
@@ -97,10 +99,10 @@ public final class AutoImporter {
 	 * <p>
 	 * Note that when the import completes, the returned {@link Loaded} {@link Program}s are not 
 	 * saved to a project.  That is the responsibility of the caller (see 
-	 * {@link LoadResults#save(Project, Object, MessageLog, TaskMonitor)}).
+	 * {@link LoadResults#save(TaskMonitor)}).
 	 * <p>
-	 * It is also the responsibility of the caller to release the returned {@link Loaded} 
-	 * {@link Program}s with {@link LoadResults#release(Object)} when they are no longer needed.
+	 * It is also the responsibility of the caller to close the returned {@link Loaded} 
+	 * {@link Program}s with {@link LoadResults#close()} when they are no longer needed.
 	 * 
 	 * @param fsrl The {@link FSRL} to import
 	 * @param project The {@link Project}.  Loaders can use this to take advantage of existing
@@ -111,7 +113,9 @@ public final class AutoImporter {
 	 *   reserves the right to change it for each {@link Loaded} result. The {@link Loaded} results 
 	 *   should be queried for their true project folder paths using 
 	 *   {@link Loaded#getProjectFolderPath()}.
-	 * @param consumer A consumer
+	 * @param consumer A reference to the object "consuming" the returned {@link LoadResults}, used
+	 *   to ensure the underlying {@link Program}s are only closed when every consumer is done
+	 *   with it (see {@link LoadResults#close()}).
 	 * @param messageLog The log
 	 * @param monitor A task monitor
 	 * @return The {@link LoadResults} which contains one or more {@link Loaded} {@link Program}s 
@@ -145,10 +149,10 @@ public final class AutoImporter {
 	 * <p>
 	 * Note that when the import completes, the returned {@link Loaded} {@link Program}s are not 
 	 * saved to a project.  That is the responsibility of the caller (see 
-	 * {@link LoadResults#save(Project, Object, MessageLog, TaskMonitor)}).
+	 * {@link LoadResults#save(TaskMonitor)}).
 	 * <p>
-	 * It is also the responsibility of the caller to release the returned {@link Loaded} 
-	 * {@link Program}s with {@link LoadResults#release(Object)} when they are no longer needed.
+	 * It is also the responsibility of the caller to close the returned {@link Loaded} 
+	 * {@link Program}s with {@link LoadResults#close()} when they are no longer needed.
 	 * 
 	 * @param provider The bytes to import
 	 * @param project The {@link Project}.  Loaders can use this to take advantage of existing
@@ -159,7 +163,9 @@ public final class AutoImporter {
 	 *   reserves the right to change it for each {@link Loaded} result. The {@link Loaded} results 
 	 *   should be queried for their true project folder paths using 
 	 *   {@link Loaded#getProjectFolderPath()}.
-	 * @param consumer A consumer
+	 * @param consumer A reference to the object "consuming" the returned {@link LoadResults}, used
+	 *   to ensure the underlying {@link Program}s are only closed when every consumer is done
+	 *   with it (see {@link LoadResults#close()}).
 	 * @param messageLog The log
 	 * @param monitor A task monitor
 	 * @return The {@link LoadResults} which contains one or more {@link Loaded} {@link Program}s 
@@ -192,10 +198,10 @@ public final class AutoImporter {
 	 * <p>
 	 * Note that when the import completes, the returned {@link Loaded} {@link Program}s are not 
 	 * saved to a project.  That is the responsibility of the caller (see 
-	 * {@link LoadResults#save(Project, Object, MessageLog, TaskMonitor)}).
+	 * {@link LoadResults#save(TaskMonitor)}).
 	 * <p>
-	 * It is also the responsibility of the caller to release the returned {@link Loaded} 
-	 * {@link Program}s with {@link LoadResults#release(Object)} when they are no longer needed.
+	 * It is also the responsibility of the caller to close the returned {@link Loaded} 
+	 * {@link Program}s with {@link LoadResults#close()} when they are no longer needed.
 	 * 
 	 * @param file The {@link File} to import
 	 * @param project The {@link Project}.  Loaders can use this to take advantage of existing
@@ -208,7 +214,9 @@ public final class AutoImporter {
 	 *   {@link Loaded#getProjectFolderPath()}.
 	 * @param loaderClass The {@link Loader} class to use
 	 * @param loaderArgs A {@link List} of optional {@link Loader}-specific arguments
-	 * @param consumer A consumer
+	 * @param consumer A reference to the object "consuming" the returned {@link LoadResults}, used
+	 *   to ensure the underlying {@link Program}s are only closed when every consumer is done
+	 *   with it (see {@link LoadResults#close()}).
 	 * @param messageLog The log
 	 * @param monitor A task monitor
 	 * @return The {@link LoadResults} which contains one or more {@link Loaded} {@link Program}s 
@@ -244,10 +252,10 @@ public final class AutoImporter {
 	 * <p>
 	 * Note that when the import completes, the returned {@link Loaded} {@link Program}s are not 
 	 * saved to a project.  That is the responsibility of the caller (see 
-	 * {@link LoadResults#save(Project, Object, MessageLog, TaskMonitor)}).
+	 * {@link LoadResults#save(TaskMonitor)}).
 	 * <p>
-	 * It is also the responsibility of the caller to release the returned {@link Loaded} 
-	 * {@link Program}s with {@link LoadResults#release(Object)} when they are no longer needed.
+	 * It is also the responsibility of the caller to close the returned {@link Loaded} 
+	 * {@link Program}s with {@link LoadResults#close()} when they are no longer needed.
 	 * 
 	 * @param fsrl The {@link FSRL} to import
 	 * @param project The {@link Project}.  Loaders can use this to take advantage of existing
@@ -260,7 +268,9 @@ public final class AutoImporter {
 	 *   {@link Loaded#getProjectFolderPath()}.
 	 * @param loaderClass The {@link Loader} class to use
 	 * @param loaderArgs A {@link List} of optional {@link Loader}-specific arguments
-	 * @param consumer A consumer
+	 * @param consumer A reference to the object "consuming" the returned {@link LoadResults}, used
+	 *   to ensure the underlying {@link Program}s are only closed when every consumer is done
+	 *   with it (see {@link LoadResults#close()}).
 	 * @param messageLog The log
 	 * @param monitor A task monitor
 	 * @return The {@link LoadResults} which contains one or more {@link Loaded} {@link Program}s 
@@ -297,10 +307,10 @@ public final class AutoImporter {
 	 * <p>
 	 * Note that when the import completes, the returned {@link Loaded} {@link Program}s are not 
 	 * saved to a project.  That is the responsibility of the caller (see 
-	 * {@link LoadResults#save(Project, Object, MessageLog, TaskMonitor)}).
+	 * {@link LoadResults#save(TaskMonitor)}).
 	 * <p>
-	 * It is also the responsibility of the caller to release the returned {@link Loaded} 
-	 * {@link Program}s with {@link LoadResults#release(Object)} when they are no longer needed.
+	 * It is also the responsibility of the caller to close the returned {@link Loaded} 
+	 * {@link Program}s with {@link LoadResults#close()} when they are no longer needed.
 	 * 
 	 * @param file The {@link File} to import
 	 * @param project The {@link Project}.  Loaders can use this to take advantage of existing
@@ -313,7 +323,9 @@ public final class AutoImporter {
 	 *   {@link Loaded#getProjectFolderPath()}.
 	 * @param language The desired {@link Language}
 	 * @param compilerSpec The desired {@link CompilerSpec compiler specification}
-	 * @param consumer A consumer
+	 * @param consumer A reference to the object "consuming" the returned {@link LoadResults}, used
+	 *   to ensure the underlying {@link Program}s are only closed when every consumer is done
+	 *   with it (see {@link LoadResults#close()}).
 	 * @param messageLog The log
 	 * @param monitor A task monitor
 	 * @return The {@link LoadResults} which contains one or more {@link Loaded} {@link Program}s 
@@ -349,10 +361,10 @@ public final class AutoImporter {
 	 * <p>
 	 * Note that when the import completes, the returned {@link Loaded} {@link Program}s are not 
 	 * saved to a project.  That is the responsibility of the caller (see 
-	 * {@link LoadResults#save(Project, Object, MessageLog, TaskMonitor)}).
+	 * {@link LoadResults#save(TaskMonitor)}).
 	 * <p>
-	 * It is also the responsibility of the caller to release the returned {@link Loaded} 
-	 * {@link Program}s with {@link LoadResults#release(Object)} when they are no longer needed.
+	 * It is also the responsibility of the caller to close the returned {@link Loaded} 
+	 * {@link Program}s with {@link LoadResults#close()} when they are no longer needed.
 	 * 
 	 * @param fsrl The {@link FSRL} to import
 	 * @param project The {@link Project}.  Loaders can use this to take advantage of existing
@@ -365,7 +377,9 @@ public final class AutoImporter {
 	 *   {@link Loaded#getProjectFolderPath()}.
 	 * @param language The desired {@link Language}
 	 * @param compilerSpec The desired {@link CompilerSpec compiler specification}
-	 * @param consumer A consumer
+	 * @param consumer A reference to the object "consuming" the returned {@link LoadResults}, used
+	 *   to ensure the underlying {@link Program}s are only closed when every consumer is done
+	 *   with it (see {@link LoadResults#close()}).
 	 * @param messageLog The log
 	 * @param monitor A task monitor
 	 * @return The {@link LoadResults} which contains one or more {@link Loaded} {@link Program}s 
@@ -401,10 +415,10 @@ public final class AutoImporter {
 	 * <p>
 	 * Note that when the import completes, the returned {@link Loaded} {@link Program}s are not 
 	 * saved to a project.  That is the responsibility of the caller (see 
-	 * {@link LoadResults#save(Project, Object, MessageLog, TaskMonitor)}).
+	 * {@link LoadResults#save(TaskMonitor)}).
 	 * <p>
-	 * It is also the responsibility of the caller to release the returned {@link Loaded} 
-	 * {@link Program}s with {@link LoadResults#release(Object)} when they are no longer needed.
+	 * It is also the responsibility of the caller to close the returned {@link Loaded} 
+	 * {@link Program}s with {@link LoadResults#close()} when they are no longer needed.
 	 * 
 	 * @param file The {@link File} to import
 	 * @param project The {@link Project}.  Loaders can use this to take advantage of existing
@@ -419,7 +433,9 @@ public final class AutoImporter {
 	 * @param loaderArgs A {@link List} of optional {@link Loader}-specific arguments
 	 * @param language The desired {@link Language}
 	 * @param compilerSpec The desired {@link CompilerSpec compiler specification}
-	 * @param consumer A consumer
+	 * @param consumer A reference to the object "consuming" the returned {@link LoadResults}, used
+	 *   to ensure the underlying {@link Program}s are only closed when every consumer is done
+	 *   with it (see {@link LoadResults#close()}).
 	 * @param messageLog The log
 	 * @param monitor A task monitor
 	 * @return The {@link LoadResults} which contains one or more {@link Loaded} {@link Program}s 
@@ -457,10 +473,10 @@ public final class AutoImporter {
 	 * <p>
 	 * Note that when the import completes, the returned {@link Loaded} {@link Program}s are not 
 	 * saved to a project.  That is the responsibility of the caller (see 
-	 * {@link LoadResults#save(Project, Object, MessageLog, TaskMonitor)}).
+	 * {@link LoadResults#save(TaskMonitor)}).
 	 * <p>
-	 * It is also the responsibility of the caller to release the returned {@link Loaded} 
-	 * {@link Program}s with {@link LoadResults#release(Object)} when they are no longer needed.
+	 * It is also the responsibility of the caller to close the returned {@link Loaded} 
+	 * {@link Program}s with {@link LoadResults#close()} when they are no longer needed.
 	 * 
 	 * @param fsrl The {@link FSRL} to import
 	 * @param project The {@link Project}.  Loaders can use this to take advantage of existing
@@ -475,7 +491,9 @@ public final class AutoImporter {
 	 * @param loaderArgs A {@link List} of optional {@link Loader}-specific arguments
 	 * @param language The desired {@link Language}
 	 * @param compilerSpec The desired {@link CompilerSpec compiler specification}
-	 * @param consumer A consumer
+	 * @param consumer A reference to the object "consuming" the returned {@link LoadResults}, used
+	 *   to ensure the underlying {@link Program}s are only closed when every consumer is done
+	 *   with it (see {@link LoadResults#close()}).
 	 * @param messageLog The log
 	 * @param monitor A task monitor
 	 * @return The {@link LoadResults} which contains one or more {@link Loaded} {@link Program}s 
@@ -513,10 +531,10 @@ public final class AutoImporter {
 	 * <p>
 	 * Note that when the import completes, the returned {@link Loaded} {@link Program} is 
 	 * not saved to a project.  That is the responsibility of the caller (see 
-	 * {@link Loaded#save(Project, MessageLog, TaskMonitor)}).
+	 * {@link Loaded#save(TaskMonitor)}).
 	 * <p>
-	 * It is also the responsibility of the caller to release the returned {@link Loaded} 
-	 * {@link Program} with {@link Loaded#release(Object)} when it is no longer needed.
+	 * It is also the responsibility of the caller to close the returned {@link Loaded} 
+	 * {@link Program} with {@link Loaded#close()} when it is no longer needed.
 	 * 
 	 * @param file The {@link File} to import
 	 * @param project The {@link Project}.  Loaders can use this to take advantage of existing
@@ -529,7 +547,9 @@ public final class AutoImporter {
 	 *   {@link Loaded#getProjectFolderPath()}.
 	 * @param language The desired {@link Language}
 	 * @param compilerSpec The desired {@link CompilerSpec compiler specification}
-	 * @param consumer A consumer
+	 * @param consumer A reference to the object "consuming" the returned {@link Loaded} 
+	 *   {@link Program}, used to ensure the underlying {@link Program} is only closed when every 
+	 *   consumer is done with it (see {@link Loaded#close()}).
 	 * @param messageLog The log
 	 * @param monitor A task monitor
 	 * @return The {@link Loaded} {@link Program} (created but not saved)
@@ -547,7 +567,7 @@ public final class AutoImporter {
 			String projectFolderPath, Language language, CompilerSpec compilerSpec, Object consumer,
 			MessageLog messageLog, TaskMonitor monitor) throws IOException, CancelledException,
 			DuplicateNameException, InvalidNameException, VersionException, LoadException {
-		LoadResults<Program> loadResults = ProgramLoader.builder()
+		try (LoadResults<Program> loadResults = ProgramLoader.builder()
 				.source(file)
 				.project(project)
 				.projectFolderPath(projectFolderPath)
@@ -556,10 +576,9 @@ public final class AutoImporter {
 				.compiler(compilerSpec)
 				.log(messageLog)
 				.monitor(monitor)
-				.load(consumer);
-
-		loadResults.releaseNonPrimary(consumer);
-		return loadResults.getPrimary();
+				.load(consumer)) {
+			return loadResults.removePrimary();
+		}
 	}
 
 	/**
@@ -568,10 +587,10 @@ public final class AutoImporter {
 	 * <p>
 	 * Note that when the import completes, the returned {@link Loaded} {@link Program} is 
 	 * not saved to a project.  That is the responsibility of the caller (see 
-	 * {@link Loaded#save(Project, MessageLog, TaskMonitor)}).
+	 * {@link Loaded#save(TaskMonitor)}).
 	 * <p>
-	 * It is also the responsibility of the caller to release the returned {@link Loaded} 
-	 * {@link Program} with {@link Loaded#release(Object)} when it is no longer needed.
+	 * It is also the responsibility of the caller to close the returned {@link Loaded} 
+	 * {@link Program} with {@link Loaded#close()} when it is no longer needed.
 	 * 
 	 * @param bytes The bytes to import
 	 * @param project The {@link Project}.  Loaders can use this to take advantage of existing
@@ -584,7 +603,9 @@ public final class AutoImporter {
 	 *   {@link Loaded#getProjectFolderPath()}.
 	 * @param language The desired {@link Language}
 	 * @param compilerSpec The desired {@link CompilerSpec compiler specification}
-	 * @param consumer A consumer
+	 * @param consumer A reference to the object "consuming" the returned {@link Loaded} 
+	 *   {@link Program}, used to ensure the underlying {@link Program} is only closed when every 
+	 *   consumer is done with it (see {@link Loaded#close()}).
 	 * @param messageLog The log
 	 * @param monitor A task monitor
 	 * @return The {@link Loaded} {@link Program} (created but not saved)
@@ -603,7 +624,7 @@ public final class AutoImporter {
 			Object consumer, MessageLog messageLog, TaskMonitor monitor) throws IOException,
 			CancelledException, DuplicateNameException, InvalidNameException, VersionException,
 			LoadException {
-		LoadResults<Program> loadResults = ProgramLoader.builder()
+		try (LoadResults<Program> loadResults = ProgramLoader.builder()
 				.source(bytes)
 				.project(project)
 				.projectFolderPath(projectFolderPath)
@@ -612,9 +633,9 @@ public final class AutoImporter {
 				.compiler(compilerSpec)
 				.log(messageLog)
 				.monitor(monitor)
-				.load(consumer);
-		loadResults.releaseNonPrimary(consumer);
-		return loadResults.getPrimary();
+				.load(consumer)) {
+			return loadResults.removePrimary();
+		}
 	}
 
 	/**
@@ -622,10 +643,10 @@ public final class AutoImporter {
 	 * <p>
 	 * Note that when the import completes, the returned {@link Loaded} {@link Program}s are not 
 	 * saved to a project.  That is the responsibility of the caller (see 
-	 * {@link LoadResults#save(Project, Object, MessageLog, TaskMonitor)}).
+	 * {@link LoadResults#save(TaskMonitor)}).
 	 * <p>
 	 * It is also the responsibility of the caller to release the returned {@link Loaded} 
-	 * {@link Program}s with {@link LoadResults#release(Object)} when they are no longer needed.
+	 * {@link Program}s with {@link LoadResults#close()} when they are no longer needed.
 	 * 
 	 * @param file The {@link File} to import
 	 * @param project The {@link Project}.  Loaders can use this to take advantage of existing
@@ -643,7 +664,9 @@ public final class AutoImporter {
 	 *   {@link Loader}'s preferred name.
 	 * @param optionChooser A {@link OptionChooser} used to choose what {@link Loader} options get
 	 *   used
-	 * @param consumer A consumer
+	 * @param consumer A reference to the object "consuming" the returned {@link LoadResults}, used
+	 *   to ensure the underlying {@link Program}s are only closed when every consumer is done
+	 *   with it (see {@link LoadResults#close()}).
 	 * @param messageLog The log
 	 * @param monitor A task monitor
 	 * @return The {@link LoadResults} which contains one or more {@link Loaded} {@link Program}s 
@@ -683,10 +706,10 @@ public final class AutoImporter {
 	 * <p>
 	 * Note that when the import completes, the returned {@link Loaded} {@link Program}s are not 
 	 * saved to a project.  That is the responsibility of the caller (see 
-	 * {@link LoadResults#save(Project, Object, MessageLog, TaskMonitor)}).
+	 * {@link LoadResults#save(TaskMonitor)}).
 	 * <p>
 	 * It is also the responsibility of the caller to release the returned {@link Loaded} 
-	 * {@link Program}s with {@link LoadResults#release(Object)} when they are no longer needed.
+	 * {@link Program}s with {@link LoadResults#close()} when they are no longer needed.
 	 * 
 	 * @param fsrl The {@link FSRL} to import
 	 * @param project The {@link Project}.  Loaders can use this to take advantage of existing
@@ -704,7 +727,9 @@ public final class AutoImporter {
 	 *   {@link Loader}'s preferred name.
 	 * @param optionChooser A {@link OptionChooser} used to choose what {@link Loader} options get
 	 *   used
-	 * @param consumer A consumer
+	 * @param consumer A reference to the object "consuming" the returned {@link LoadResults}, used
+	 *   to ensure the underlying {@link Program}s are only closed when every consumer is done
+	 *   with it (see {@link LoadResults#close()}).
 	 * @param messageLog The log
 	 * @param monitor A task monitor
 	 * @return The {@link LoadResults} which contains one or more {@link Loaded} {@link Program}s 
@@ -744,10 +769,10 @@ public final class AutoImporter {
 	 * <p>
 	 * Note that when the import completes, the returned {@link Loaded} {@link Program}s are not 
 	 * saved to a project.  That is the responsibility of the caller (see 
-	 * {@link LoadResults#save(Project, Object, MessageLog, TaskMonitor)}).
+	 * {@link LoadResults#save(TaskMonitor)}).
 	 * <p>
 	 * It is also the responsibility of the caller to release the returned {@link Loaded} 
-	 * {@link Program}s with {@link LoadResults#release(Object)} when they are no longer needed.
+	 * {@link Program}s with {@link LoadResults#close()} when they are no longer needed.
 	 * 
 	 * @param provider The bytes to import
 	 * @param project The {@link Project}.  Loaders can use this to take advantage of existing
@@ -765,7 +790,9 @@ public final class AutoImporter {
 	 *   {@link Loader}'s preferred name.
 	 * @param optionChooser A {@link OptionChooser} used to choose what {@link Loader} options get
 	 *   used
-	 * @param consumer A consumer
+	 * @param consumer A reference to the object "consuming" the returned {@link LoadResults}, used
+	 *   to ensure the underlying {@link Program}s are only closed when every consumer is done
+	 *   with it (see {@link LoadResults#close()}).
 	 * @param messageLog The log
 	 * @param monitor A task monitor
 	 * @return The {@link LoadResults} which contains one or more {@link Loaded} {@link Program}s 

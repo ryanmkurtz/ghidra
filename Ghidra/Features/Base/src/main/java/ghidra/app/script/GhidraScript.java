@@ -44,8 +44,7 @@ import ghidra.app.util.demangler.DemangledObject;
 import ghidra.app.util.demangler.DemanglerUtil;
 import ghidra.app.util.dialog.AskAddrDialog;
 import ghidra.app.util.importer.ProgramLoader;
-import ghidra.app.util.opinion.BinaryLoader;
-import ghidra.app.util.opinion.LoadException;
+import ghidra.app.util.opinion.*;
 import ghidra.app.util.query.TableService;
 import ghidra.app.util.viewer.field.BrowserCodeUnitFormat;
 import ghidra.app.util.viewer.field.CommentUtils;
@@ -3634,12 +3633,12 @@ public abstract class GhidraScript extends FlatProgramAPI {
 	 * @throws Exception if any exceptions occur while importing
 	 */
 	public Program importFile(File file) throws Exception {
-		try {
-			return ProgramLoader.builder()
-					.source(file)
-					.project(state.getProject())
-					.monitor(monitor)
-					.loadProgram(this);
+		try (LoadResults<Program> loadResults = ProgramLoader.builder()
+				.source(file)
+				.project(state.getProject())
+				.monitor(monitor)
+				.load()) {
+			return loadResults.getPrimaryDomainObject(this);
 		}
 		catch (LoadException e) {
 			return null;
@@ -3662,15 +3661,15 @@ public abstract class GhidraScript extends FlatProgramAPI {
 	 */
 	public Program importFileAsBinary(File file, Language language, CompilerSpec compilerSpec)
 			throws Exception {
-		try {
-			return ProgramLoader.builder()
-					.source(file)
-					.project(state.getProject())
-					.loaders(BinaryLoader.class)
-					.language(language)
-					.compiler(compilerSpec)
-					.monitor(monitor)
-					.loadProgram(this);
+		try (LoadResults<Program> loadResults = ProgramLoader.builder()
+				.source(file)
+				.project(state.getProject())
+				.loaders(BinaryLoader.class)
+				.language(language)
+				.compiler(compilerSpec)
+				.monitor(monitor)
+				.load()) {
+			return loadResults.getPrimaryDomainObject(this);
 		}
 		catch (LoadException e) {
 			return null;

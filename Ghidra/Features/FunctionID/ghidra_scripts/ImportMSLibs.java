@@ -29,7 +29,6 @@ import ghidra.app.util.importer.MessageLog;
 import ghidra.app.util.importer.ProgramLoader;
 import ghidra.app.util.opinion.*;
 import ghidra.framework.model.DomainFolder;
-import ghidra.framework.model.DomainObject;
 import ghidra.framework.store.local.LocalFileSystem;
 import ghidra.program.model.lang.LanguageDescription;
 import ghidra.program.model.listing.Program;
@@ -101,7 +100,7 @@ public class ImportMSLibs extends GhidraScript {
 						if (CoffMachineType.isMachineTypeDefined(header.getMagic())) {
 							String[] splits = splitPreferredName(preferredName);
 
-							LoadResults<? extends DomainObject> loadResults =
+							try (LoadResults<Program> loadResults =
 								ProgramLoader.builder()
 										.source(coffProvider)
 										.project(state.getProject())
@@ -113,20 +112,19 @@ public class ImportMSLibs extends GhidraScript {
 												splits[splits.length - 1]))
 										.log(log)
 										.monitor(new CancelOnlyWrappingTaskMonitor(monitor))
-										.load(this);
-
-							try {
-								for (Loaded<? extends DomainObject> loaded : loadResults) {
-									if (loaded.getDomainObject() instanceof Program program) {
-										loaded.save(state.getProject(), log, monitor);
+										.load()) {
+								for (Loaded<Program> loaded : loadResults) {
+									Program program = loaded.getDomainObject(this);
+									try {
+										loaded.save(monitor);
 										DomainFolder destination =
 											establishFolder(root, file, program, isDebug, splits);
 										program.getDomainFile().moveTo(destination);
 									}
+									finally {
+										program.release(this);
+									}
 								}
-							}
-							finally {
-								loadResults.release(this);
 							}
 						}
 					}

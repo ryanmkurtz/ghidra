@@ -30,7 +30,6 @@ import generic.theme.GThemeDefaults.Colors;
 import generic.theme.GThemeDefaults.Colors.Palette;
 import ghidra.app.plugin.core.codebrowser.CodeViewerProvider;
 import ghidra.app.plugin.core.references.*;
-import ghidra.app.util.importer.MessageLog;
 import ghidra.app.util.importer.ProgramLoader;
 import ghidra.app.util.opinion.LoadResults;
 import ghidra.framework.main.DataTreeDialog;
@@ -303,17 +302,12 @@ public class ReferencesPluginScreenShots extends GhidraScreenShotGenerator {
 
 	private void importFile(File file) throws CancelledException, VersionException, IOException {
 		Project project = env.getProject();
-		LoadResults<Program> loadResults = ProgramLoader.builder()
+		try (LoadResults<Program> loadResults = ProgramLoader.builder()
 				.source(file)
 				.project(project)
 				.projectFolderPath(project.getProjectData().getRootFolder().getPathname())
-				.load(this);
-
-		try {
-			loadResults.getPrimary().save(project, new MessageLog(), TaskMonitor.DUMMY);
-		}
-		finally {
-			loadResults.release(this);
+				.load()) {
+			loadResults.getPrimary().save(TaskMonitor.DUMMY);
 		}
 	}
 

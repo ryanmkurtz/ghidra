@@ -83,11 +83,10 @@ public interface Loader extends ExtensionPoint, Comparable<Loader> {
 	 * <p>
 	 * Note that when the load completes, the returned {@link Loaded} {@link DomainObject}s are not 
 	 * saved to a project.  That is the responsibility of the caller (see 
-	 * {@link LoadResults#save(Project, Object, MessageLog, TaskMonitor)}).
+	 * {@link LoadResults#save(TaskMonitor)}).
 	 * <p>
 	 * It is also the responsibility of the caller to release the returned {@link Loaded} 
-	 * {@link DomainObject}s with {@link LoadResults#release(Object)} when they are no longer
-	 * needed.
+	 * {@link DomainObject}s with {@link LoadResults#close()} when they are no longer needed.
 	 *
 	 * @param provider The bytes to load.
 	 * @param loadedName A suggested name for the primary {@link Loaded} {@link DomainObject}. 

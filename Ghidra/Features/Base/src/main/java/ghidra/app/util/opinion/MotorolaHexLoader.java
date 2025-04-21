@@ -172,7 +172,7 @@ public class MotorolaHexLoader extends AbstractProgramLoader {
 		Program prog = createProgram(provider, programName, null, getName(), importerLanguage,
 			importerCompilerSpec, consumer);
 		List<Loaded<Program>> loadedList =
-			List.of(new Loaded<>(prog, programName, programFolderPath));
+			List.of(new Loaded<>(prog, programName, project, programFolderPath, consumer));
 		boolean success = false;
 		try {
 			loadInto(provider, loadSpec, options, log, prog, monitor);
@@ -182,7 +182,7 @@ public class MotorolaHexLoader extends AbstractProgramLoader {
 		}
 		finally {
 			if (!success) {
-				release(loadedList, consumer);
+				loadedList.forEach(Loaded::close);
 			}
 		}
 	}

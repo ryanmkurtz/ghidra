@@ -18,7 +18,6 @@ package ghidra.app.util.opinion;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
-import ghidra.app.util.importer.MessageLog;
 import ghidra.framework.model.*;
 import ghidra.util.InvalidNameException;
 import ghidra.util.exception.*;
@@ -30,15 +29,17 @@ import ghidra.util.task.TaskMonitor;
  * for the loaded {@link DomainObject}, should it get saved to a project.
  * <p>
  * NOTE: If an object of this type is marked as {@link #setDiscard(boolean) discardable}, it should
- * be {@link #release(Object) released} and not saved. 
+ * be {@link #close() closed} and not saved. 
  * 
  * @param <T> The type of {@link DomainObject} that was loaded
  */
-public class Loaded<T extends DomainObject> {
+public class Loaded<T extends DomainObject> implements AutoCloseable {
 
 	private final T domainObject;
 	private final String name;
+	private Project project;
 	private String projectFolderPath;
+	private Object consumer;
 
 	private DomainFile domainFile;
 	private boolean ignoreSave;
@@ -48,16 +49,24 @@ public class Loaded<T extends DomainObject> {
 	 * Creates a new {@link Loaded} object
 	 * 
 	 * @param domainObject The loaded {@link DomainObject}
-	 * @param name The name of the loaded {@link DomainObject}.  If a 
-	 *   {@link #save(Project, MessageLog, TaskMonitor)} occurs, this will attempted to be used for
-	 *   the resulting {@link DomainFile}'s name.
+	 * @param name The name of the loaded {@link DomainObject}.  If a {@link #save(TaskMonitor)} 
+	 *   occurs, this will attempted to be used for the resulting {@link DomainFile}'s name.
+	 * @param project If not null, the project this will get saved to during a 
+	 *   {@link #save(TaskMonitor)} operation
 	 * @param projectFolderPath The project folder path this will get saved to during a 
-	 *   {@link #save(Project, MessageLog, TaskMonitor)} operation.  If null or empty, the root 
-	 *   project folder will be used.
+	 *   {@link #save(TaskMonitor)} operation.  If null or empty, the root project folder will be 
+	 *   used.
+	 * @param consumer The consumer of the {@code domainObject}, which will get used when this 
+	 *   object is {@link #close() closed}. Wrapping a {@link DomainObject} in a {@link Loaded} 
+	 *   transfers responsibility of releasing the {@link DomainObject} to this {@link Loaded}'s 
+	 *   {@link #close()} method.
 	 */
-	public Loaded(T domainObject, String name, String projectFolderPath) {
+	public Loaded(T domainObject, String name, Project project, String projectFolderPath,
+			Object consumer) {
 		this.domainObject = domainObject;
 		this.name = name;
+		this.project = project;
+		this.consumer = consumer;
 		setProjectFolderPath(projectFolderPath);
 	}
 
@@ -67,26 +76,46 @@ public class Loaded<T extends DomainObject> {
 	 * 
 	 * @param domainObject The loaded {@link DomainObject}
 	 * @param domainFile The {@link DomainFile} to be loaded
+	 * @param consumer The consumer of the {@code domainObject}, which will get used when this object is
+	 *   {@link #close() closed}. Wrapping a {@link DomainObject} in a {@link Loaded} transfers
+	 *   responsibility of releasing the {@link DomainObject} to this {@link Loaded}'s 
+	 *   {@link #close()} method.
 	 */
-	public Loaded(T domainObject, DomainFile domainFile) {
-		this(domainObject, domainFile.getName(), domainFile.getParent().getPathname());
+	public Loaded(T domainObject, DomainFile domainFile, Object consumer) {
+		this(domainObject, domainFile.getName(), null, domainFile.getParent().getPathname(),
+			consumer);
 		this.domainFile = domainFile;
 		this.ignoreSave = true;
 	}
 
 	/**
-	 * Gets the loaded {@link DomainObject}
+	 * Gets the loaded {@link DomainObject}.
+	 * <p>
+	 * NOTE: Calling this method "consumes" the {@link DomainObject}. It is the responsibility of
+	 * the caller to properly {@link DomainObject#release(Object) release} it when done. This
+	 * {@link DomainObject#release(Object)} does not replace the requirement to 
+	 * {@link #close()} the {@link Loaded} object when done.
 	 * 
+	 * @param con The consumer of the returned {@link DomainObject}
 	 * @return The loaded {@link DomainObject}
 	 */
-	public T getDomainObject() {
+	public T getDomainObject(Object con) {
+		domainObject.addConsumer(con);
 		return domainObject;
 	}
 
 	/**
-	 * Gets the name of the loaded {@link DomainObject}.  If a 
-	 * {@link #save(Project, MessageLog, TaskMonitor)} occurs, this will attempted to be used for
-	 * the resulting {@link DomainFile}'s name.
+	 * Gets the loaded {@link DomainObject}'s type
+	 * 
+	 * @return the loaded {@link DomainObject}'s type
+	 */
+	public Class<? extends DomainObject> getDomainObjectType() {
+		return domainObject.getClass();
+	}
+
+	/**
+	 * Gets the name of the loaded {@link DomainObject}.  If a {@link #save(TaskMonitor)} occurs, 
+	 * this will attempted to be used for the resulting {@link DomainFile}'s name.
 	 * 
 	 * @return the name of the loaded {@link DomainObject}
 	 */
@@ -95,8 +124,18 @@ public class Loaded<T extends DomainObject> {
 	}
 
 	/**
-	 * Gets the project folder path this will get saved to during a 
-	 * {@link #save(Project, MessageLog, TaskMonitor)} operation.
+	 * Gets the {@link Project} this will get saved to during a {@link #save(TaskMonitor)} operation
+	 *
+	 *@return The {@link Project} this will get saved to during a {@link #save(TaskMonitor)} 
+	 *  operation (could be null)
+	 */
+	public Project getProject() {
+		return project;
+	}
+
+	/**
+	 * Gets the project folder path this will get saved to during a {@link #save(TaskMonitor)} 
+	 * operation.
 	 * <p>
 	 * NOTE: The returned path will always end with a "/".
 	 * 
@@ -107,12 +146,12 @@ public class Loaded<T extends DomainObject> {
 	}
 
 	/**
-	 * Sets the project folder path this will get saved to during a
-	 * {@link #save(Project, MessageLog, TaskMonitor)} operation.
+	 * Sets the project folder path this will get saved to during a {@link #save(TaskMonitor)} 
+	 * operation.
 	 * 
 	 * @param projectFolderPath The project folder path this will get saved to during a 
-	 *   {@link #save(Project, MessageLog, TaskMonitor)} operation.  If null or empty, the root 
-	 *   project folder will be used.
+	 *   {@link #save(TaskMonitor)} operation.  If null or empty, the root project folder will be 
+	 *   used.
 	 */
 	public void setProjectFolderPath(String projectFolderPath) {
 		if (projectFolderPath == null || projectFolderPath.isBlank()) {
@@ -125,19 +164,6 @@ public class Loaded<T extends DomainObject> {
 	}
 
 	/**
-	 * Notify the loaded {@link DomainObject} that the specified consumer is no longer using it.
-	 * When the last consumer invokes this method, the loaded {@link DomainObject} will be closed
-	 * and will become invalid.
-	 * 
-	 * @param consumer the consumer
-	 */
-	public void release(Object consumer) {
-		if (!domainObject.isClosed() && domainObject.isUsedBy(consumer)) {
-			domainObject.release(consumer);
-		}
-	}
-
-	/**
 	 * Saves the loaded {@link DomainObject} to the given {@link Project} at this object's 
 	 * project folder path, using this object's name.
 	 * <p>
@@ -146,8 +172,6 @@ public class Loaded<T extends DomainObject> {
 	 * Therefore, it should not be assumed that the returned {@link DomainFile} will have the same
 	 * name as a call to {@link #getName()}.
 	 * 
-	 * @param project The {@link Project} to save to
-	 * @param messageLog The log
 	 * @param monitor A cancelable task monitor
 	 * @return The {@link DomainFile} where the save happened
 	 * @throws CancelledException if the operation was cancelled
@@ -155,7 +179,7 @@ public class Loaded<T extends DomainObject> {
 	 * @throws IOException If there was an IO-related error, an invalid name was specified, or it
 	 *   was already successfully saved and still exists
 	 */
-	public DomainFile save(Project project, MessageLog messageLog, TaskMonitor monitor)
+	public DomainFile save(TaskMonitor monitor)
 			throws CancelledException, ClosedException, IOException {
 
 		if (ignoreSave) {
@@ -202,13 +226,13 @@ public class Loaded<T extends DomainObject> {
 
 	/**
 	 * Gets the loaded {@link DomainObject}'s associated {@link DomainFile} that was
-	 * {@link #save(Project, MessageLog, TaskMonitor) saved}
+	 * {@link #save(TaskMonitor) saved}
 	 * 
 	 * @return The loaded {@link DomainObject}'s associated saved {@link DomainFile}, or null if 
 	 *   was not saved
 	 * @throws FileNotFoundException If the loaded {@link DomainObject} was saved but the associated
 	 *   {@link DomainFile} no longer exists
-	 * @see #save(Project, MessageLog, TaskMonitor)
+	 * @see #save(TaskMonitor)
 	 */
 	public DomainFile getSavedDomainFile() throws FileNotFoundException {
 		if (domainFile != null && !domainFile.exists()) {
@@ -239,21 +263,25 @@ public class Loaded<T extends DomainObject> {
 
 
 	/**
-	 * Deletes the loaded {@link DomainObject}'s associated {@link DomainFile} that was
-	 * {@link #save(Project, MessageLog, TaskMonitor) saved}.  This method has no effect if it was
-	 * never saved.
-	 * <p>
-	 * NOTE: The loaded {@link DomainObject} must be {@link #release(Object) released} prior to
-	 * calling this method.
+	 * {@link #close() Closes} this {@link Loaded} and deletes the loaded {@link DomainObject}'s 
+	 * associated {@link DomainFile} that was {@link #save(TaskMonitor) saved}.  This method has no 
+	 * effect if it was never saved.
 	 * 
-	 * @param consumer the consumer
 	 * @throws IOException If there was an issue deleting the saved {@link DomainFile}
-	 * @see #save(Project, MessageLog, TaskMonitor)
+	 * @see #save(TaskMonitor)
 	 */
-	void deleteSavedDomainFile(Object consumer) throws IOException {
+	void closeAndDelete() throws IOException {
+		close();
 		if (domainFile != null && domainFile.exists()) {
 			domainFile.delete();
 			domainFile = null;
+		}
+	}
+
+	@Override
+	public void close() {
+		if (consumer != null && !domainObject.isClosed() && domainObject.isUsedBy(consumer)) {
+			domainObject.release(consumer);
 		}
 	}
 

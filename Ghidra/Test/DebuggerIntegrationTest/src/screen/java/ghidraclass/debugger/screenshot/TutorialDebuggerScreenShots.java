@@ -74,7 +74,6 @@ import ghidra.app.plugin.core.terminal.TerminalProvider;
 import ghidra.app.script.GhidraState;
 import ghidra.app.services.*;
 import ghidra.app.services.DebuggerEmulationService.EmulationResult;
-import ghidra.app.util.importer.MessageLog;
 import ghidra.app.util.importer.ProgramLoader;
 import ghidra.app.util.opinion.LoadResults;
 import ghidra.async.AsyncTestUtils;
@@ -389,18 +388,15 @@ public class TutorialDebuggerScreenShots extends GhidraScreenShotGenerator
 
 	protected Program importModule(TraceModule module) throws Throwable {
 		Program prog = null;
-		try {
-			long snap = flatDbg.getCurrentSnap();
-			MessageLog log = new MessageLog();
-			LoadResults<Program> result = ProgramLoader.builder()
+		long snap = flatDbg.getCurrentSnap();
+		try (LoadResults<Program> result = ProgramLoader.builder()
 					.source(new File(module.getName(snap)))
 					.project(env.getProject())
-					.log(log)
 					.monitor(monitor)
-					.load(this);
+				.load()) {
 
-			result.save(env.getProject(), this, log, monitor);
-			prog = result.getPrimaryDomainObject();
+			result.save(monitor);
+			prog = result.getPrimaryDomainObject(this);
 			GhidraProgramUtilities.markProgramNotToAskToAnalyze(prog);
 			programManager.openProgram(prog);
 		}

@@ -65,7 +65,7 @@ public class ExternalSymbolResolverAnalyzer extends AbstractAnalyzer {
 			throws CancelledException {
 
 		try (ExternalSymbolResolver esr = new ExternalSymbolResolver(
-			program.getDomainFile().getParent().getProjectData(), monitor)) {
+			program.getDomainFile().getParent().getProjectData(), this, monitor)) {
 			esr.addProgramToFixup(program);
 			esr.fixUnresolvedExternalSymbols();
 			esr.logInfo(s -> Msg.info(this, s), false);

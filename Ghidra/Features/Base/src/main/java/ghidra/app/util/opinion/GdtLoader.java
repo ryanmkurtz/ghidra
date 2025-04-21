@@ -60,7 +60,7 @@ public class GdtLoader implements Loader {
 
 		DataTypeArchive dtArchive =
 			loadPackedProgramDatabase(provider, filename, consumer, monitor);
-		return new LoadResults<>(dtArchive, filename, projectFolderPath);
+		return new LoadResults<>(dtArchive, filename, project, projectFolderPath, consumer);
 	}
 
 	private DataTypeArchive loadPackedProgramDatabase(ByteProvider provider, String programName,

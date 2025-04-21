@@ -49,10 +49,10 @@ public final class AutoImporter {
 	 * <p>
 	 * Note that when the import completes, the returned {@link Loaded} {@link Program}s are not 
 	 * saved to a project.  That is the responsibility of the caller (see 
-	 * {@link LoadResults#save(Project, Object, MessageLog, TaskMonitor)}).
+	 * {@link LoadResults#save(TaskMonitor)}).
 	 * <p>
-	 * It is also the responsibility of the caller to release the returned {@link Loaded} 
-	 * {@link Program}s with {@link LoadResults#release(Object)} when they are no longer needed.
+	 * It is also the responsibility of the caller to close the returned {@link Loaded} 
+	 * {@link Program}s with {@link LoadResults#close()} when they are no longer needed.
 	 * 
 	 * @param file The {@link File} to import
 	 * @param project The {@link Project}.  Loaders can use this to take advantage of existing
@@ -97,10 +97,10 @@ public final class AutoImporter {
 	 * <p>
 	 * Note that when the import completes, the returned {@link Loaded} {@link Program}s are not 
 	 * saved to a project.  That is the responsibility of the caller (see 
-	 * {@link LoadResults#save(Project, Object, MessageLog, TaskMonitor)}).
+	 * {@link LoadResults#save(TaskMonitor)}).
 	 * <p>
 	 * It is also the responsibility of the caller to release the returned {@link Loaded} 
-	 * {@link Program}s with {@link LoadResults#release(Object)} when they are no longer needed.
+	 * {@link Program}s with {@link LoadResults#close()} when they are no longer needed.
 	 * 
 	 * @param fsrl The {@link FSRL} to import
 	 * @param project The {@link Project}.  Loaders can use this to take advantage of existing
@@ -145,10 +145,10 @@ public final class AutoImporter {
 	 * <p>
 	 * Note that when the import completes, the returned {@link Loaded} {@link Program}s are not 
 	 * saved to a project.  That is the responsibility of the caller (see 
-	 * {@link LoadResults#save(Project, Object, MessageLog, TaskMonitor)}).
+	 * {@link LoadResults#save(TaskMonitor)}).
 	 * <p>
 	 * It is also the responsibility of the caller to release the returned {@link Loaded} 
-	 * {@link Program}s with {@link LoadResults#release(Object)} when they are no longer needed.
+	 * {@link Program}s with {@link LoadResults#close()} when they are no longer needed.
 	 * 
 	 * @param provider The bytes to import
 	 * @param project The {@link Project}.  Loaders can use this to take advantage of existing
@@ -192,10 +192,10 @@ public final class AutoImporter {
 	 * <p>
 	 * Note that when the import completes, the returned {@link Loaded} {@link Program}s are not 
 	 * saved to a project.  That is the responsibility of the caller (see 
-	 * {@link LoadResults#save(Project, Object, MessageLog, TaskMonitor)}).
+	 * {@link LoadResults#save(TaskMonitor)}).
 	 * <p>
 	 * It is also the responsibility of the caller to release the returned {@link Loaded} 
-	 * {@link Program}s with {@link LoadResults#release(Object)} when they are no longer needed.
+	 * {@link Program}s with {@link LoadResults#close()} when they are no longer needed.
 	 * 
 	 * @param file The {@link File} to import
 	 * @param project The {@link Project}.  Loaders can use this to take advantage of existing
@@ -244,10 +244,10 @@ public final class AutoImporter {
 	 * <p>
 	 * Note that when the import completes, the returned {@link Loaded} {@link Program}s are not 
 	 * saved to a project.  That is the responsibility of the caller (see 
-	 * {@link LoadResults#save(Project, Object, MessageLog, TaskMonitor)}).
+	 * {@link LoadResults#save(TaskMonitor)}).
 	 * <p>
 	 * It is also the responsibility of the caller to release the returned {@link Loaded} 
-	 * {@link Program}s with {@link LoadResults#release(Object)} when they are no longer needed.
+	 * {@link Program}s with {@link LoadResults#close()} when they are no longer needed.
 	 * 
 	 * @param fsrl The {@link FSRL} to import
 	 * @param project The {@link Project}.  Loaders can use this to take advantage of existing
@@ -297,10 +297,10 @@ public final class AutoImporter {
 	 * <p>
 	 * Note that when the import completes, the returned {@link Loaded} {@link Program}s are not 
 	 * saved to a project.  That is the responsibility of the caller (see 
-	 * {@link LoadResults#save(Project, Object, MessageLog, TaskMonitor)}).
+	 * {@link LoadResults#save(TaskMonitor)}).
 	 * <p>
 	 * It is also the responsibility of the caller to release the returned {@link Loaded} 
-	 * {@link Program}s with {@link LoadResults#release(Object)} when they are no longer needed.
+	 * {@link Program}s with {@link LoadResults#close()} when they are no longer needed.
 	 * 
 	 * @param file The {@link File} to import
 	 * @param project The {@link Project}.  Loaders can use this to take advantage of existing
@@ -349,10 +349,10 @@ public final class AutoImporter {
 	 * <p>
 	 * Note that when the import completes, the returned {@link Loaded} {@link Program}s are not 
 	 * saved to a project.  That is the responsibility of the caller (see 
-	 * {@link LoadResults#save(Project, Object, MessageLog, TaskMonitor)}).
+	 * {@link LoadResults#save(TaskMonitor)}).
 	 * <p>
 	 * It is also the responsibility of the caller to release the returned {@link Loaded} 
-	 * {@link Program}s with {@link LoadResults#release(Object)} when they are no longer needed.
+	 * {@link Program}s with {@link LoadResults#close()} when they are no longer needed.
 	 * 
 	 * @param fsrl The {@link FSRL} to import
 	 * @param project The {@link Project}.  Loaders can use this to take advantage of existing
@@ -401,10 +401,10 @@ public final class AutoImporter {
 	 * <p>
 	 * Note that when the import completes, the returned {@link Loaded} {@link Program}s are not 
 	 * saved to a project.  That is the responsibility of the caller (see 
-	 * {@link LoadResults#save(Project, Object, MessageLog, TaskMonitor)}).
+	 * {@link LoadResults#save(TaskMonitor)}).
 	 * <p>
 	 * It is also the responsibility of the caller to release the returned {@link Loaded} 
-	 * {@link Program}s with {@link LoadResults#release(Object)} when they are no longer needed.
+	 * {@link Program}s with {@link LoadResults#close()} when they are no longer needed.
 	 * 
 	 * @param file The {@link File} to import
 	 * @param project The {@link Project}.  Loaders can use this to take advantage of existing
@@ -457,10 +457,10 @@ public final class AutoImporter {
 	 * <p>
 	 * Note that when the import completes, the returned {@link Loaded} {@link Program}s are not 
 	 * saved to a project.  That is the responsibility of the caller (see 
-	 * {@link LoadResults#save(Project, Object, MessageLog, TaskMonitor)}).
+	 * {@link LoadResults#save(TaskMonitor)}).
 	 * <p>
 	 * It is also the responsibility of the caller to release the returned {@link Loaded} 
-	 * {@link Program}s with {@link LoadResults#release(Object)} when they are no longer needed.
+	 * {@link Program}s with {@link LoadResults#close()} when they are no longer needed.
 	 * 
 	 * @param fsrl The {@link FSRL} to import
 	 * @param project The {@link Project}.  Loaders can use this to take advantage of existing
@@ -513,10 +513,10 @@ public final class AutoImporter {
 	 * <p>
 	 * Note that when the import completes, the returned {@link Loaded} {@link Program} is 
 	 * not saved to a project.  That is the responsibility of the caller (see 
-	 * {@link Loaded#save(Project, MessageLog, TaskMonitor)}).
+	 * {@link Loaded#save(TaskMonitor)}).
 	 * <p>
 	 * It is also the responsibility of the caller to release the returned {@link Loaded} 
-	 * {@link Program} with {@link Loaded#release(Object)} when it is no longer needed.
+	 * {@link Program} with {@link Loaded#close()} when it is no longer needed.
 	 * 
 	 * @param file The {@link File} to import
 	 * @param project The {@link Project}.  Loaders can use this to take advantage of existing
@@ -547,7 +547,7 @@ public final class AutoImporter {
 			String projectFolderPath, Language language, CompilerSpec compilerSpec, Object consumer,
 			MessageLog messageLog, TaskMonitor monitor) throws IOException, CancelledException,
 			DuplicateNameException, InvalidNameException, VersionException, LoadException {
-		LoadResults<Program> loadResults = ProgramLoader.builder()
+		try (LoadResults<Program> loadResults = ProgramLoader.builder()
 				.source(file)
 				.project(project)
 				.projectFolderPath(projectFolderPath)
@@ -556,10 +556,9 @@ public final class AutoImporter {
 				.compiler(compilerSpec)
 				.log(messageLog)
 				.monitor(monitor)
-				.load(consumer);
-
-		loadResults.releaseNonPrimary(consumer);
-		return loadResults.getPrimary();
+				.load(consumer)) {
+			return loadResults.removePrimary();
+		}
 	}
 
 	/**
@@ -568,10 +567,10 @@ public final class AutoImporter {
 	 * <p>
 	 * Note that when the import completes, the returned {@link Loaded} {@link Program} is 
 	 * not saved to a project.  That is the responsibility of the caller (see 
-	 * {@link Loaded#save(Project, MessageLog, TaskMonitor)}).
+	 * {@link Loaded#save(TaskMonitor)}).
 	 * <p>
 	 * It is also the responsibility of the caller to release the returned {@link Loaded} 
-	 * {@link Program} with {@link Loaded#release(Object)} when it is no longer needed.
+	 * {@link Program} with {@link Loaded#close()} when it is no longer needed.
 	 * 
 	 * @param bytes The bytes to import
 	 * @param project The {@link Project}.  Loaders can use this to take advantage of existing
@@ -613,8 +612,7 @@ public final class AutoImporter {
 				.log(messageLog)
 				.monitor(monitor)
 				.load(consumer);
-		loadResults.releaseNonPrimary(consumer);
-		return loadResults.getPrimary();
+		return loadResults.removePrimary();
 	}
 
 	/**
@@ -622,10 +620,10 @@ public final class AutoImporter {
 	 * <p>
 	 * Note that when the import completes, the returned {@link Loaded} {@link Program}s are not 
 	 * saved to a project.  That is the responsibility of the caller (see 
-	 * {@link LoadResults#save(Project, Object, MessageLog, TaskMonitor)}).
+	 * {@link LoadResults#save(TaskMonitor)}).
 	 * <p>
 	 * It is also the responsibility of the caller to release the returned {@link Loaded} 
-	 * {@link Program}s with {@link LoadResults#release(Object)} when they are no longer needed.
+	 * {@link Program}s with {@link LoadResults#close()} when they are no longer needed.
 	 * 
 	 * @param file The {@link File} to import
 	 * @param project The {@link Project}.  Loaders can use this to take advantage of existing
@@ -683,10 +681,10 @@ public final class AutoImporter {
 	 * <p>
 	 * Note that when the import completes, the returned {@link Loaded} {@link Program}s are not 
 	 * saved to a project.  That is the responsibility of the caller (see 
-	 * {@link LoadResults#save(Project, Object, MessageLog, TaskMonitor)}).
+	 * {@link LoadResults#save(TaskMonitor)}).
 	 * <p>
 	 * It is also the responsibility of the caller to release the returned {@link Loaded} 
-	 * {@link Program}s with {@link LoadResults#release(Object)} when they are no longer needed.
+	 * {@link Program}s with {@link LoadResults#close()} when they are no longer needed.
 	 * 
 	 * @param fsrl The {@link FSRL} to import
 	 * @param project The {@link Project}.  Loaders can use this to take advantage of existing
@@ -744,10 +742,10 @@ public final class AutoImporter {
 	 * <p>
 	 * Note that when the import completes, the returned {@link Loaded} {@link Program}s are not 
 	 * saved to a project.  That is the responsibility of the caller (see 
-	 * {@link LoadResults#save(Project, Object, MessageLog, TaskMonitor)}).
+	 * {@link LoadResults#save(TaskMonitor)}).
 	 * <p>
 	 * It is also the responsibility of the caller to release the returned {@link Loaded} 
-	 * {@link Program}s with {@link LoadResults#release(Object)} when they are no longer needed.
+	 * {@link Program}s with {@link LoadResults#close()} when they are no longer needed.
 	 * 
 	 * @param provider The bytes to import
 	 * @param project The {@link Project}.  Loaders can use this to take advantage of existing

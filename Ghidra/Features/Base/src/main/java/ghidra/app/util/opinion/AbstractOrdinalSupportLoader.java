@@ -136,7 +136,7 @@ public abstract class AbstractOrdinalSupportLoader extends AbstractLibrarySuppor
 			monitor.initialize(saveablePrograms.size());
 			for (Loaded<Program> loadedProgram : saveablePrograms) {
 				monitor.checkCancelled();
-				Program program = loadedProgram.getDomainObject();
+				Program program = loadedProgram.getDomainObject(this);
 				int id = program.startTransaction("Ordinal fixups");
 				try {
 					applyLibrarySymbols(program, messageLog, monitor);
@@ -144,6 +144,7 @@ public abstract class AbstractOrdinalSupportLoader extends AbstractLibrarySuppor
 				}
 				finally {
 					program.endTransaction(id, true); // More efficient to commit when program will be discarded
+					program.release(this);
 				}
 			}
 		}

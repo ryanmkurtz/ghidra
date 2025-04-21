@@ -67,8 +67,8 @@ public abstract class AbstractProgramWrapperLoader extends AbstractProgramLoader
 
 		Program program = createProgram(provider, programName, imageBaseAddr, getName(), language,
 			compilerSpec, consumer);
-		List<Loaded<Program>> loadedList =
-			List.of(new Loaded<Program>(program, programName, programFolderPath));
+		List<Loaded<Program>> loadedList = List.of(
+			new Loaded<Program>(program, programName, project, programFolderPath, consumer));
 
 		int transactionID = program.startTransaction("Loading");
 		boolean success = false;
@@ -81,7 +81,7 @@ public abstract class AbstractProgramWrapperLoader extends AbstractProgramLoader
 		finally {
 			program.endTransaction(transactionID, true); // More efficient to commit when program will be discarded
 			if (!success) {
-				release(loadedList, consumer);
+				loadedList.forEach(Loaded::close);
 			}
 		}
 	}

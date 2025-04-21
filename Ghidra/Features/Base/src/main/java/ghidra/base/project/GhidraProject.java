@@ -23,6 +23,7 @@ import java.util.Iterator;
 
 import ghidra.app.plugin.core.analysis.AutoAnalysisManager;
 import ghidra.app.util.importer.ProgramLoader;
+import ghidra.app.util.opinion.LoadResults;
 import ghidra.app.util.opinion.Loader;
 import ghidra.framework.Application;
 import ghidra.framework.client.*;
@@ -595,16 +596,17 @@ public class GhidraProject {
 
 	public Program importProgram(File file, Language language, CompilerSpec compilerSpec)
 			throws CancelledException, VersionException, IOException {
-		Program program = ProgramLoader.builder()
+		try (LoadResults<Program> loadResults = ProgramLoader.builder()
 				.source(file)
 				.project(project)
 				.language(language)
 				.compiler(compilerSpec)
 				.monitor(MONITOR)
-				.loadProgram(this);
-
-		initializeProgram(program, false);
-		return program;
+				.load()) {
+			Program program = loadResults.getPrimaryDomainObject(this);
+			initializeProgram(program, false);
+			return program;
+		}
 	}
 
 	public Program importProgram(File file, Processor processor)
@@ -617,42 +619,45 @@ public class GhidraProject {
 
 	public Program importProgram(File file, Class<? extends Loader> loaderClass)
 			throws CancelledException, VersionException, IOException {
-		Program program = ProgramLoader.builder()
+		try (LoadResults<Program> loadResults = ProgramLoader.builder()
 				.source(file)
 				.project(project)
 				.loaders(loaderClass)
 				.monitor(MONITOR)
-				.loadProgram(this);
-
-		initializeProgram(program, false);
-		return program;
+				.load()) {
+			Program program = loadResults.getPrimaryDomainObject(this);
+			initializeProgram(program, false);
+			return program;
+		}
 	}
 
 	public Program importProgram(File file, Class<? extends Loader> loaderClass, Language language,
 			CompilerSpec compilerSpec) throws CancelledException, VersionException, IOException {
-		Program program = ProgramLoader.builder()
+		try (LoadResults<Program> loadResults = ProgramLoader.builder()
 				.source(file)
 				.project(project)
 				.loaders(loaderClass)
 				.language(language)
 				.compiler(compilerSpec)
 				.monitor(MONITOR)
-				.loadProgram(this);
-		
-		initializeProgram(program, false);
-		return program;
+				.load()) {
+			Program program = loadResults.getPrimaryDomainObject(this);
+			initializeProgram(program, false);
+			return program;
+		}
 	}
 
 	public Program importProgram(File file)
 			throws CancelledException, VersionException, IOException {
-		Program program = ProgramLoader.builder()
+		try (LoadResults<Program> loadResults = ProgramLoader.builder()
 				.source(file)
 				.project(project)
 				.monitor(MONITOR)
-				.loadProgram(this);
-
-		initializeProgram(program, false);
-		return program;
+				.load()) {
+			Program program = loadResults.getPrimaryDomainObject(this);
+			initializeProgram(program, false);
+			return program;
+		}
 	}
 
 	public Program importProgramFast(File file)

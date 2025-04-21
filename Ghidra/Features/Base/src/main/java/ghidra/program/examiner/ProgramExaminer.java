@@ -27,6 +27,7 @@ import ghidra.app.util.bin.*;
 import ghidra.app.util.importer.MessageLog;
 import ghidra.app.util.importer.ProgramLoader;
 import ghidra.app.util.opinion.LoadException;
+import ghidra.app.util.opinion.LoadResults;
 import ghidra.framework.*;
 import ghidra.program.model.data.*;
 import ghidra.program.model.lang.*;
@@ -81,19 +82,21 @@ public class ProgramExaminer {
 		initializeGhidra();
 		messageLog = new MessageLog();
 		try {
-			try {
-				program = ProgramLoader.builder()
+			try (LoadResults<Program> loadResults = ProgramLoader.builder()
 						.source(provider)
 						.log(messageLog)
-						.loadProgram(this);
+						.load()) {
+				program = loadResults.getPrimaryDomainObject(this);
 			}
 			catch (LoadException e) {
 				try {
-					program = ProgramLoader.builder()
+					try (LoadResults<Program> loadResults = ProgramLoader.builder()
 							.source(provider)
 							.language(defaultLanguage)
 							.log(messageLog)
-							.loadProgram(this);
+							.load()) {
+						program = loadResults.getPrimaryDomainObject(this);
+					}
 				}
 				catch (LoadException e1) {
 					throw new GhidraException(

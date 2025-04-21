@@ -200,7 +200,7 @@ public class XmlLoader extends AbstractProgramLoader {
 		Program prog = createProgram(provider, programName, imageBase, getName(), importerLanguage,
 			importerCompilerSpec, consumer);
 		List<Loaded<Program>> loadedList =
-			List.of(new Loaded<>(prog, programName, programFolderPath));
+			List.of(new Loaded<>(prog, programName, project, programFolderPath, consumer));
 		boolean success = false;
 		try {
 			success = doImport(result.lastXmlMgr, options, log, prog, monitor, false);
@@ -212,7 +212,7 @@ public class XmlLoader extends AbstractProgramLoader {
 		}
 		finally {
 			if (!success) {
-				release(loadedList, consumer);
+				loadedList.forEach(Loaded::close);
 			}
 		}
 	}

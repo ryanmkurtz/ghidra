@@ -56,19 +56,19 @@ public class TutorialDebuggerMaintenance extends AbstractGhidraHeadedIntegration
 	@Test
 	public void testRecreateTermminesGzf() throws Throwable {
 		File termmines = Application.getModuleDataFile("TestResources", "termmines").getFile(false);
-		LoadResults<Program> results = ProgramLoader.builder()
+		try (LoadResults<Program> loadResults = ProgramLoader.builder()
 				.source(termmines)
 				.project(env.getProject())
 				.monitor(CONSOLE)
-				.load(this);
-
-		program = results.getPrimaryDomainObject();
-		try (Transaction tx = program.openTransaction("Analyze")) {
-			program.setExecutablePath("/tmp/termmines");
-			GhidraProject.analyze(program);
+				.load()) {
+			program = loadResults.getPrimaryDomainObject(this);
+			try (Transaction tx = program.openTransaction("Analyze")) {
+				program.setExecutablePath("/tmp/termmines");
+				GhidraProject.analyze(program);
+			}
+			File dest = new File(termmines.getParentFile(), "termmines.gzf");
+			dest.delete();
+			program.saveToPackedFile(dest, CONSOLE);
 		}
-		File dest = new File(termmines.getParentFile(), "termmines.gzf");
-		dest.delete();
-		program.saveToPackedFile(dest, CONSOLE);
 	}
 }

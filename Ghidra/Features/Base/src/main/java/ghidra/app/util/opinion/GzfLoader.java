@@ -78,7 +78,7 @@ public class GzfLoader implements Loader {
 			throws IOException, CancelledException, VersionException {
 
 		Program program = loadPackedProgramDatabase(provider, programName, consumer, monitor);
-		return new LoadResults<>(program, programName, projectFolderPath);
+		return new LoadResults<>(program, programName, project, projectFolderPath, consumer);
 	}
 
 	private Program loadPackedProgramDatabase(ByteProvider provider, String programName,

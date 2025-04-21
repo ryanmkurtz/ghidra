@@ -53,13 +53,15 @@ public class ExternalSymbolResolver implements Closeable {
 	}
 
 	private final ProjectData projectData;
+	private final Object consumer;
 	private final TaskMonitor monitor;
 	private final List<ProgramSymbolResolver> programsToFix = new ArrayList<>();
 	private final Map<String, Program> loadedPrograms = new HashMap<>();
 	private final Map<String, Throwable> problemLibraries = new HashMap<>();
 
-	public ExternalSymbolResolver(ProjectData projectData, TaskMonitor monitor) {
+	public ExternalSymbolResolver(ProjectData projectData, Object consumer, TaskMonitor monitor) {
 		this.projectData = projectData;
+		this.consumer = consumer;
 		this.monitor = monitor;
 	}
 
@@ -114,7 +116,7 @@ public class ExternalSymbolResolver implements Closeable {
 	@Override
 	public void close() {
 		for (Program prog : loadedPrograms.values()) {
-			prog.release(this);
+			prog.release(consumer);
 		}
 		programsToFix.clear();
 		loadedPrograms.clear();

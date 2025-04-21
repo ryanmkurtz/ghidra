@@ -78,13 +78,13 @@ public class TraceRmiLauncherServicePluginTest extends AbstractGhidraHeadedDebug
 	@Test
 	public void testGetClassName() throws Exception {
 		ResourceFile rf = Application.getModuleDataFile("TestResources", "HelloWorld.class");
-		LoadResults<Program> results = ProgramLoader.builder()
+		try (LoadResults<Program> results = ProgramLoader.builder()
 				.source(rf.getFile(false))
 				.project(env.getProject())
 				.monitor(monitor)
-				.load(this);
-
-		program = results.getPrimaryDomainObject();
+				.load()) {
+			program = results.getPrimaryDomainObject(this);
+		}
 		AutoAnalysisManager analyzer = AutoAnalysisManager.getAnalysisManager(program);
 		analyzer.reAnalyzeAll(null);
 		Command<Program> cmd = new AnalysisBackgroundCommand(analyzer, false);

@@ -299,7 +299,8 @@ public class Loaded<T extends DomainObject> implements AutoCloseable {
 	 */
 	@Override
 	public void close() {
-		if (loadedConsumer != null && !domainObject.isClosed() && domainObject.isUsedBy(loadedConsumer)) {
+		if (loadedConsumer != null && !domainObject.isClosed() &&
+			domainObject.isUsedBy(loadedConsumer)) {
 			domainObject.release(loadedConsumer);
 		}
 	}

@@ -80,7 +80,7 @@ public class LoadResults<T extends DomainObject> implements Iterable<Loaded<T>>,
 	}
 
 	/**
-	 * Gets the "primary" {@link Loaded} {@link DomainObject}, who's meaning is defined by each 
+	 * Gets the "primary" {@link Loaded} {@link DomainObject}, whose meaning is defined by each 
 	 * {@link Loader} implementation
 	 * 
 	 * @return The "primary" {@link Loaded} {@link DomainObject}
@@ -90,23 +90,20 @@ public class LoadResults<T extends DomainObject> implements Iterable<Loaded<T>>,
 	}
 
 	/**
-	 * Removes the "primary" {@link Loaded} {@link DomainObject} from this {@link LoadResults}.
-	 * <p>
-	 * NOTE: It is the responsibility of the caller to {@link Loaded#close()} the returned 
-	 * {@link Loaded} {@link DomainObject} when finished with it, since this {@link LoadResults}
-	 * will no longer have a reference to it.
+	 * Gets the "non-primary" {@link Loaded} {@link DomainObject}s, whose meaning is defined by each
+	 * {@link Loader} implementation
 	 * 
-	 * @return The removed "primary" {@link Loaded} {@link DomainObject}
+	 * @return The "non-primary" {@link Loaded} {@link DomainObject}s
 	 */
-	public Loaded<T> removePrimary() {
-		return loadedList.removeFirst();
+	public List<Loaded<T>> getNonPrimary() {
+		return loadedList.stream().skip(1).toList();
 	}
 
 	/**
 	 * Gets the "primary" {@link DomainObject}, whose meaning is defined by each {@link Loader} 
 	 * implementation.
 	 * <p>
-	 * NOTE: The given It is the responsibility of the caller to properly 
+	 * NOTE: It is the responsibility of the caller to properly 
 	 * {@link DomainObject#release(Object) release} it when done. This
 	 * {@link DomainObject#release(Object)} does not replace the requirement to 
 	 * {@link #close()} the {@link LoadResults} object when done.
@@ -138,8 +135,7 @@ public class LoadResults<T extends DomainObject> implements Iterable<Loaded<T>>,
 	 * {@link Project}.
 	 * <p>
 	 * NOTE: If any fail to save, none will be saved (already saved {@link DomainFile}s will be
-	 * cleaned up/deleted), and all {@link Loaded} {@link DomainObject}s will have been
-	 * {@link #close() closed}.
+	 * cleaned up/deleted).
 	 * 
 	 * @param monitor A cancelable task monitor
 	 * @throws CancelledException if the operation was cancelled
@@ -157,10 +153,9 @@ public class LoadResults<T extends DomainObject> implements Iterable<Loaded<T>>,
 		}
 		finally {
 			if (!success) {
-				for (Loaded<T> loaded : this) {
+				for (Loaded<T> loaded : loadedList) {
 					try {
 						loaded.delete();
-						loaded.close();
 					}
 					catch (Exception e1) {
 						Msg.error(getClass(), "Failed to delete: " + loaded);

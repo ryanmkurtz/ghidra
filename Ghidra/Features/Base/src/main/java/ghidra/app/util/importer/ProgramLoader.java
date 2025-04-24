@@ -79,9 +79,13 @@ public class ProgramLoader {
 		}
 
 		/**
-		 * Sets the required import source to the given {@link ByteProvider}
+		 * Sets the required import source to the given {@link ByteProvider}.
 		 * <p>
-		 * NOTE: Any previously defined sources will be overwritten
+		 * NOTE: Any previously defined sources will be overwritten.
+		 * <p>
+		 * NOTE: Ownership of the given {@link ByteProvider} is not transfered to this 
+		 * {@link Builder}, so it is the responsibility of the caller to properly 
+		 * {@link ByteProvider#close() close} it when done.
 		 * 
 		 * @param p The {@link ByteProvider} to import. A {@code null} value will unset the source.
 		 * @return This {@link Builder}
@@ -489,8 +493,7 @@ public class ProgramLoader {
 								: LoadSpecChooser.CHOOSE_THE_FIRST_PREFERRED);
 			LoadSpec loadSpec = loadSpecChooser.choose(loaderMap);
 			if (loadSpec == null) {
-				File f = p.getFile();
-				String name = f != null ? f.getAbsolutePath() : p.getName();
+				String name = Objects.requireNonNullElse(p.getName(), "???");
 				Msg.info(ProgramLoader.class, "No load spec found for import file: " + name);
 				throw new LoadException("No load spec found");
 			}

@@ -567,7 +567,7 @@ public final class AutoImporter {
 			String projectFolderPath, Language language, CompilerSpec compilerSpec, Object consumer,
 			MessageLog messageLog, TaskMonitor monitor) throws IOException, CancelledException,
 			DuplicateNameException, InvalidNameException, VersionException, LoadException {
-		try (LoadResults<Program> loadResults = ProgramLoader.builder()
+		LoadResults<Program> loadResults = ProgramLoader.builder()
 				.source(file)
 				.project(project)
 				.projectFolderPath(projectFolderPath)
@@ -576,9 +576,9 @@ public final class AutoImporter {
 				.compiler(compilerSpec)
 				.log(messageLog)
 				.monitor(monitor)
-				.load(consumer)) {
-			return loadResults.removePrimary();
-		}
+				.load(consumer);
+		loadResults.getNonPrimary().forEach(Loaded::close);
+		return loadResults.getPrimary();
 	}
 
 	/**
@@ -624,7 +624,7 @@ public final class AutoImporter {
 			Object consumer, MessageLog messageLog, TaskMonitor monitor) throws IOException,
 			CancelledException, DuplicateNameException, InvalidNameException, VersionException,
 			LoadException {
-		try (LoadResults<Program> loadResults = ProgramLoader.builder()
+		LoadResults<Program> loadResults = ProgramLoader.builder()
 				.source(bytes)
 				.project(project)
 				.projectFolderPath(projectFolderPath)
@@ -633,9 +633,9 @@ public final class AutoImporter {
 				.compiler(compilerSpec)
 				.log(messageLog)
 				.monitor(monitor)
-				.load(consumer)) {
-			return loadResults.removePrimary();
-		}
+				.load(consumer);
+		loadResults.getNonPrimary().forEach(Loaded::close);
+		return loadResults.getPrimary();
 	}
 
 	/**

@@ -65,7 +65,7 @@ public class ProgramLoader {
 		private String projectFolderPath;
 		private String importNameOverride;
 		private Predicate<Loader> loaderFilter = LoaderService.ACCEPT_ALL;
-		private List<Pair<String, String>> loaderArgs;
+		private List<Pair<String, String>> loaderArgs = new ArrayList<>();
 		private LanguageID languageId;
 		private CompilerSpecID compilerSpecId;
 		private MessageLog log = new MessageLog();
@@ -228,22 +228,19 @@ public class ProgramLoader {
 		 * @return This {@link Builder}
 		 */
 		public Builder loaderArgs(List<Pair<String, String>> args) {
-			this.loaderArgs = args;
+			this.loaderArgs = args != null ? new ArrayList<>(args) : new ArrayList<>();
 			return this;
 		}
 	
 		/**
-		 * Sets the single {@link Loader} argument to use during import.
-		 * <p>
-		 * By default, no {@link Loader} arguments are used.
+		 * Adds the given {@link Loader} argument to use during import.
 		 * 
-		 * @param name A single {@link Loader} argument name to use during import. A {@code null} 
-		 *   value will result in no {@link Loader} arguments being used.
+		 * @param name A single {@link Loader} argument name to use during import.
 		 * @param value The value that corresponds to the argument {@code name}
 		 * @return This {@link Builder}
 		 */
-		public Builder loaderArgs(String name, String value) {
-			this.loaderArgs = List.of(new Pair<String, String>(name, value));
+		public Builder addLoaderArg(String name, String value) {
+			this.loaderArgs.add(new Pair<String, String>(name, value));
 			return this;
 		}
 

@@ -23,8 +23,7 @@ import java.util.Iterator;
 
 import ghidra.app.plugin.core.analysis.AutoAnalysisManager;
 import ghidra.app.util.importer.ProgramLoader;
-import ghidra.app.util.opinion.LoadResults;
-import ghidra.app.util.opinion.Loader;
+import ghidra.app.util.opinion.*;
 import ghidra.framework.Application;
 import ghidra.framework.client.*;
 import ghidra.framework.cmd.Command;
@@ -605,16 +604,19 @@ public class GhidraProject {
 	 * @param file The {@link File} to import
 	 * @param language The desired {@link Language}
 	 * @param compilerSpec The desired {@link CompilerSpec compiler specification}
-	 * @return The import {@link Program}
+	 * @return The imported {@link Program}
 	 * @throws IOException if there was an IO-related problem loading
+	 * @throws LanguageNotFoundException if there was a problem getting the language		
 	 * @throws CancelledException if the operation was cancelled 
 	 * @throws VersionException if there was an issue with database versions, probably due to a 
 	 *   failed language upgrade
+	 * @throws LoadException if there was a problem loading
 	 * @deprecated Use {@link ProgramLoader}
 	 */
 	@Deprecated(since = "11.4", forRemoval = true)
 	public Program importProgram(File file, Language language, CompilerSpec compilerSpec)
-			throws CancelledException, VersionException, IOException {
+			throws CancelledException, VersionException, LanguageNotFoundException, LoadException,
+			IOException {
 		try (LoadResults<Program> loadResults = ProgramLoader.builder()
 				.source(file)
 				.project(project)
@@ -638,16 +640,18 @@ public class GhidraProject {
 	 * 
 	 * @param file The {@link File} to import
 	 * @param processor The desired {@link Processor}
-	 * @return The import {@link Program}
+	 * @return The imported {@link Program}
 	 * @throws IOException if there was an IO-related problem loading
+	 * @throws LanguageNotFoundException if there was a problem getting the language		
 	 * @throws CancelledException if the operation was cancelled 
 	 * @throws VersionException if there was an issue with database versions, probably due to a 
 	 *   failed language upgrade
+	 * @throws LoadException if there was a problem loading
 	 * @deprecated Use {@link ProgramLoader}
 	 */
 	@Deprecated(since = "11.4", forRemoval = true)
-	public Program importProgram(File file, Processor processor)
-			throws CancelledException, VersionException, IOException {
+	public Program importProgram(File file, Processor processor) throws CancelledException,
+			VersionException, LanguageNotFoundException, LoadException, IOException {
 		LanguageService svc = DefaultLanguageService.getLanguageService();
 		Language language = svc.getDefaultLanguage(processor);
 		CompilerSpec compilerSpec = language.getDefaultCompilerSpec();
@@ -663,16 +667,19 @@ public class GhidraProject {
 	 * 
 	 * @param file The {@link File} to import
 	 * @param loaderClass The desired {@link Loader}
-	 * @return The import {@link Program}
+	 * @return The imported {@link Program}
 	 * @throws IOException if there was an IO-related problem loading
+	 * @throws LanguageNotFoundException if there was a problem getting the language		
 	 * @throws CancelledException if the operation was cancelled 
 	 * @throws VersionException if there was an issue with database versions, probably due to a 
 	 *   failed language upgrade
+	 * @throws LoadException if there was a problem loading
 	 * @deprecated Use {@link ProgramLoader}
 	 */
 	@Deprecated(since = "11.4", forRemoval = true)
 	public Program importProgram(File file, Class<? extends Loader> loaderClass)
-			throws CancelledException, VersionException, IOException {
+			throws CancelledException, VersionException, LanguageNotFoundException, LoadException,
+			IOException {
 		try (LoadResults<Program> loadResults = ProgramLoader.builder()
 				.source(file)
 				.project(project)
@@ -697,16 +704,19 @@ public class GhidraProject {
 	 * @param loaderClass The desired {@link Loader}
 	 * @param language The desired {@link Language}
 	 * @param compilerSpec The desired {@link CompilerSpec compiler specification}
-	 * @return The import {@link Program}
+	 * @return The imported {@link Program}
 	 * @throws IOException if there was an IO-related problem loading
+	 * @throws LanguageNotFoundException if there was a problem getting the language		
 	 * @throws CancelledException if the operation was cancelled 
 	 * @throws VersionException if there was an issue with database versions, probably due to a 
 	 *   failed language upgrade
+	 * @throws LoadException if there was a problem loading
 	 * @deprecated Use {@link ProgramLoader}
 	 */
 	@Deprecated(since = "11.4", forRemoval = true)
 	public Program importProgram(File file, Class<? extends Loader> loaderClass, Language language,
-			CompilerSpec compilerSpec) throws CancelledException, VersionException, IOException {
+			CompilerSpec compilerSpec) throws CancelledException, VersionException,
+			LanguageNotFoundException, LoadException, IOException {
 		try (LoadResults<Program> loadResults = ProgramLoader.builder()
 				.source(file)
 				.project(project)
@@ -729,16 +739,18 @@ public class GhidraProject {
 	 * {@link GhidraProject} instance as the consumer.
 	 * 
 	 * @param file The {@link File} to import
-	 * @return The import {@link Program}
+	 * @return The imported {@link Program}
 	 * @throws IOException if there was an IO-related problem loading
+	 * @throws LanguageNotFoundException if there was a problem getting the language		
 	 * @throws CancelledException if the operation was cancelled 
 	 * @throws VersionException if there was an issue with database versions, probably due to a 
 	 *   failed language upgrade
+	 * @throws LoadException if there was a problem loading
 	 * @deprecated Use {@link ProgramLoader}
 	 */
 	@Deprecated(since = "11.4", forRemoval = true)
-	public Program importProgram(File file)
-			throws CancelledException, VersionException, IOException {
+	public Program importProgram(File file) throws CancelledException, VersionException,
+			LanguageNotFoundException, LoadException, IOException {
 		try (LoadResults<Program> loadResults = ProgramLoader.builder()
 				.source(file)
 				.project(project)
@@ -758,16 +770,18 @@ public class GhidraProject {
 	 * {@link GhidraProject} instance as the consumer.
 	 * 
 	 * @param file The {@link File} to import
-	 * @return The import {@link Program}
+	 * @return The imported {@link Program}
 	 * @throws IOException if there was an IO-related problem loading
+	 * @throws LanguageNotFoundException if there was a problem getting the language		
 	 * @throws CancelledException if the operation was cancelled 
 	 * @throws VersionException if there was an issue with database versions, probably due to a 
 	 *   failed language upgrade
+	 * @throws LoadException if there was a problem loading
 	 * @deprecated Use {@link ProgramLoader}
 	 */
 	@Deprecated(since = "11.4", forRemoval = true)
-	public Program importProgramFast(File file)
-			throws CancelledException, VersionException, IOException {
+	public Program importProgramFast(File file) throws CancelledException, VersionException,
+			LanguageNotFoundException, LoadException, IOException {
 		return importProgram(file);
 	}
 

@@ -22,8 +22,7 @@ import java.util.function.Predicate;
 
 import generic.stl.Pair;
 import ghidra.app.util.Option;
-import ghidra.app.util.bin.ByteProvider;
-import ghidra.app.util.bin.ByteProviderWrapper;
+import ghidra.app.util.bin.*;
 import ghidra.app.util.opinion.*;
 import ghidra.formats.gfilesystem.FSRL;
 import ghidra.formats.gfilesystem.FileSystemService;
@@ -61,6 +60,7 @@ public class ProgramLoader {
 		private ByteProvider provider;
 		private FSRL fsrl;
 		private File file;
+		private byte[] bytes;
 		private Project project;
 		private String projectFolderPath;
 		private String importNameOverride;
@@ -94,6 +94,7 @@ public class ProgramLoader {
 			this.provider = p;
 			this.fsrl = null;
 			this.file = null;
+			this.bytes = null;
 			return this;
 		}
 
@@ -106,9 +107,10 @@ public class ProgramLoader {
 		 * @return This {@link Builder}
 		 */
 		public Builder source(FSRL f) {
-			this.fsrl = f;
 			this.provider = null;
+			this.fsrl = f;
 			this.file = null;
+			this.bytes = null;
 			return this;
 		}
 
@@ -121,9 +123,26 @@ public class ProgramLoader {
 		 * @return This {@link Builder}
 		 */
 		public Builder source(File f) {
-			this.file = f;
 			this.provider = null;
 			this.fsrl = null;
+			this.file = f;
+			this.bytes = null;
+			return this;
+		}
+
+		/**
+		 * Sets the required import source to the given bytes
+		 * <p>
+		 * NOTE: Any previously defined sources will be overwritten
+		 * 
+		 * @param b The bytes to import. A {@code null} value will unset the source.
+		 * @return This {@link Builder}
+		 */
+		public Builder source(byte[] b) {
+			this.provider = null;
+			this.fsrl = null;
+			this.file = null;
+			this.bytes = b;
 			return this;
 		}
 
@@ -357,8 +376,8 @@ public class ProgramLoader {
 		}
 
 		/**
-		 * Loads the specified {@link #source(ByteProvider)} with this {@link Builder}'s current
-		 * configuration
+		 * Loads the specified {@link #source(ByteProvider) source} with this {@link Builder}'s 
+		 * current configuration
 		 * 
 		 * @return The {@link LoadResults} which contains one or more {@link Loaded} 
 		 *   {@link Program}s (created but not saved)
@@ -375,8 +394,8 @@ public class ProgramLoader {
 		}
 
 		/**
-		 * Loads the specified {@link #source(ByteProvider)} with this {@link Builder}'s current
-		 * configuration.
+		 * Loads the specified {@link #source(ByteProvider) source} with this {@link Builder}'s 
+		 * current configuration.
 		 * <p>
 		 * NOTE: This method exists to maintain compatibility with the {@link AutoImporter} class,
 		 * whose methods require consumer objects to be passed in. It should not be used by clients
@@ -466,6 +485,9 @@ public class ProgramLoader {
 			}
 			else if (file != null) {
 				p = fsService.getByteProvider(fsService.getLocalFSRL(file), true, monitor);
+			}
+			else if (bytes != null) {
+				p = new ByteArrayProvider(bytes);
 			}
 			else {
 				throw new LoadException("No source to import!");

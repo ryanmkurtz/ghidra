@@ -17,6 +17,7 @@ package ghidra.app.util.opinion;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.function.Predicate;
 
 import ghidra.app.util.importer.MessageLog;
 import ghidra.framework.model.*;
@@ -121,6 +122,22 @@ public class LoadResults<T extends DomainObject> implements Iterable<Loaded<T>>,
 	}
 
 	/**
+	 * Gets the "primary" loaded {@link DomainObject}, whose meaning is defined by each 
+	 * {@link Loader} implementation. Unsafe resource management is used. Temporarily exists to 
+	 * provide backwards compatibility.
+	 * 
+	 * @return The "primary" {@link DomainObject}
+	 * @deprecated This class's internal {@link DomainObject}s are now cleaned up with the 
+	 *   {@link #close()} method.  If the primary {@link DomainObject} needs to be retrieved from 
+	 *   this class, instead use {@link #getPrimaryDomainObject(Object)} and independently clean up
+	 *   the new reference with a separate call to {@link DomainObject#release(Object)}.
+	 */
+	@Deprecated(since = "11.4", forRemoval = true)
+	public T getPrimaryDomainObject() {
+		return loadedList.get(0).getDomainObject();
+	}
+
+	/**
 	 * Gets the number of {@link Loaded} {@link DomainObject}s in this {@link LoadResults}.  The
 	 * size will always be greater than 0.
 	 * 
@@ -165,9 +182,48 @@ public class LoadResults<T extends DomainObject> implements Iterable<Loaded<T>>,
 		}
 	}
 
-	@Override
-	public Iterator<Loaded<T>> iterator() {
-		return loadedList.iterator();
+	/**
+	 * Unsafely notifies all of the {@link Loaded} {@link DomainObject}s that the specified consumer
+	 * is no longer using them. Temporarily exists to provide backwards compatibility.
+	 * 
+	 * @param consumer the consumer
+	 * @deprecated Use {@link #close()} instead
+	 */
+	@Deprecated(since = "11.4", forRemoval = true)
+	public void release(Object consumer) {
+		loadedList.forEach(loaded -> loaded.release(consumer));
+	}
+
+	/**
+	 * Unsafely notifies the filtered {@link Loaded} {@link DomainObject}s that the specified 
+	 * consumer is no longer using them. Temporarily exists to provide backwards compatibility.
+	 * 
+	 * @param consumer the consumer
+	 * @param filter a filter to apply to the {@link Loaded} {@link DomainObject}s prior to the
+	 *   release
+	 * @deprecated Use {@link #close()} instead
+	 */
+	@Deprecated(since = "11.4", forRemoval = true)
+	public void release(Object consumer, Predicate<? super Loaded<T>> filter) {
+		loadedList.stream().filter(filter).forEach(loaded -> loaded.release(consumer));
+	}
+
+	/**
+	 * Notify the non-primary {@link Loaded} {@link DomainObject}s that the specified consumer is no 
+	 * longer using them. When the last consumer invokes this method, the non-primary {@link Loaded} 
+	 * {@link DomainObject}s will be closed and will become invalid.
+	 * 
+	 * @param consumer the consumer
+	 * @deprecated Use {@link #getNonPrimary()} and {@link Loaded#close()} on the {@link List} 
+	 *   elements instead
+	 */
+	@Deprecated(since = "11.4", forRemoval = true)
+	public void releaseNonPrimary(Object consumer) {
+		for (int i = 0; i < loadedList.size(); i++) {
+			if (i > 0) {
+				loadedList.get(i).release(consumer);
+			}
+		}
 	}
 
 	/**
@@ -180,5 +236,10 @@ public class LoadResults<T extends DomainObject> implements Iterable<Loaded<T>>,
 	@Override
 	public void close() {
 		loadedList.forEach(Loaded::close);
+	}
+
+	@Override
+	public Iterator<Loaded<T>> iterator() {
+		return loadedList.iterator();
 	}
 }

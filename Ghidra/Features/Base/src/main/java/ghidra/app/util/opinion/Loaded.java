@@ -112,6 +112,21 @@ public class Loaded<T extends DomainObject> implements AutoCloseable {
 		domainObject.addConsumer(consumer);
 		return domainObject;
 	}
+	
+	/**
+	 * Gets the loaded {@link DomainObject} with unsafe resource management. Temporarily exists
+	 * to provide backwards compatibility.
+	 * 
+	 * @return The loaded {@link DomainObject}
+	 * @deprecated This class's internal {@link DomainObject} is now cleaned up with the 
+	 *   {@link #close()} method.  If the {@link DomainObject} needs to be retrieved from this 
+	 *   class, instead use {@link #getDomainObject(Object)} and independently clean up the new
+	 *   reference with a separate call to {@link DomainObject#release(Object)}.
+	 */
+	@Deprecated(since = "11.4", forRemoval = true)
+	public T getDomainObject() {
+		return domainObject;
+	}
 
 	/**
 	 * Gets the loaded {@link DomainObject}'s type
@@ -287,6 +302,31 @@ public class Loaded<T extends DomainObject> implements AutoCloseable {
 			return true;
 		}
 		return false;
+	}
+
+	/**
+	 * Gets the loaded {@link DomainObject} with unsafe resource management. Temporarily exists
+	 * to provide backwards compatibility.
+	 * 
+	 * @return The loaded {@link DomainObject}
+	 * @deprecated This class's internal {@link DomainObject} is now cleaned up with the 
+	 *   {@link #close()} method.  If the {@link DomainObject} needs to be retrieved from this 
+	 *   class, instead use {@link #getDomainObject(Object)} and independently clean up the new
+	 *   reference with a separate call to {@link DomainObject#release(Object)}.
+	 */
+
+	/**
+	 * Unsafely notifies the loaded {@link DomainObject} that the specified consumer is no longer
+	 * using it. Temporarily exists to provide backwards compatibility.
+	 * 
+	 * @param consumer the consumer
+	 * @deprecated Use {@link #close()} instead
+	 */
+	@Deprecated(since = "11.4", forRemoval = true)
+	public void release(Object consumer) {
+		if (!domainObject.isClosed() && domainObject.isUsedBy(consumer)) {
+			domainObject.release(consumer);
+		}
 	}
 
 	/**

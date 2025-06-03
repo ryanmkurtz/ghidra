@@ -85,7 +85,7 @@ public final class InterpreterGhidraScript extends GhidraScript {
 		state.setCurrentHighlight(highlight);
 	}
 
-	public void set(GhidraState state, PrintWriter writer) {
-		set(state, new InterpreterTaskMonitor(writer), writer);
+	public void set(GhidraState state, PrintWriter writer, PrintWriter errorWriter) {
+		set(state, new InterpreterTaskMonitor(writer), writer, errorWriter);
 	}
 }

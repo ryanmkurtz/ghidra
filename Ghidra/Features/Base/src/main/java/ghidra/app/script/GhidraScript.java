@@ -37,7 +37,8 @@ import ghidra.app.plugin.core.analysis.AnalysisWorker;
 import ghidra.app.plugin.core.analysis.AutoAnalysisManager;
 import ghidra.app.plugin.core.colorizer.ColorizingService;
 import ghidra.app.plugin.core.table.TableComponentProvider;
-import ghidra.app.services.*;
+import ghidra.app.services.GoToService;
+import ghidra.app.services.ProgramManager;
 import ghidra.app.tablechooser.TableChooserDialog;
 import ghidra.app.tablechooser.TableChooserExecutor;
 import ghidra.app.util.demangler.DemangledObject;
@@ -142,6 +143,7 @@ public abstract class GhidraScript extends FlatProgramAPI {
 	protected ResourceFile sourceFile;
 	protected GhidraState state;
 	protected PrintWriter writer;
+	protected PrintWriter errorWriter;
 	protected Address currentAddress;
 	protected ProgramLocation currentLocation;
 	protected ProgramSelection currentSelection;
@@ -198,9 +200,23 @@ public abstract class GhidraScript extends FlatProgramAPI {
 	 * @param writer the target of script "print" statements
 	 */
 	public final void set(GhidraState state, TaskMonitor monitor, PrintWriter writer) {
+		set(state, monitor, writer, null);
+	}
+
+	/**
+	 * Set the context for this script.
+	 *
+	 * @param state state object
+	 * @param monitor the monitor to use during run
+	 * @param writer the target of script "print" statements (could be null)
+	 * @param errWriter the target of script "printerr" statements (could be null)
+	 */
+	public final void set(GhidraState state, TaskMonitor monitor, PrintWriter writer,
+			PrintWriter errWriter) {
 		this.state = state;
 		this.monitor = monitor;
 		this.writer = writer;
+		this.errorWriter = errWriter;
 		loadVariablesFromState();
 	}
 
@@ -228,14 +244,28 @@ public abstract class GhidraScript extends FlatProgramAPI {
 	 *
 	 * @param runState state object
 	 * @param runMonitor the monitor to use during run
-	 * @param runWriter the target of script "print" statements
+	 * @param runWriter the target of script "print" statements (could be null)
 	 * @throws Exception if the script excepts
 	 */
 	public final void execute(GhidraState runState, TaskMonitor runMonitor, PrintWriter runWriter)
 			throws Exception {
+		execute(runState, runMonitor, runWriter, null);
+	}
+
+	/**
+	 * Execute/run script and {@link #doCleanup} afterwards.
+	 *
+	 * @param runState state object
+	 * @param runMonitor the monitor to use during run
+	 * @param runWriter the target of script "print" statements (could be null)
+	 * @param errWriter the target of script "printerr" statements (could be null)
+	 * @throws Exception if the script excepts
+	 */
+	public final void execute(GhidraState runState, TaskMonitor runMonitor, PrintWriter runWriter,
+			PrintWriter errWriter) throws Exception {
 		boolean success = false;
 		try {
-			doExecute(runState, runMonitor, runWriter);
+			doExecute(runState, runMonitor, runWriter, errWriter);
 			success = true;
 		}
 		finally {
@@ -243,11 +273,12 @@ public abstract class GhidraScript extends FlatProgramAPI {
 		}
 	}
 
-	private void doExecute(GhidraState runState, TaskMonitor runMonitor, PrintWriter runWriter)
-			throws Exception {
+	private void doExecute(GhidraState runState, TaskMonitor runMonitor, PrintWriter runWriter,
+			PrintWriter errWriter) throws Exception {
 		this.state = runState;
 		this.monitor = runMonitor;
 		this.writer = runWriter;
+		this.errorWriter = errWriter;
 		loadVariablesFromState();
 
 		loadPropertiesFile();
@@ -855,7 +886,7 @@ public abstract class GhidraScript extends FlatProgramAPI {
 				updateStateFromVariables();
 			}
 
-			script.execute(scriptState, monitor, writer);
+			script.execute(scriptState, monitor, writer, errorWriter);
 
 			if (scriptState == state) {
 				loadVariablesFromState();
@@ -958,7 +989,7 @@ public abstract class GhidraScript extends FlatProgramAPI {
 	}
 
 	/**
-	 * Prints the message to the console followed by a line feed.
+	 * Prints the message followed by a line feed.
 	 *
 	 * @param message the message to print
 	 * @see #printf(String, Object...)
@@ -969,25 +1000,8 @@ public abstract class GhidraScript extends FlatProgramAPI {
 		// note: use a Message object to facilitate script message log filtering
 		Msg.info(GhidraScript.class, new ScriptMessage(decoratedMessage));
 
-		if (isRunningHeadless()) {
-			return;
-		}
-
-		PluginTool tool = state.getTool();
-		if (tool == null) {
-			return;
-		}
-
-		ConsoleService console = tool.getService(ConsoleService.class);
-		if (console == null) {
-			return;
-		}
-
-		try {
-			console.addMessage(getScriptName(), message);
-		}
-		catch (Exception e) {
-			Msg.error(this, "Script Message: " + message, e);
+		if (writer != null) {
+			writer.println(message);
 		}
 	}
 
@@ -1024,7 +1038,7 @@ public abstract class GhidraScript extends FlatProgramAPI {
 	}
 
 	/**
-	 * Prints the message to the console - no line feed
+	 * Prints the message - no line feed
 	 * <p>
 	 * <b><u>Note:</u> This method will not print out the name of the script,
 	 * as does {@link #println(String)}
@@ -1051,30 +1065,13 @@ public abstract class GhidraScript extends FlatProgramAPI {
 		}
 		Msg.info(GhidraScript.class, new ScriptMessage(strippedMessage));
 
-		if (isRunningHeadless()) {
-			return;
-		}
-
-		PluginTool tool = state.getTool();
-		if (tool == null) {
-			return;
-		}
-
-		ConsoleService console = tool.getService(ConsoleService.class);
-		if (console == null) {
-			return;
-		}
-
-		try {
-			console.print(message);
-		}
-		catch (Exception e) {
-			Msg.error(this, "Script Message: " + message, e);
+		if (writer != null) {
+			writer.print(message);
 		}
 	}
 
 	/**
-	 * Prints the error message to the console followed by a line feed.
+	 * Prints the error message followed by a line feed.
 	 *
 	 * @param message the error message to print
 	 */
@@ -1082,25 +1079,11 @@ public abstract class GhidraScript extends FlatProgramAPI {
 		String msgMessage = getScriptName() + "> " + message;
 		Msg.error(GhidraScript.class, new ScriptMessage(msgMessage));
 
-		if (isRunningHeadless()) {
-			return;
+		if (errorWriter != null) {
+			errorWriter.println(message);
 		}
-
-		PluginTool tool = state.getTool();
-		if (tool == null) {
-			return;
-		}
-
-		ConsoleService console = tool.getService(ConsoleService.class);
-		if (console == null) {
-			return;
-		}
-
-		try {
-			console.addErrorMessage(getScriptName(), message);
-		}
-		catch (Exception e) {
-			Msg.error(this, "Script Message: " + message, e);
+		else if (writer != null) {
+			writer.println(message);
 		}
 	}
 
@@ -3685,7 +3668,7 @@ public abstract class GhidraScript extends FlatProgramAPI {
 		pm.openProgram(program);
 		end(true);
 		GhidraState newState = new GhidraState(tool, tool.getProject(), program, null, null, null);
-		set(newState, monitor, writer);
+		set(newState, monitor, writer, errorWriter);
 		start();
 	}
 

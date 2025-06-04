@@ -57,7 +57,7 @@ public class PyGhidraPlugin extends ProgramPlugin {
 		super(tool);
 		GhidraState state = new GhidraState(tool, tool.getProject(), null, null, null, null);
 		// use the copy constructor so this state doesn't fire plugin events
-		script.set(new GhidraState(state), null, null, null);
+		script.set(new GhidraState(state), null, null, null, false);
 	}
 
 	/**

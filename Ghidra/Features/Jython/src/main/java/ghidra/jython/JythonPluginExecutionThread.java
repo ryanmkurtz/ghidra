@@ -72,7 +72,7 @@ class JythonPluginExecutionThread extends Thread {
 				new GhidraState(tool, tool.getProject(), program, plugin.getProgramLocation(),
 					plugin.getProgramSelection(), plugin.getProgramHighlight()),
 				interactiveTaskMonitor, new PrintWriter(console.getStdOut(), true),
-				new PrintWriter(console.getStdErr(), true));
+				new PrintWriter(console.getStdErr(), true), false);
 
 			// Execute the command
 			moreInputWanted.set(false);

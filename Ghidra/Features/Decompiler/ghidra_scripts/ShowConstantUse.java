@@ -330,7 +330,8 @@ public class ShowConstantUse extends GhidraScript {
 					if (scriptSource != null) {
 						GhidraScriptProvider provider = GhidraScriptUtil.getProvider(scriptSource);
 						GhidraScript script = provider.getScriptInstance(scriptSource, errorWriter);
-						script.execute(scriptState, monitor, writer, errorWriter);
+						script.execute(scriptState, monitor, writer, errorWriter,
+							useDecoratedOutput);
 						return;
 					}
 				}

@@ -144,6 +144,7 @@ public abstract class GhidraScript extends FlatProgramAPI {
 	protected GhidraState state;
 	protected PrintWriter writer;
 	protected PrintWriter errorWriter;
+	protected boolean useDecoratedOutput;
 	protected Address currentAddress;
 	protected ProgramLocation currentLocation;
 	protected ProgramSelection currentSelection;
@@ -201,12 +202,12 @@ public abstract class GhidraScript extends FlatProgramAPI {
 	 * @param state state object
 	 * @param monitor the monitor to use during run
 	 * @param writer the target of script "print" statements (may be null)
-	 * @deprecated Use {@link #set(GhidraState, TaskMonitor, PrintWriter, PrintWriter)} instead to
-	 *   also set a {@link PrintWriter} for {@code stderr}
+	 * @deprecated Use {@link #set(GhidraState, TaskMonitor, PrintWriter, PrintWriter, boolean)} 
+	 *   instead to also set a {@link PrintWriter} for {@code stderr}
 	 */
 	@Deprecated(since = "11.5")
 	public final void set(GhidraState state, TaskMonitor monitor, PrintWriter writer) {
-		set(state, monitor, writer, writer);
+		set(state, monitor, writer, writer, false);
 	}
 
 	/**
@@ -216,13 +217,16 @@ public abstract class GhidraScript extends FlatProgramAPI {
 	 * @param monitor the monitor to use during run
 	 * @param writer the target of script "print" statements (may be null)
 	 * @param errWriter the target of script "printerr" statements (may be null)
+	 * @param decorateOutput true to decorate the writer output with a script name prefix;
+	 *   otherwise, false
 	 */
 	public final void set(GhidraState state, TaskMonitor monitor, PrintWriter writer,
-			PrintWriter errWriter) {
+			PrintWriter errWriter, boolean decorateOutput) {
 		this.state = state;
 		this.monitor = monitor;
 		this.writer = writer;
 		this.errorWriter = errWriter;
+		this.useDecoratedOutput = decorateOutput;
 		loadVariablesFromState();
 	}
 
@@ -255,13 +259,13 @@ public abstract class GhidraScript extends FlatProgramAPI {
 	 * @param runMonitor the monitor to use during run
 	 * @param runWriter the target of script "print" statements (may be null)
 	 * @throws Exception if the script excepts
-	 * @deprecated Use {@link #execute(GhidraState, TaskMonitor, PrintWriter, PrintWriter)} instead 
-	 *   to also set a {@link PrintWriter} for {@code stderr}
+	 * @deprecated Use {@link #execute(GhidraState, TaskMonitor, PrintWriter, PrintWriter, boolean)}
+	 *   instead to also set a {@link PrintWriter} for {@code stderr}
 	 */
 	@Deprecated(since = "11.5")
 	public final void execute(GhidraState runState, TaskMonitor runMonitor, PrintWriter runWriter)
 			throws Exception {
-		execute(runState, runMonitor, runWriter, runWriter);
+		execute(runState, runMonitor, runWriter, runWriter, false);
 	}
 
 	/**
@@ -271,13 +275,15 @@ public abstract class GhidraScript extends FlatProgramAPI {
 	 * @param runMonitor the monitor to use during run
 	 * @param runWriter the target of script "print" statements (may be null)
 	 * @param errWriter the target of script "printerr" statements (may be null)
+	 * @param decorateOutput true to decorate the writer output with a script name prefix;
+	 *   otherwise, false
 	 * @throws Exception if the script excepts
 	 */
 	public final void execute(GhidraState runState, TaskMonitor runMonitor, PrintWriter runWriter,
-			PrintWriter errWriter) throws Exception {
+			PrintWriter errWriter, boolean decorateOutput) throws Exception {
 		boolean success = false;
 		try {
-			doExecute(runState, runMonitor, runWriter, errWriter);
+			doExecute(runState, runMonitor, runWriter, errWriter, decorateOutput);
 			success = true;
 		}
 		finally {
@@ -286,11 +292,12 @@ public abstract class GhidraScript extends FlatProgramAPI {
 	}
 
 	private void doExecute(GhidraState runState, TaskMonitor runMonitor, PrintWriter runWriter,
-			PrintWriter errWriter) throws Exception {
+			PrintWriter errWriter, boolean decorateOutput) throws Exception {
 		this.state = runState;
 		this.monitor = runMonitor;
 		this.writer = runWriter;
 		this.errorWriter = errWriter;
+		this.useDecoratedOutput = decorateOutput;
 		loadVariablesFromState();
 
 		loadPropertiesFile();
@@ -898,7 +905,7 @@ public abstract class GhidraScript extends FlatProgramAPI {
 				updateStateFromVariables();
 			}
 
-			script.execute(scriptState, monitor, writer, errorWriter);
+			script.execute(scriptState, monitor, writer, errorWriter, useDecoratedOutput);
 
 			if (scriptState == state) {
 				loadVariablesFromState();
@@ -993,45 +1000,44 @@ public abstract class GhidraScript extends FlatProgramAPI {
 
 	/**
 	 * Prints a newline to this script's {@code stdout} {@link PrintWriter}, which is set by 
-	 * {@link #set(GhidraState, TaskMonitor, PrintWriter, PrintWriter)} or
-	 * {@link #execute(GhidraState, TaskMonitor, PrintWriter, PrintWriter)}
+	 * {@link #set(GhidraState, TaskMonitor, PrintWriter, PrintWriter, boolean)} or
+	 * {@link #execute(GhidraState, TaskMonitor, PrintWriter, PrintWriter, boolean)}
 	 * <p>
-	 * Additionally, the newline (with the script name prepended) is written to Ghidra's log.
+	 * Additionally, the newline is written to Ghidra's log.
 	 */
 	public void println() {
 		println("");
 	}
 
 	/**
-	 * Prints the message followed by a line feed to this script's {@code stdout}
-	 * {@link PrintWriter}, which is set by 
-	 * {@link #set(GhidraState, TaskMonitor, PrintWriter, PrintWriter)} or
-	 * {@link #execute(GhidraState, TaskMonitor, PrintWriter, PrintWriter)}
+	 * Prints the {@link #useDecoratedOutput optionally} {@link #decorate(String) decorated} message
+	 * followed by a line feed to this script's {@code stdout} {@link PrintWriter}, which is set by 
+	 * {@link #set(GhidraState, TaskMonitor, PrintWriter, PrintWriter, boolean)} or
+	 * {@link #execute(GhidraState, TaskMonitor, PrintWriter, PrintWriter, boolean)}.
 	 * <p>
-	 * Additionally, the message (with the script name prepended) is written to Ghidra's log.
+	 * Additionally, the always {@link #decorate(String) decorated} message is written to Ghidra's 
+	 * log.
 	 *
 	 * @param message the message to print
 	 */
 	public void println(String message) {
-		String decoratedMessage = getScriptName() + "> " + message;
+		String decoratedMessage = decorate(message);
 
-		// note: use a Message object to facilitate script message log filtering
 		Msg.info(GhidraScript.class, new ScriptMessage(decoratedMessage));
 
 		if (writer != null) {
-			writer.println(message);
+			writer.println(useDecoratedOutput ? decoratedMessage : message);
 		}
 	}
 
 	/**
-	 * Prints the {@link java.util.Formatter formatted message} to this script's {@code stdout}
-	 * {@link PrintWriter}, which is set by 
-	 * {@link #set(GhidraState, TaskMonitor, PrintWriter, PrintWriter)} or
-	 * {@link #execute(GhidraState, TaskMonitor, PrintWriter, PrintWriter)}
+	 * Prints the undecorated {@link java.util.Formatter formatted message} to this script's 
+	 * {@code stdout} {@link PrintWriter}, which is set by 
+	 * {@link #set(GhidraState, TaskMonitor, PrintWriter, PrintWriter, boolean)} or
+	 * {@link #execute(GhidraState, TaskMonitor, PrintWriter, PrintWriter, boolean)}.
 	 * <p>
-	 * Additionally, the formatted message (with the script name prepended) is written to Ghidra's 
-	 * log.
-	 * 
+	 * Additionally, the undecorated formatted message is written to Ghidra's log.
+	 *
 	 * @param message the message to format
 	 * @param args C-like {@code printf} formatter arguments
 	 */
@@ -1041,11 +1047,12 @@ public abstract class GhidraScript extends FlatProgramAPI {
 	}
 
 	/**
-	 * Prints the message with no newline to this script's {@code stdout} {@link PrintWriter}, which
-	 * is set by {@link #set(GhidraState, TaskMonitor, PrintWriter, PrintWriter)} or
-	 * {@link #execute(GhidraState, TaskMonitor, PrintWriter, PrintWriter)}
+	 * Prints the undecorated message with no newline to this script's {@code stdout} 
+	 * {@link PrintWriter}, which is set by 
+	 * {@link #set(GhidraState, TaskMonitor, PrintWriter, PrintWriter, boolean)} or
+	 * {@link #execute(GhidraState, TaskMonitor, PrintWriter, PrintWriter, boolean)}.
 	 * <p>
-	 * Additionally, the message (with the script name prepended) is written to Ghidra's log.
+	 * Additionally, the undecorated message is written to Ghidra's log.
 	 *
 	 * @param message the message to print
 	 */
@@ -1067,23 +1074,36 @@ public abstract class GhidraScript extends FlatProgramAPI {
 	}
 
 	/**
-	 * Prints the message followed by a line feed to this script's {@code stderr}
-	 * {@link PrintWriter}, which is set by 
-	 * {@link #set(GhidraState, TaskMonitor, PrintWriter, PrintWriter)} or
-	 * {@link #execute(GhidraState, TaskMonitor, PrintWriter, PrintWriter)}
+	 * Prints the {@link #useDecoratedOutput optionally} {@link #decorate(String) decorated} message
+	 * followed by a line feed to this script's {@code stderr} {@link PrintWriter}, which is set by 
+	 * {@link #set(GhidraState, TaskMonitor, PrintWriter, PrintWriter, boolean)} or
+	 * {@link #execute(GhidraState, TaskMonitor, PrintWriter, PrintWriter, boolean)}.
 	 * <p>
-	 * Additionally, the message (with the script name prepended) is written to Ghidra's log as an
-	 * error.
+	 * Additionally, the always {@link #decorate(String) decorated} message is written to Ghidra's 
+	 * log as an error.
 	 *
 	 * @param message the message to print
 	 */
 	public void printerr(String message) {
-		String msgMessage = getScriptName() + "> " + message;
-		Msg.error(GhidraScript.class, new ScriptMessage(msgMessage));
+		String decoratedMessage = decorate(message);
+
+		Msg.error(GhidraScript.class, new ScriptMessage(decoratedMessage));
 
 		if (errorWriter != null) {
-			errorWriter.println(message);
+			errorWriter.println(useDecoratedOutput ? decoratedMessage : message);
 		}
+	}
+
+	/**
+	 * Decorates the given message, which is used by the {@link GhidraScript} "print" methods during
+	 * logging and {@link #useDecoratedOutput optionally} when outputting to the 
+	 * {@link PrintWriter}s. 
+	 * 
+	 * @param message The message to decorate
+	 * @return The decorated message
+	 */
+	protected String decorate(String message) {
+		return getScriptName() + "> " + message;
 	}
 
 	/**
@@ -3667,7 +3687,7 @@ public abstract class GhidraScript extends FlatProgramAPI {
 		pm.openProgram(program);
 		end(true);
 		GhidraState newState = new GhidraState(tool, tool.getProject(), program, null, null, null);
-		set(newState, monitor, writer, errorWriter);
+		set(newState, monitor, writer, errorWriter, useDecoratedOutput);
 		start();
 	}
 

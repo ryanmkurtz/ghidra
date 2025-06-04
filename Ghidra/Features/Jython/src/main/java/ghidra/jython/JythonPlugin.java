@@ -233,7 +233,7 @@ public class JythonPlugin extends ProgramPlugin
 			new GhidraState(tool, tool.getProject(), getCurrentProgram(), getProgramLocation(),
 				getProgramSelection(), getProgramHighlight()),
 			interactiveTaskMonitor, new PrintWriter(console.getStdOut(), true),
-			new PrintWriter(console.getStdErr(), true));
+			new PrintWriter(console.getStdErr(), true), false);
 		interpreter.injectScriptHierarchy(interactiveScript);
 		interactiveTaskMonitor = new JythonInteractiveTaskMonitor(console.getStdOut());
 
@@ -289,7 +289,7 @@ public class JythonPlugin extends ProgramPlugin
 		interactiveScript.set(
 			new GhidraState(tool, tool.getProject(), currentProgram, currentLocation,
 				currentSelection, currentHighlight),
-			interactiveTaskMonitor, console.getOutWriter(), console.getErrWriter());
+			interactiveTaskMonitor, console.getOutWriter(), console.getErrWriter(), false);
 
 		return interpreter.getCommandCompletions(cmd, includeBuiltins, caretPos);
 	}

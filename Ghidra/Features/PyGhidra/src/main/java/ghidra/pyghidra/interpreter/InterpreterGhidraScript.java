@@ -86,6 +86,6 @@ public final class InterpreterGhidraScript extends GhidraScript {
 	}
 
 	public void set(GhidraState state, PrintWriter writer, PrintWriter errorWriter) {
-		set(state, new InterpreterTaskMonitor(writer), writer, errorWriter);
+		set(state, new InterpreterTaskMonitor(writer), writer, errorWriter, false);
 	}
 }

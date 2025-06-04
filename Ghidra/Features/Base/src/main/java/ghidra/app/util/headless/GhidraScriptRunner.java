@@ -80,7 +80,7 @@ public class GhidraScriptRunner implements GhidraLaunchable {
 			PrintWriter writer = new PrintWriter(System.out, true);
 			PrintWriter errWriter = new PrintWriter(System.out, true);
 			Msg.info(this, "SCRIPT: " + scriptName);
-			script.execute(scriptState, TaskMonitor.DUMMY, writer, errWriter);
+			script.execute(scriptState, TaskMonitor.DUMMY, writer, errWriter, false);
 		}
 		catch (Exception exc) {
 			Program prog = scriptState.getCurrentProgram();

@@ -44,7 +44,7 @@ class RunScriptTask extends Task {
 			Thread.currentThread().setName(scriptName);
 
 			console.addMessage(scriptName, "Running...");
-			script.execute(currentState, monitor, console.getStdOut(), console.getStdErr());
+			script.execute(currentState, monitor, console.getStdOut(), console.getStdErr(), false);
 			console.addMessage(scriptName, "Finished!");
 		}
 		catch (CancelledException e) {

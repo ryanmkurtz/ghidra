@@ -773,7 +773,7 @@ public class GhidraScriptTest extends AbstractGhidraHeadedIntegrationTest {
 				// test stub
 			}
 		};
-		script.set(state, TaskMonitor.DUMMY, null, null);
+		script.set(state, TaskMonitor.DUMMY, null, null, false);
 		return script;
 	}
 

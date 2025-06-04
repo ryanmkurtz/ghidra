@@ -194,13 +194,19 @@ public abstract class GhidraScript extends FlatProgramAPI {
 
 	/**
 	 * Set the context for this script.
+	 * <p>
+	 * This method will use the given {@link PrintWriter} for both {@code stdout} and 
+	 * {@code stderr}.
 	 *
 	 * @param state state object
 	 * @param monitor the monitor to use during run
-	 * @param writer the target of script "print" statements
+	 * @param writer the target of script "print" statements (may be null)
+	 * @deprecated Use {@link #set(GhidraState, TaskMonitor, PrintWriter, PrintWriter)} instead to
+	 *   also set a {@link PrintWriter} for {@code stderr}
 	 */
+	@Deprecated(since = "11.5")
 	public final void set(GhidraState state, TaskMonitor monitor, PrintWriter writer) {
-		set(state, monitor, writer, null);
+		set(state, monitor, writer, writer);
 	}
 
 	/**
@@ -208,8 +214,8 @@ public abstract class GhidraScript extends FlatProgramAPI {
 	 *
 	 * @param state state object
 	 * @param monitor the monitor to use during run
-	 * @param writer the target of script "print" statements (could be null)
-	 * @param errWriter the target of script "printerr" statements (could be null)
+	 * @param writer the target of script "print" statements (may be null)
+	 * @param errWriter the target of script "printerr" statements (may be null)
 	 */
 	public final void set(GhidraState state, TaskMonitor monitor, PrintWriter writer,
 			PrintWriter errWriter) {
@@ -241,15 +247,21 @@ public abstract class GhidraScript extends FlatProgramAPI {
 
 	/**
 	 * Execute/run script and {@link #doCleanup} afterwards.
+	 * <p>
+	 * This method will use the given {@link PrintWriter} for both {@code stdout} and 
+	 * {@code stderr}.
 	 *
 	 * @param runState state object
 	 * @param runMonitor the monitor to use during run
-	 * @param runWriter the target of script "print" statements (could be null)
+	 * @param runWriter the target of script "print" statements (may be null)
 	 * @throws Exception if the script excepts
+	 * @deprecated Use {@link #execute(GhidraState, TaskMonitor, PrintWriter, PrintWriter)} instead 
+	 *   to also set a {@link PrintWriter} for {@code stderr}
 	 */
+	@Deprecated(since = "11.5")
 	public final void execute(GhidraState runState, TaskMonitor runMonitor, PrintWriter runWriter)
 			throws Exception {
-		execute(runState, runMonitor, runWriter, null);
+		execute(runState, runMonitor, runWriter, runWriter);
 	}
 
 	/**
@@ -257,8 +269,8 @@ public abstract class GhidraScript extends FlatProgramAPI {
 	 *
 	 * @param runState state object
 	 * @param runMonitor the monitor to use during run
-	 * @param runWriter the target of script "print" statements (could be null)
-	 * @param errWriter the target of script "printerr" statements (could be null)
+	 * @param runWriter the target of script "print" statements (may be null)
+	 * @param errWriter the target of script "printerr" statements (may be null)
 	 * @throws Exception if the script excepts
 	 */
 	public final void execute(GhidraState runState, TaskMonitor runMonitor, PrintWriter runWriter,
@@ -875,7 +887,7 @@ public abstract class GhidraScript extends FlatProgramAPI {
 					"': unable to run this script type.");
 			}
 
-			GhidraScript script = provider.getScriptInstance(scriptSource, writer);
+			GhidraScript script = provider.getScriptInstance(scriptSource, errorWriter);
 			script.setScriptArgs(scriptArguments);
 
 			if (potentialPropertiesFileLocs.size() > 0) {
@@ -980,19 +992,25 @@ public abstract class GhidraScript extends FlatProgramAPI {
 	}
 
 	/**
-	 * Prints a newline.
-	 *
-	 * @see #printf(String, Object...)
+	 * Prints a newline to this script's {@code stdout} {@link PrintWriter}, which is set by 
+	 * {@link #set(GhidraState, TaskMonitor, PrintWriter, PrintWriter)} or
+	 * {@link #execute(GhidraState, TaskMonitor, PrintWriter, PrintWriter)}
+	 * <p>
+	 * Additionally, the newline (with the script name prepended) is written to Ghidra's log.
 	 */
 	public void println() {
 		println("");
 	}
 
 	/**
-	 * Prints the message followed by a line feed.
+	 * Prints the message followed by a line feed to this script's {@code stdout}
+	 * {@link PrintWriter}, which is set by 
+	 * {@link #set(GhidraState, TaskMonitor, PrintWriter, PrintWriter)} or
+	 * {@link #execute(GhidraState, TaskMonitor, PrintWriter, PrintWriter)}
+	 * <p>
+	 * Additionally, the message (with the script name prepended) is written to Ghidra's log.
 	 *
 	 * @param message the message to print
-	 * @see #printf(String, Object...)
 	 */
 	public void println(String message) {
 		String decoratedMessage = getScriptName() + "> " + message;
@@ -1006,31 +1024,16 @@ public abstract class GhidraScript extends FlatProgramAPI {
 	}
 
 	/**
-	 * A convenience method to print a formatted String using Java's <code>printf</code>
-	 * feature, which is similar to that of the C programming language.
-	 * For a full description on Java's
-	 * <code>printf</code> usage, see {@link java.util.Formatter}.
+	 * Prints the {@link java.util.Formatter formatted message} to this script's {@code stdout}
+	 * {@link PrintWriter}, which is set by 
+	 * {@link #set(GhidraState, TaskMonitor, PrintWriter, PrintWriter)} or
+	 * {@link #execute(GhidraState, TaskMonitor, PrintWriter, PrintWriter)}
 	 * <p>
-	 * For examples, see the included <code>FormatExampleScript</code>.
-	 * <p>
-	 * <b><u>Note:</u> This method will not:</b>
-	 * <ul>
-	 * 	<li><b>print out the name of the script, as does {@link #println(String)}</b></li>
-	 *  <li><b>print a newline</b></li>
-	 * </ul>
-	 * If you would like the name of the script to precede you message, then you must add that
-	 * yourself.  The {@link #println(String)} does this via the following code:
-	 * <pre>
-	 *     String messageWithSource = getScriptName() + "&gt; " + message;
-	 * </pre>
-	 *
+	 * Additionally, the formatted message (with the script name prepended) is written to Ghidra's 
+	 * log.
+	 * 
 	 * @param message the message to format
-	 * @param args formatter arguments (see above)
-	 *
-	 * @see String#format(String, Object...)
-	 * @see java.util.Formatter
-	 * @see #print(String)
-	 * @see #println(String)
+	 * @param args C-like {@code printf} formatter arguments
 	 */
 	public void printf(String message, Object... args) {
 		String formattedString = String.format(message, args);
@@ -1038,20 +1041,13 @@ public abstract class GhidraScript extends FlatProgramAPI {
 	}
 
 	/**
-	 * Prints the message - no line feed
+	 * Prints the message with no newline to this script's {@code stdout} {@link PrintWriter}, which
+	 * is set by {@link #set(GhidraState, TaskMonitor, PrintWriter, PrintWriter)} or
+	 * {@link #execute(GhidraState, TaskMonitor, PrintWriter, PrintWriter)}
 	 * <p>
-	 * <b><u>Note:</u> This method will not print out the name of the script,
-	 * as does {@link #println(String)}
-	 * </b>
-	 * <p>
-	 * If you would like the name of the script to precede you message, then you must add that
-	 * yourself.  The {@link #println(String)} does this via the following code:
-	 * <pre>
-	 *     String messageWithSource = getScriptName() + "&gt; " + message;
-	 * </pre>
+	 * Additionally, the message (with the script name prepended) is written to Ghidra's log.
 	 *
 	 * @param message the message to print
-	 * @see #printf(String, Object...)
 	 */
 	public void print(String message) {
 		// clients using print may add their own newline, which interferes with our logging,
@@ -1071,9 +1067,15 @@ public abstract class GhidraScript extends FlatProgramAPI {
 	}
 
 	/**
-	 * Prints the error message followed by a line feed.
+	 * Prints the message followed by a line feed to this script's {@code stderr}
+	 * {@link PrintWriter}, which is set by 
+	 * {@link #set(GhidraState, TaskMonitor, PrintWriter, PrintWriter)} or
+	 * {@link #execute(GhidraState, TaskMonitor, PrintWriter, PrintWriter)}
+	 * <p>
+	 * Additionally, the message (with the script name prepended) is written to Ghidra's log as an
+	 * error.
 	 *
-	 * @param message the error message to print
+	 * @param message the message to print
 	 */
 	public void printerr(String message) {
 		String msgMessage = getScriptName() + "> " + message;
@@ -1081,9 +1083,6 @@ public abstract class GhidraScript extends FlatProgramAPI {
 
 		if (errorWriter != null) {
 			errorWriter.println(message);
-		}
-		else if (writer != null) {
-			writer.println(message);
 		}
 	}
 

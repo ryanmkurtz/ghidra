@@ -72,7 +72,7 @@ public class RunPCodeExportScriptTask extends Task {
 			script.setScriptArgs(new String[] { facts_directory });
 
 			console.addMessage(scriptName, "Running...");
-			script.execute(currentState, monitor, console.getStdOut());
+			script.execute(currentState, monitor, console.getStdOut(), console.getStdErr());
 			console.addMessage(scriptName, "Finished!");
 		}
 		catch (CancelledException e) {

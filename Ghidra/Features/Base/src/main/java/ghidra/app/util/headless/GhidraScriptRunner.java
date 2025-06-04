@@ -77,10 +77,10 @@ public class GhidraScriptRunner implements GhidraLaunchable {
 			srcFile != null ? srcFile.getAbsolutePath() : (script.getClass().getName() + ".class");
 
 		try {
-			PrintWriter writer = new PrintWriter(System.out);
+			PrintWriter writer = new PrintWriter(System.out, true);
+			PrintWriter errWriter = new PrintWriter(System.out, true);
 			Msg.info(this, "SCRIPT: " + scriptName);
-			script.execute(scriptState, TaskMonitor.DUMMY, writer);
-			writer.flush();
+			script.execute(scriptState, TaskMonitor.DUMMY, writer, errWriter);
 		}
 		catch (Exception exc) {
 			Program prog = scriptState.getCurrentProgram();
@@ -107,8 +107,8 @@ public class GhidraScriptRunner implements GhidraLaunchable {
 				"ensure you have installed the necessary plugin.");
 		}
 
-		PrintWriter writer = new PrintWriter(System.out);
-		GhidraScript foundScript = provider.getScriptInstance(scriptSourceFile, writer);
+		PrintWriter errWriter = new PrintWriter(System.err);
+		GhidraScript foundScript = provider.getScriptInstance(scriptSourceFile, errWriter);
 
 		if (propertiesFilePath != null) {
 			// Get basename, assume that it ends in .java, since we've already covered the

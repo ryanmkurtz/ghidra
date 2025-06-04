@@ -584,7 +584,10 @@ public class HeadlessAnalyzer {
 
 		try {
 			Msg.info(this, "SCRIPT: " + scriptName);
-			script.execute(scriptState, TaskMonitor.DUMMY, null);
+
+			// Execute the script, but don't directly write to stdout or stderr. The headless
+			// analyzer only uses the logging mechanism to get output to the user.
+			script.execute(scriptState, TaskMonitor.DUMMY, null, null);
 		}
 		catch (Exception exc) {
 			String logErrorMsg = "REPORT SCRIPT ERROR: ";
@@ -906,8 +909,8 @@ public class HeadlessAnalyzer {
 
 					// GhidraScriptProvider case
 					GhidraScriptProvider provider = GhidraScriptUtil.getProvider(currScriptFile);
-					PrintWriter writer = new PrintWriter(System.out);
-					currScript = provider.getScriptInstance(currScriptFile, writer);
+					PrintWriter errWriter = new PrintWriter(System.err);
+					currScript = provider.getScriptInstance(currScriptFile, errWriter);
 					currScript.setScriptArgs(scriptArgs);
 
 					if (options.propertiesFilePaths.size() > 0) {

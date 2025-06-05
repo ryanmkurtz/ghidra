@@ -49,7 +49,7 @@ public final class AutoImporter {
 	 * <p>
 	 * Note that when the import completes, the returned {@link Loaded} {@link Program}s are not 
 	 * saved to a project.  That is the responsibility of the caller (see 
-	 * {@link LoadResults#save(TaskMonitor)}).
+	 * {@link LoadResults#save(boolean, TaskMonitor)}).
 	 * <p>
 	 * It is also the responsibility of the caller to close the returned {@link Loaded} 
 	 * {@link Program}s with {@link LoadResults#close()} when they are no longer needed.
@@ -99,7 +99,7 @@ public final class AutoImporter {
 	 * <p>
 	 * Note that when the import completes, the returned {@link Loaded} {@link Program}s are not 
 	 * saved to a project.  That is the responsibility of the caller (see 
-	 * {@link LoadResults#save(TaskMonitor)}).
+	 * {@link LoadResults#save(boolean, TaskMonitor)}).
 	 * <p>
 	 * It is also the responsibility of the caller to close the returned {@link Loaded} 
 	 * {@link Program}s with {@link LoadResults#close()} when they are no longer needed.
@@ -149,7 +149,7 @@ public final class AutoImporter {
 	 * <p>
 	 * Note that when the import completes, the returned {@link Loaded} {@link Program}s are not 
 	 * saved to a project.  That is the responsibility of the caller (see 
-	 * {@link LoadResults#save(TaskMonitor)}).
+	 * {@link LoadResults#save(boolean, TaskMonitor)}).
 	 * <p>
 	 * It is also the responsibility of the caller to close the returned {@link Loaded} 
 	 * {@link Program}s with {@link LoadResults#close()} when they are no longer needed.
@@ -198,7 +198,7 @@ public final class AutoImporter {
 	 * <p>
 	 * Note that when the import completes, the returned {@link Loaded} {@link Program}s are not 
 	 * saved to a project.  That is the responsibility of the caller (see 
-	 * {@link LoadResults#save(TaskMonitor)}).
+	 * {@link LoadResults#save(boolean, TaskMonitor)}).
 	 * <p>
 	 * It is also the responsibility of the caller to close the returned {@link Loaded} 
 	 * {@link Program}s with {@link LoadResults#close()} when they are no longer needed.
@@ -252,7 +252,7 @@ public final class AutoImporter {
 	 * <p>
 	 * Note that when the import completes, the returned {@link Loaded} {@link Program}s are not 
 	 * saved to a project.  That is the responsibility of the caller (see 
-	 * {@link LoadResults#save(TaskMonitor)}).
+	 * {@link LoadResults#save(boolean, TaskMonitor)}).
 	 * <p>
 	 * It is also the responsibility of the caller to close the returned {@link Loaded} 
 	 * {@link Program}s with {@link LoadResults#close()} when they are no longer needed.
@@ -307,7 +307,7 @@ public final class AutoImporter {
 	 * <p>
 	 * Note that when the import completes, the returned {@link Loaded} {@link Program}s are not 
 	 * saved to a project.  That is the responsibility of the caller (see 
-	 * {@link LoadResults#save(TaskMonitor)}).
+	 * {@link LoadResults#save(boolean, TaskMonitor)}).
 	 * <p>
 	 * It is also the responsibility of the caller to close the returned {@link Loaded} 
 	 * {@link Program}s with {@link LoadResults#close()} when they are no longer needed.
@@ -361,7 +361,7 @@ public final class AutoImporter {
 	 * <p>
 	 * Note that when the import completes, the returned {@link Loaded} {@link Program}s are not 
 	 * saved to a project.  That is the responsibility of the caller (see 
-	 * {@link LoadResults#save(TaskMonitor)}).
+	 * {@link LoadResults#save(boolean, TaskMonitor)}).
 	 * <p>
 	 * It is also the responsibility of the caller to close the returned {@link Loaded} 
 	 * {@link Program}s with {@link LoadResults#close()} when they are no longer needed.
@@ -415,7 +415,7 @@ public final class AutoImporter {
 	 * <p>
 	 * Note that when the import completes, the returned {@link Loaded} {@link Program}s are not 
 	 * saved to a project.  That is the responsibility of the caller (see 
-	 * {@link LoadResults#save(TaskMonitor)}).
+	 * {@link LoadResults#save(boolean, TaskMonitor)}).
 	 * <p>
 	 * It is also the responsibility of the caller to close the returned {@link Loaded} 
 	 * {@link Program}s with {@link LoadResults#close()} when they are no longer needed.
@@ -473,7 +473,7 @@ public final class AutoImporter {
 	 * <p>
 	 * Note that when the import completes, the returned {@link Loaded} {@link Program}s are not 
 	 * saved to a project.  That is the responsibility of the caller (see 
-	 * {@link LoadResults#save(TaskMonitor)}).
+	 * {@link LoadResults#save(boolean, TaskMonitor)}).
 	 * <p>
 	 * It is also the responsibility of the caller to close the returned {@link Loaded} 
 	 * {@link Program}s with {@link LoadResults#close()} when they are no longer needed.
@@ -643,7 +643,7 @@ public final class AutoImporter {
 	 * <p>
 	 * Note that when the import completes, the returned {@link Loaded} {@link Program}s are not 
 	 * saved to a project.  That is the responsibility of the caller (see 
-	 * {@link LoadResults#save(TaskMonitor)}).
+	 * {@link LoadResults#save(boolean, TaskMonitor)}).
 	 * <p>
 	 * It is also the responsibility of the caller to release the returned {@link Loaded} 
 	 * {@link Program}s with {@link LoadResults#close()} when they are no longer needed.
@@ -706,7 +706,7 @@ public final class AutoImporter {
 	 * <p>
 	 * Note that when the import completes, the returned {@link Loaded} {@link Program}s are not 
 	 * saved to a project.  That is the responsibility of the caller (see 
-	 * {@link LoadResults#save(TaskMonitor)}).
+	 * {@link LoadResults#save(boolean, TaskMonitor)}).
 	 * <p>
 	 * It is also the responsibility of the caller to release the returned {@link Loaded} 
 	 * {@link Program}s with {@link LoadResults#close()} when they are no longer needed.
@@ -769,7 +769,7 @@ public final class AutoImporter {
 	 * <p>
 	 * Note that when the import completes, the returned {@link Loaded} {@link Program}s are not 
 	 * saved to a project.  That is the responsibility of the caller (see 
-	 * {@link LoadResults#save(TaskMonitor)}).
+	 * {@link LoadResults#save(boolean, TaskMonitor)}).
 	 * <p>
 	 * It is also the responsibility of the caller to release the returned {@link Loaded} 
 	 * {@link Program}s with {@link LoadResults#close()} when they are no longer needed.

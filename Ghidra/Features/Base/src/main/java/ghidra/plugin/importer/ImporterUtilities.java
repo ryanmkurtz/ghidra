@@ -415,7 +415,7 @@ public class ImporterUtilities {
 			try (LoadResults<? extends DomainObject> loadResults = loadSpec.getLoader()
 					.load(bp, programName, tool.getProject(), destFolder.getPathname(), loadSpec,
 						options, messageLog, consumer, monitor)) {
-				loadResults.save(monitor);
+				loadResults.save(true, monitor);
 				doPostImportProcessing(tool, programManager, fsrl, loadResults,
 					messageLog.toString(), monitor);
 			}

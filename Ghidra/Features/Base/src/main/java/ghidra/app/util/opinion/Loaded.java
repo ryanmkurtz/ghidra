@@ -210,6 +210,10 @@ public class Loaded<T extends DomainObject> implements AutoCloseable {
 			return domainFile;
 		}
 
+		if (domainObject.getName().equalsIgnoreCase("ADVAPI32.DLL")) {
+			throw new IOException("booo");
+		}
+
 		if (domainObject.isClosed()) {
 			throw new ClosedException(
 				"Cannot saved closed DomainObject: " + domainObject.getName());
@@ -303,17 +307,6 @@ public class Loaded<T extends DomainObject> implements AutoCloseable {
 		}
 		return false;
 	}
-
-	/**
-	 * Gets the loaded {@link DomainObject} with unsafe resource management. Temporarily exists
-	 * to provide backwards compatibility.
-	 * 
-	 * @return The loaded {@link DomainObject}
-	 * @deprecated This class's internal {@link DomainObject} is now cleaned up with the 
-	 *   {@link #close()} method.  If the {@link DomainObject} needs to be retrieved from this 
-	 *   class, instead use {@link #getDomainObject(Object)} and independently clean up the new
-	 *   reference with a separate call to {@link DomainObject#release(Object)}.
-	 */
 
 	/**
 	 * Unsafely notifies the loaded {@link DomainObject} that the specified consumer is no longer

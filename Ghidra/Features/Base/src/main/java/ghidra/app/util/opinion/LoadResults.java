@@ -62,13 +62,13 @@ public class LoadResults<T extends DomainObject> implements Iterable<Loaded<T>>,
 	 * 
 	 * @param domainObject The loaded {@link DomainObject}
 	 * @param name The name of the loaded {@link DomainObject}.  If a 
-	 *   {@link #save(TaskMonitor) save} occurs, this will attempted to be used for the resulting 
-	 *   {@link DomainFile}'s name.
+	 *   {@link #save(boolean, TaskMonitor) save} occurs, this will attempted to be used for the 
+	 *   resulting {@link DomainFile}'s name.
 	 * @param project If not null, the project this will get saved to during a 
-	 *   {@link #save(TaskMonitor)} operation
+	 *   {@link #save(boolean, TaskMonitor)} operation
 	 * @param projectFolderPath The project folder path this will get saved to during a 
-	 *   {@link #save(TaskMonitor) save} operation.  If null or empty, the root project folder will
-	 *   be used.
+	 *   {@link #save(boolean, TaskMonitor) save} operation.  If null or empty, the root project 
+	 *   folder will be used.
 	 * @param consumer A reference to the object "consuming" the returned this 
 	 *   {@link LoadResults}, used to ensure the underlying {@link DomainObject}s are only closed 
 	 *   when every consumer is done with it (see {@link #close()}). NOTE:  Wrapping a 
@@ -150,16 +150,16 @@ public class LoadResults<T extends DomainObject> implements Iterable<Loaded<T>>,
 	/**
 	 * {@link Loaded#save(TaskMonitor) Saves} each {@link Loaded} {@link DomainObject} to the given 
 	 * {@link Project}.
-	 * <p>
-	 * NOTE: If any fail to save, none will be saved (already saved {@link DomainFile}s will be
-	 * cleaned up/deleted).
 	 * 
+	 * @param rollbackAndClose True if failing to save any {@link Loaded} {@link DomainObject} 
+	 *   should result in none being saved; false if partial saves are allowed. Rolling back will 
+	 *   {@link Loaded#close()} each {@link Loaded} result.
 	 * @param monitor A cancelable task monitor
 	 * @throws CancelledException if the operation was cancelled
 	 * @throws IOException If there was a problem saving
 	 * @see Loaded#save(TaskMonitor)
 	 */
-	public void save(TaskMonitor monitor)
+	public void save(boolean rollbackAndClose, TaskMonitor monitor)
 			throws CancelledException, IOException {
 		boolean success = false;
 		try {
@@ -169,9 +169,10 @@ public class LoadResults<T extends DomainObject> implements Iterable<Loaded<T>>,
 			success = true;
 		}
 		finally {
-			if (!success) {
+			if (!success && rollbackAndClose) {
 				for (Loaded<T> loaded : loadedList) {
 					try {
+						loaded.close();
 						loaded.delete();
 					}
 					catch (Exception e1) {

@@ -76,7 +76,7 @@ public class LoadLibrariesOptionsDialog extends OptionsDialog {
 							program.getDomainFile().getParent().getPathname(), loadSpec,
 						getOptions(), messageLog, consumer, monitor)) {
 
-				loadResults.save(monitor);
+				loadResults.save(true, monitor);
 				
 				// Display results
 				String importMessages = messageLog.toString();

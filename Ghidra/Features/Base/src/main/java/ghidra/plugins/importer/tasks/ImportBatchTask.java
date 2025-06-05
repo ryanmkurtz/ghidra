@@ -154,7 +154,7 @@ public class ImportBatchTask extends Task {
 
 					// TODO: accumulate batch results
 					if (loadResults != null) {
-						loadResults.save(monitor);
+						loadResults.save(true, monitor);
 						processImportResults(loadResults, batchLoadConfig, monitor);
 					}
 				}

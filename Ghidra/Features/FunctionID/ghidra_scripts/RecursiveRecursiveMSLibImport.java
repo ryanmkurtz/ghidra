@@ -163,7 +163,7 @@ public class RecursiveRecursiveMSLibImport extends GhidraScript {
 										.log(log)
 										.monitor(monitor)
 										.load()) {
-								loadResults.save(monitor);
+								loadResults.save(true, monitor);
 							}
 						}
 					}

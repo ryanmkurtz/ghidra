@@ -412,8 +412,10 @@ public class ProgramLoader {
 		 * @throws VersionException if there was an issue with database versions, probably due to a 
 		 *   failed language upgrade
 		 * @throws LoadException if there was a problem loading
+		 * @deprecated Use {@link #load()} instead
 		 */
 		@SuppressWarnings("unchecked")
+		@Deprecated(since = "11.5", forRemoval = true)
 		LoadResults<Program> load(Object consumer) throws IOException, LanguageNotFoundException,
 				CancelledException, VersionException, LoadException {
 			try (ByteProvider p = getSourceAsProvider()) {

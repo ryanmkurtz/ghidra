@@ -77,10 +77,9 @@ public class GhidraScriptRunner implements GhidraLaunchable {
 			srcFile != null ? srcFile.getAbsolutePath() : (script.getClass().getName() + ".class");
 
 		try {
-			PrintWriter writer = new PrintWriter(System.out, true);
-			PrintWriter errWriter = new PrintWriter(System.out, true);
 			Msg.info(this, "SCRIPT: " + scriptName);
-			script.execute(scriptState, TaskMonitor.DUMMY, writer, errWriter, false);
+			ScriptControls controls = new ScriptControls(System.out, System.err, TaskMonitor.DUMMY);
+			script.execute(scriptState, controls);
 		}
 		catch (Exception exc) {
 			Program prog = scriptState.getCurrentProgram();

@@ -44,7 +44,6 @@ import ghidra.test.AbstractGhidraHeadedIntegrationTest;
 import ghidra.test.TestEnv;
 import ghidra.util.Msg;
 import ghidra.util.exception.AssertException;
-import ghidra.util.task.TaskMonitor;
 
 public class GhidraScriptTest extends AbstractGhidraHeadedIntegrationTest {
 
@@ -773,7 +772,7 @@ public class GhidraScriptTest extends AbstractGhidraHeadedIntegrationTest {
 				// test stub
 			}
 		};
-		script.set(state, TaskMonitor.DUMMY, null, null, false);
+		script.set(state, ScriptControls.NONE);
 		return script;
 	}
 

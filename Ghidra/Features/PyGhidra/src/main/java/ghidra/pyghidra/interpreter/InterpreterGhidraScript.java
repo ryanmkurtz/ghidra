@@ -17,8 +17,7 @@ package ghidra.pyghidra.interpreter;
 
 import java.io.PrintWriter;
 
-import ghidra.app.script.GhidraScript;
-import ghidra.app.script.GhidraState;
+import ghidra.app.script.*;
 import ghidra.program.model.address.Address;
 import ghidra.program.model.listing.Program;
 import ghidra.program.util.ProgramLocation;
@@ -85,7 +84,7 @@ public final class InterpreterGhidraScript extends GhidraScript {
 		state.setCurrentHighlight(highlight);
 	}
 
-	public void set(GhidraState state, PrintWriter writer, PrintWriter errorWriter) {
-		set(state, new InterpreterTaskMonitor(writer), writer, errorWriter, false);
+	public void set(GhidraState state, PrintWriter writer) {
+		set(state, new ScriptControls(writer, writer, new InterpreterTaskMonitor(writer)));
 	}
 }

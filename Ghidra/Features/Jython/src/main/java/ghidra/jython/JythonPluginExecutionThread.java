@@ -16,7 +16,6 @@
 package ghidra.jython;
 
 import java.io.File;
-import java.io.PrintWriter;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.python.core.PyException;
@@ -25,6 +24,7 @@ import db.Transaction;
 import generic.jar.ResourceFile;
 import ghidra.app.plugin.core.interpreter.InterpreterConsole;
 import ghidra.app.script.GhidraState;
+import ghidra.app.script.ScriptControls;
 import ghidra.framework.plugintool.PluginTool;
 import ghidra.program.model.listing.Program;
 import ghidra.util.task.TaskMonitor;
@@ -71,8 +71,7 @@ class JythonPluginExecutionThread extends Thread {
 			interactiveScript.set(
 				new GhidraState(tool, tool.getProject(), program, plugin.getProgramLocation(),
 					plugin.getProgramSelection(), plugin.getProgramHighlight()),
-				interactiveTaskMonitor, new PrintWriter(console.getStdOut(), true),
-				new PrintWriter(console.getStdErr(), true), false);
+				new ScriptControls(console, interactiveTaskMonitor));
 
 			// Execute the command
 			moreInputWanted.set(false);

@@ -423,7 +423,7 @@ public abstract class HeadlessScript extends GhidraScript {
 
 			script.setScriptArgs(scriptArguments);
 
-			script.execute(scriptState, monitor, writer, errorWriter, useDecoratedOutput);
+			script.execute(scriptState);
 
 			if (scriptState == state) {
 				loadVariablesFromState();

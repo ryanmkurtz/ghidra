@@ -96,7 +96,7 @@ public class WindowsResourceReferenceAnalyzer extends AbstractAnalyzer {
 			PrintWriter errWriter = getErrorMsgStream(tool);
 
 			GhidraScript script = provider.getScriptInstance(sourceFile, errWriter);
-			script.set(state, monitor, writer, errWriter, false);
+			script.set(state, new ScriptControls(writer, errWriter, monitor));
 
 			// This code was added so the analyzer won't print script messages to console
 			// This also adds the ability to pass the option to add or not add bookmarks to the script

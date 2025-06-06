@@ -15,8 +15,7 @@
  */
 package ghidra.app.plugin.core.script;
 
-import ghidra.app.script.GhidraScript;
-import ghidra.app.script.GhidraState;
+import ghidra.app.script.*;
 import ghidra.app.services.ConsoleService;
 import ghidra.program.model.listing.Program;
 import ghidra.util.Msg;
@@ -44,7 +43,7 @@ class RunScriptTask extends Task {
 			Thread.currentThread().setName(scriptName);
 
 			console.addMessage(scriptName, "Running...");
-			script.execute(currentState, monitor, console.getStdOut(), console.getStdErr(), false);
+			script.execute(currentState, new ScriptControls(console, monitor));
 			console.addMessage(scriptName, "Finished!");
 		}
 		catch (CancelledException e) {

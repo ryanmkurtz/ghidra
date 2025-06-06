@@ -34,6 +34,7 @@ import ghidra.app.plugin.ProgramPlugin;
 import ghidra.app.plugin.core.console.CodeCompletion;
 import ghidra.app.plugin.core.interpreter.*;
 import ghidra.app.script.GhidraState;
+import ghidra.app.script.ScriptControls;
 import ghidra.framework.options.OptionsChangeListener;
 import ghidra.framework.options.ToolOptions;
 import ghidra.framework.plugintool.PluginInfo;
@@ -232,8 +233,7 @@ public class JythonPlugin extends ProgramPlugin
 		interactiveScript.set(
 			new GhidraState(tool, tool.getProject(), getCurrentProgram(), getProgramLocation(),
 				getProgramSelection(), getProgramHighlight()),
-			interactiveTaskMonitor, new PrintWriter(console.getStdOut(), true),
-			new PrintWriter(console.getStdErr(), true), false);
+			new ScriptControls(console, interactiveTaskMonitor));
 		interpreter.injectScriptHierarchy(interactiveScript);
 		interactiveTaskMonitor = new JythonInteractiveTaskMonitor(console.getStdOut());
 
@@ -289,7 +289,7 @@ public class JythonPlugin extends ProgramPlugin
 		interactiveScript.set(
 			new GhidraState(tool, tool.getProject(), currentProgram, currentLocation,
 				currentSelection, currentHighlight),
-			interactiveTaskMonitor, console.getOutWriter(), console.getErrWriter(), false);
+			new ScriptControls(console, interactiveTaskMonitor));
 
 		return interpreter.getCommandCompletions(cmd, includeBuiltins, caretPos);
 	}

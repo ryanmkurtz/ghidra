@@ -72,12 +72,12 @@ public class JythonScript extends GhidraScript {
 			}
 
 			if (ghidraScript instanceof JythonScript) {
-				ghidraScript.set(scriptState, monitor, writer, errorWriter, useDecoratedOutput);
+				ghidraScript.set(scriptState);
 				JythonScript jythonScript = (JythonScript) ghidraScript;
 				interpreter.execFile(jythonScript.getSourceFile(), jythonScript);
 			}
 			else {
-				ghidraScript.execute(scriptState, monitor, writer, errorWriter, useDecoratedOutput);
+				ghidraScript.execute(scriptState);
 			}
 
 			if (scriptState == state) {

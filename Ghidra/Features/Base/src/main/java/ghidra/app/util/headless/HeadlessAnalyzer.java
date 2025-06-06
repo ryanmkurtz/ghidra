@@ -587,7 +587,7 @@ public class HeadlessAnalyzer {
 
 			// Execute the script, but don't directly write to stdout or stderr. The headless
 			// analyzer only uses the logging mechanism to get output to the user.
-			script.execute(scriptState, TaskMonitor.DUMMY, null, null, false);
+			script.execute(scriptState, ScriptControls.NONE);
 		}
 		catch (Exception exc) {
 			String logErrorMsg = "REPORT SCRIPT ERROR: ";

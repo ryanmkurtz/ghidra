@@ -25,8 +25,7 @@ import org.junit.*;
 import generic.jar.ResourceFile;
 import ghidra.app.plugin.core.console.ConsolePlugin;
 import ghidra.app.plugin.core.osgi.BundleHost;
-import ghidra.app.script.GhidraScriptUtil;
-import ghidra.app.script.GhidraState;
+import ghidra.app.script.*;
 import ghidra.app.services.ConsoleService;
 import ghidra.framework.Application;
 import ghidra.framework.plugintool.PluginTool;
@@ -128,7 +127,7 @@ public class JythonScriptTest extends AbstractGhidraHeadedIntegrationTest {
 		JythonScriptProvider scriptProvider = new JythonScriptProvider();
 		PrintWriter writer = new PrintWriter(new ByteArrayOutputStream());
 		JythonScript script = (JythonScript) scriptProvider.getScriptInstance(scriptFile, writer);
-		script.set(state, TaskMonitor.DUMMY, writer, writer, false);
+		script.set(state, new ScriptControls(writer, writer, TaskMonitor.DUMMY));
 		script.run();
 
 		waitForSwing();

@@ -20,11 +20,14 @@
 //@toolbar    world.png
 
 import ghidra.app.script.GhidraScript;
+import ghidra.app.script.ScriptControls;
 
 public class HelloWorldScript extends GhidraScript {
 
 	@Override
 	public void run() throws Exception {
 		println("Hello World");
+		set(state, new ScriptControls(writer, errorWriter, true, monitor));
+		runScript("python_basics.py");
 	}
 }

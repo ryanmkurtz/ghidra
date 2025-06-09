@@ -17,6 +17,8 @@ package ghidra.app.util.opinion;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 import ghidra.framework.model.*;
 import ghidra.util.InvalidNameException;
@@ -27,23 +29,18 @@ import ghidra.util.task.TaskMonitor;
  * A loaded {@link DomainObject} produced by a {@link Loader}.  In addition to storing the loaded
  * {@link DomainObject}, it also stores the {@link Loader}'s desired name and project folder path 
  * for the loaded {@link DomainObject}, should it get saved to a project.
- * <p>
- * NOTE: If an object of this type is marked as {@link #setDiscard(boolean) discardable}, it should
- * be {@link #close() closed} and not saved. 
  * 
  * @param <T> The type of {@link DomainObject} that was loaded
  */
 public class Loaded<T extends DomainObject> implements AutoCloseable {
 
-	private final T domainObject;
-	private final String name;
-	private Project project;
-	private String projectFolderPath;
-	private Object loadedConsumer;
+	protected final T domainObject;
+	protected final String name;
+	protected Project project;
+	protected String projectFolderPath;
+	protected Object loadedConsumer;
 
-	private DomainFile domainFile;
-	private boolean ignoreSave;
-	private boolean discard;
+	protected DomainFile domainFile;
 
 	/**
 	 * Creates a new {@link Loaded} object.
@@ -71,25 +68,6 @@ public class Loaded<T extends DomainObject> implements AutoCloseable {
 		this.project = project;
 		this.loadedConsumer = consumer;
 		setProjectFolderPath(projectFolderPath);
-	}
-
-	/**
-	 * Creates a {@link Loaded} view on an existing {@link DomainFile}. This type of {@link Loaded}
-	 * object cannot be saved.
-	 * 
-	 * @param domainObject The loaded {@link DomainObject}
-	 * @param domainFile The {@link DomainFile} to be loaded
-	 * @param consumer A reference to the object "consuming" the returned {@link Loaded} 
-	 *   {@link DomainObject}, used to ensure the underlying {@link DomainObject} is only closed 
-	 *   when every consumer is done with it (see {@link #close()}). NOTE:  Wrapping a 
-	 *   {@link DomainObject} in a {@link Loaded} transfers responsibility of releasing the 
-	 *   given {@link DomainObject} to this {@link Loaded}'s {@link #close()} method. 
-	 */
-	public Loaded(T domainObject, DomainFile domainFile, Object consumer) {
-		this(domainObject, domainFile.getName(), null, domainFile.getParent().getPathname(),
-			consumer);
-		this.domainFile = domainFile;
-		this.ignoreSave = true;
 	}
 
 	/**
@@ -135,6 +113,27 @@ public class Loaded<T extends DomainObject> implements AutoCloseable {
 	 */
 	public Class<? extends DomainObject> getDomainObjectType() {
 		return domainObject.getClass();
+	}
+
+	/**
+	 * Safely applies the given operation to the loaded {@link DomainObject} without the need to 
+	 * worry about resource management
+	 * 
+	 * @param operation The operation to apply to the loaded {@link DomainObject}
+	 */
+	public void apply(Consumer<T> operation) {
+		operation.accept(domainObject);
+	}
+
+	/**
+	 * Safely tests the given predicate on the loaded {@link DomainObject} without the need to 
+	 * worry about resource management
+	 * 
+	 * @param predicate The predicate to test
+	 * @return The result of the test
+	 */
+	public boolean check(Predicate<T> predicate) {
+		return predicate.test(domainObject);
 	}
 
 	/**
@@ -206,14 +205,6 @@ public class Loaded<T extends DomainObject> implements AutoCloseable {
 	public DomainFile save(TaskMonitor monitor)
 			throws CancelledException, ClosedException, IOException {
 
-		if (ignoreSave) {
-			return domainFile;
-		}
-
-		if (domainObject.getName().equalsIgnoreCase("ADVAPI32.DLL")) {
-			throw new IOException("booo");
-		}
-
 		if (domainObject.isClosed()) {
 			throw new ClosedException(
 				"Cannot saved closed DomainObject: " + domainObject.getName());
@@ -267,45 +258,6 @@ public class Loaded<T extends DomainObject> implements AutoCloseable {
 			throw new FileNotFoundException("Saved DomainFile no longer exists: " + domainFile);
 		}
 		return domainFile;
-	}
-
-	/**
-	 * Checks to see if this {@link Loaded} {@link DomainObject} should be discarded (not saved)
-	 * 
-	 * @return True if this {@link Loaded} {@link DomainObject} should be discarded; otherwise, 
-	 *   false
-	 */
-	public boolean shouldDiscard() {
-		return discard;
-	}
-
-	/**
-	 * Sets whether or not this {@link Loaded} {@link DomainObject} should be discarded (not saved)
-	 * 
-	 * @param discard True if this {@link Loaded} {@link DomainObject} should be discarded;
-	 *   otherwise, false
-	 */
-	public void setDiscard(boolean discard) {
-		this.discard = discard;
-	}
-
-
-	/**
-	 * Deletes the loaded {@link DomainObject}'s associated {@link DomainFile} that was 
-	 * {@link #save(TaskMonitor) saved}.
-	 * 
-	 * @return True if the the {@link DomainFile} existed and was deleted; false if it did not
-	 *   exist
-	 * @throws IOException If there was an issue deleting the saved {@link DomainFile}
-	 * @see #save(TaskMonitor)
-	 */
-	boolean delete() throws IOException {
-		if (domainFile != null && domainFile.exists()) {
-			domainFile.delete();
-			domainFile = null;
-			return true;
-		}
-		return false;
 	}
 
 	/**

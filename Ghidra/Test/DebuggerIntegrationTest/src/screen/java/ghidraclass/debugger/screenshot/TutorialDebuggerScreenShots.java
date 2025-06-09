@@ -395,7 +395,7 @@ public class TutorialDebuggerScreenShots extends GhidraScreenShotGenerator
 					.monitor(monitor)
 				.load()) {
 
-			result.save(true, monitor);
+			result.save(monitor);
 			prog = result.getPrimaryDomainObject(this);
 			GhidraProgramUtilities.markProgramNotToAskToAnalyze(prog);
 			programManager.openProgram(prog);

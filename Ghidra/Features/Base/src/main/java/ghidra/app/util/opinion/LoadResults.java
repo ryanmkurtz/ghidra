@@ -21,7 +21,6 @@ import java.util.function.Predicate;
 
 import ghidra.app.util.importer.MessageLog;
 import ghidra.framework.model.*;
-import ghidra.util.Msg;
 import ghidra.util.exception.CancelledException;
 import ghidra.util.task.TaskMonitor;
 
@@ -62,13 +61,13 @@ public class LoadResults<T extends DomainObject> implements Iterable<Loaded<T>>,
 	 * 
 	 * @param domainObject The loaded {@link DomainObject}
 	 * @param name The name of the loaded {@link DomainObject}.  If a 
-	 *   {@link #save(boolean, TaskMonitor) save} occurs, this will attempted to be used for the 
-	 *   resulting {@link DomainFile}'s name.
+	 *   {@link #save(TaskMonitor) save} occurs, this will attempted to be used for the resulting 
+	 *   {@link DomainFile}'s name.
 	 * @param project If not null, the project this will get saved to during a 
-	 *   {@link #save(boolean, TaskMonitor)} operation
+	 *   {@link #save(TaskMonitor)} operation
 	 * @param projectFolderPath The project folder path this will get saved to during a 
-	 *   {@link #save(boolean, TaskMonitor) save} operation.  If null or empty, the root project 
-	 *   folder will be used.
+	 *   {@link #save(TaskMonitor) save} operation.  If null or empty, the root project folder will
+	 *   be used.
 	 * @param consumer A reference to the object "consuming" the returned this 
 	 *   {@link LoadResults}, used to ensure the underlying {@link DomainObject}s are only closed 
 	 *   when every consumer is done with it (see {@link #close()}). NOTE:  Wrapping a 
@@ -151,35 +150,16 @@ public class LoadResults<T extends DomainObject> implements Iterable<Loaded<T>>,
 	 * {@link Loaded#save(TaskMonitor) Saves} each {@link Loaded} {@link DomainObject} to the given 
 	 * {@link Project}.
 	 * 
-	 * @param rollbackAndClose True if failing to save any {@link Loaded} {@link DomainObject} 
-	 *   should result in none being saved; false if partial saves are allowed. Rolling back will 
-	 *   {@link Loaded#close()} each {@link Loaded} result.
 	 * @param monitor A cancelable task monitor
 	 * @throws CancelledException if the operation was cancelled
-	 * @throws IOException If there was a problem saving
+	 * @throws IOException If there was a problem saving. A thrown exception may result in only some
+	 *   of the {@link Loaded} elements being saved. It is the responsibility of the caller to clean
+	 *   things up appropriately.
 	 * @see Loaded#save(TaskMonitor)
 	 */
-	public void save(boolean rollbackAndClose, TaskMonitor monitor)
-			throws CancelledException, IOException {
-		boolean success = false;
-		try {
-			for (Loaded<T> loaded : loadedList) {
-				loaded.save(monitor);
-			}
-			success = true;
-		}
-		finally {
-			if (!success && rollbackAndClose) {
-				for (Loaded<T> loaded : loadedList) {
-					try {
-						loaded.close();
-						loaded.delete();
-					}
-					catch (Exception e1) {
-						Msg.error(getClass(), "Failed to delete: " + loaded);
-					}
-				}
-			}
+	public void save(TaskMonitor monitor) throws CancelledException, IOException {
+		for (Loaded<T> loaded : loadedList) {
+			loaded.save(monitor);
 		}
 	}
 

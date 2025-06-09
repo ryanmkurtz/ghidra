@@ -147,11 +147,11 @@ public abstract class AbstractProgramLoader implements Loader {
 			// Subclasses can perform custom post-load fix-ups
 			postLoadProgramFixups(loadedPrograms, project, loadSpec, options, messageLog, monitor);
 
-			// Discard unneeded programs
+			// Discard temporary programs
 			Iterator<Loaded<Program>> iter = loadedPrograms.iterator();
 			while (iter.hasNext()) {
 				Loaded<Program> loaded = iter.next();
-				if (loaded.shouldDiscard()) {
+				if (loaded.check(p -> p.isTemporary())) {
 					iter.remove();
 					loaded.close();
 				}

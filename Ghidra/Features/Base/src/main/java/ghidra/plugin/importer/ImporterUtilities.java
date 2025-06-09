@@ -279,9 +279,25 @@ public class ImporterUtilities {
 
 		try {
 			ByteProvider provider = getProvider(program);
+			if (provider == null) {
+				Msg.showWarn(null, null, LoadLibrariesOptionsDialog.TITLE,
+					"Cannot Load Libraries. Program does not have file bytes associated with it.");
+				return;
+			}
 			LoadSpec loadSpec = getLoadSpec(provider, program);
+			if (loadSpec == null || loadSpec.getLoader()
+					.getDefaultOptions(provider, loadSpec, null, false)
+					.stream()
+					.noneMatch(e -> e.getName()
+							.equals(
+								AbstractLibrarySupportLoader.LOAD_ONLY_LIBRARIES_OPTION_NAME))) {
+				Msg.showWarn(null, null, LoadLibrariesOptionsDialog.TITLE,
+					"Cannot Load Libraries. Program does not support library loading.");
+				return;
+			}
 			AddressFactory addressFactory =
 				loadSpec.getLanguageCompilerSpec().getLanguage().getAddressFactory();
+
 			SystemUtilities.runSwingLater(() -> {
 				OptionsDialog dialog = new LoadLibrariesOptionsDialog(provider, program, tool,
 					loadSpec, () -> addressFactory);
@@ -415,7 +431,7 @@ public class ImporterUtilities {
 			try (LoadResults<? extends DomainObject> loadResults = loadSpec.getLoader()
 					.load(bp, programName, tool.getProject(), destFolder.getPathname(), loadSpec,
 						options, messageLog, consumer, monitor)) {
-				loadResults.save(true, monitor);
+				loadResults.save(monitor);
 				doPostImportProcessing(tool, programManager, fsrl, loadResults,
 					messageLog.toString(), monitor);
 			}

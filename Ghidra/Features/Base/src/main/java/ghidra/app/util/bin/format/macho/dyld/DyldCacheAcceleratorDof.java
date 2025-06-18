@@ -26,7 +26,7 @@ import ghidra.util.exception.DuplicateNameException;
 /**
  * Represents a dyld_cache_accelerator_dof structure.
  * 
- * @see <a href="https://github.com/apple-oss-distributions/dyld/blob/main/cache-builder/dyld_cache_format.h">dyld_cache_format.h</a> 
+ * @see <a href="https://github.com/apple-oss-distributions/dyld/blob/main/include/mach-o/dyld_cache_format.h">dyld_cache_format.h</a> 
  */
 @SuppressWarnings("unused")
 public class DyldCacheAcceleratorDof implements StructConverter {

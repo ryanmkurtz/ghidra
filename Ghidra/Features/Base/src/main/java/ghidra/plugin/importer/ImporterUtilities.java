@@ -29,6 +29,7 @@ import ghidra.app.util.bin.ByteProvider;
 import ghidra.app.util.bin.FileBytesProvider;
 import ghidra.app.util.importer.MessageLog;
 import ghidra.app.util.opinion.*;
+import ghidra.app.util.opinion.Loader.ImporterSettings;
 import ghidra.formats.gfilesystem.*;
 import ghidra.framework.main.AppInfo;
 import ghidra.framework.main.FrontEndTool;
@@ -294,7 +295,7 @@ public class ImporterUtilities {
 			}
 			LoadSpec loadSpec = getLoadSpec(provider, program);
 			if (loadSpec == null || loadSpec.getLoader()
-					.getDefaultOptions(provider, loadSpec, null, false)
+					.getDefaultOptions(provider, loadSpec, null, false, false)
 					.stream()
 					.noneMatch(e -> e.getName()
 							.equals(
@@ -372,8 +373,10 @@ public class ImporterUtilities {
 				if (program == null) {
 					return;
 				}
-				try (LoadResults<? extends DomainObject> loadResults = new LoadResults<>(program,
-					program.getName(), tool.getProject(), destFolder.getPathname(), consumer)) {
+				try (LoadResults<? extends DomainObject> loadResults =
+					new LoadResults<>(new Loaded<>(program, program.getName(),
+						refdFile.file.getFSRL(), tool.getProject(),
+						destFolder.getPathname(), null, false, consumer))) {
 					doPostImportProcessing(tool, programManager, fsrl, loadResults, "", monitor);
 				}
 			}
@@ -420,25 +423,33 @@ public class ImporterUtilities {
 	 * @param tool tool to which popup dialogs should be associated
 	 * @param programManager program manager to open imported file with or null
 	 * @param fsrl import file location
-	 * @param destFolder project destination folder
+	 * @param projectRootPath The project folder path that all imported things will be saved 
+	 *   relative to. If {@code null}, "/" will be used.
+	 * @param rootRelativeFolderPath A suggested folder path relative to the {@code projectRootPath}
+	 *   for the imported items. This is just a suggestion, and a {@link Loader} implementation 
+	 *   reserves the right to change it for each imported item.
+	 * @param mirrorFsLayout True if the filesystem layout should be mirrored when loading;
+	 *   otherwise, false
 	 * @param loadSpec import {@link LoadSpec}
 	 * @param programName program name
 	 * @param options import options
 	 * @param monitor task monitor
 	 */
 	public static void importSingleFile(PluginTool tool, ProgramManager programManager, FSRL fsrl,
-			DomainFolder destFolder, LoadSpec loadSpec, String programName, List<Option> options,
-			TaskMonitor monitor) {
+			String projectRootPath, String rootRelativeFolderPath, boolean mirrorFsLayout,
+			LoadSpec loadSpec, String programName, List<Option> options, TaskMonitor monitor) {
 
 		Objects.requireNonNull(monitor);
 
 		try (ByteProvider bp = fsService.getByteProvider(fsrl, false, monitor)) {
-
-			Object consumer = new Object();
 			MessageLog messageLog = new MessageLog();
-			try (LoadResults<? extends DomainObject> loadResults = loadSpec.getLoader()
-					.load(bp, programName, tool.getProject(), destFolder.getPathname(), loadSpec,
-						options, messageLog, consumer, monitor)) {
+
+			ImporterSettings settings = new ImporterSettings(bp, programName, tool.getProject(),
+				projectRootPath, rootRelativeFolderPath, mirrorFsLayout, loadSpec, options,
+				new Object(), messageLog, monitor);
+
+			try (LoadResults<? extends DomainObject> loadResults =
+				loadSpec.getLoader().load(settings)) {
 				loadResults.save(monitor);
 				doPostImportProcessing(tool, programManager, fsrl, loadResults,
 					messageLog.toString(), monitor);
@@ -450,7 +461,7 @@ public class ImporterUtilities {
 		}
 		catch (Exception e) {
 			Msg.showError(ImporterUtilities.class, tool.getActiveWindow(), "Error Importing File",
-				"Error importing file: " + fsrl.getName(), e);
+				"Error importing file: %s (%s)".formatted(fsrl.getName(), e.getMessage()));
 		}
 	}
 
@@ -508,8 +519,13 @@ public class ImporterUtilities {
 		Objects.requireNonNull(monitor);
 
 		MessageLog messageLog = new MessageLog();
+		Object consumer = new Object();
+		program.addConsumer(consumer);
 		try (ByteProvider bp = fsService.getByteProvider(fsrl, false, monitor)) {
-			loadSpec.getLoader().loadInto(bp, loadSpec, options, messageLog, program, monitor);
+			ImporterSettings settings = new ImporterSettings(bp, bp.getName(), tool.getProject(),
+				null, program.getDomainFile().getPathname(), false, loadSpec, options, consumer,
+				messageLog, monitor);
+			loadSpec.getLoader().loadInto(program, settings);
 			displayResults(tool, program, program.getDomainFile(), messageLog.toString());
 
 			// Optionally echo loader message log to application.log
@@ -523,6 +539,9 @@ public class ImporterUtilities {
 		catch (IOException e) {
 			Msg.showError(ImporterUtilities.class, null, "Error Importing File",
 				"Error importing file " + fsrl.getName(), e);
+		}
+		finally {
+			program.release(consumer);
 		}
 
 	}

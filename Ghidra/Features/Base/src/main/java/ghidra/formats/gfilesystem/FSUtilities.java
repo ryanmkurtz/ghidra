@@ -651,4 +651,15 @@ public class FSUtilities {
 		return FileType.UNKNOWN;
 	}
 
+	/**
+	 * Splits the given path into its individual directory and filename components. For example,
+	 * {@code "/dir/dir/dir/file"} becomes {@code ["", "dir", "dir", "dir", "file"]}.
+	 * 
+	 * @param path The path to split
+	 * @return The split path
+	 */
+	public static String[] splitPath(String path) {
+		return Objects.requireNonNullElse(path, "").replace('\\', '/').split("/");
+	}
+
 }

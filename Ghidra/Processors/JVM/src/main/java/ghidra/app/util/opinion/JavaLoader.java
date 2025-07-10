@@ -20,10 +20,8 @@ import java.math.BigInteger;
 import java.util.*;
 
 import ghidra.app.cmd.register.SetRegisterCmd;
-import ghidra.app.util.Option;
 import ghidra.app.util.bin.BinaryReader;
 import ghidra.app.util.bin.ByteProvider;
-import ghidra.app.util.importer.MessageLog;
 import ghidra.framework.store.LockException;
 import ghidra.javaclass.format.*;
 import ghidra.javaclass.format.attributes.CodeAttribute;
@@ -89,10 +87,9 @@ public class JavaLoader extends AbstractProgramWrapperLoader {
 	}
 
 	@Override
-	public void load(ByteProvider provider, LoadSpec loadSpec, List<Option> options,
-			Program program, TaskMonitor monitor, MessageLog log) throws IOException {
+	public void load(Program program, ImporterSettings settings) throws IOException {
 		try {
-			doLoad(provider, program, monitor);
+			doLoad(settings.provider(), program, settings.monitor());
 		}
 		catch (LockException e) {
 			e.printStackTrace();
@@ -109,11 +106,6 @@ public class JavaLoader extends AbstractProgramWrapperLoader {
 		catch (DuplicateNameException e) {
 			e.printStackTrace();
 		}
-	}
-
-	public void load(ByteProvider provider, Program program, TaskMonitor monitor)
-			throws IOException {
-		load(provider, null, null, program, monitor, null);
 	}
 
 	private void doLoad(ByteProvider provider, Program program, TaskMonitor monitor)

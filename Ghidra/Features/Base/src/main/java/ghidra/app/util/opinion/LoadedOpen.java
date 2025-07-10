@@ -15,6 +15,7 @@
  */
 package ghidra.app.util.opinion;
 
+import ghidra.formats.gfilesystem.FSRL;
 import ghidra.framework.model.DomainFile;
 import ghidra.framework.model.DomainObject;
 import ghidra.util.task.TaskMonitor;
@@ -39,9 +40,10 @@ public class LoadedOpen<T extends DomainObject> extends Loaded<T> {
 	 *   given {@link DomainObject} to this {@link Loaded}'s {@link #close()} method. 
 	 * @throws LoadException if the given {@link DomainFile} is not open
 	 */
-	public LoadedOpen(T domainObject, DomainFile domainFile, Object consumer) throws LoadException {
-		super(domainObject, domainFile.getName(), null, domainFile.getParent().getPathname(),
-			consumer);
+	public LoadedOpen(T domainObject, DomainFile domainFile, FSRL fsrl, Object consumer)
+			throws LoadException {
+		super(domainObject, domainFile.getName(), fsrl, null, domainFile.getParent().getPathname(),
+			null, false, consumer);
 		this.domainFile = domainFile;
 		if (!domainFile.isOpen()) {
 			throw new LoadException(domainFile + " is not open");

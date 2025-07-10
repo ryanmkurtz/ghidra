@@ -23,11 +23,9 @@ import ghidra.app.util.bin.BinaryReader;
 import ghidra.app.util.bin.ByteProvider;
 import ghidra.app.util.bin.format.macho.dyld.DyldArchitecture;
 import ghidra.app.util.bin.format.macho.dyld.DyldCacheHeader;
-import ghidra.app.util.importer.MessageLog;
 import ghidra.framework.model.DomainObject;
 import ghidra.program.model.listing.Program;
 import ghidra.util.exception.CancelledException;
-import ghidra.util.task.TaskMonitor;
 
 /**
  * A {@link Loader} for DYLD shared cache files.
@@ -129,13 +127,12 @@ public class DyldCacheLoader extends AbstractProgramWrapperLoader {
 	}
 
 	@Override
-	public void load(ByteProvider provider, LoadSpec loadSpec, List<Option> options,
-			Program program, TaskMonitor monitor, MessageLog log) throws IOException {
+	public void load(Program program, ImporterSettings settings) throws IOException {
 
 		try {
-			DyldCacheProgramBuilder.buildProgram(program, provider,
-				MemoryBlockUtils.createFileBytes(program, provider, monitor),
-				getDyldCacheOptions(options), log, monitor);
+			DyldCacheProgramBuilder.buildProgram(program, settings.provider(),
+				MemoryBlockUtils.createFileBytes(program, settings.provider(), settings.monitor()),
+				getDyldCacheOptions(settings.options()), settings.log(), settings.monitor());
 		}
 		catch (CancelledException e) {
 			return;
@@ -147,9 +144,9 @@ public class DyldCacheLoader extends AbstractProgramWrapperLoader {
 
 	@Override
 	public List<Option> getDefaultOptions(ByteProvider provider, LoadSpec loadSpec,
-			DomainObject domainObject, boolean loadIntoProgram) {
-		List<Option> list =
-			super.getDefaultOptions(provider, loadSpec, domainObject, loadIntoProgram);
+			DomainObject domainObject, boolean loadIntoProgram, boolean mirrorFsLayout) {
+		List<Option> list = super.getDefaultOptions(provider, loadSpec, domainObject,
+			loadIntoProgram, mirrorFsLayout);
 		if (!loadIntoProgram) {
 			list.add(new Option(FIXUP_SLIDE_POINTERS_OPTION_NAME,
 				FIXUP_SLIDE_POINTERS_OPTION_DEFAULT, Boolean.class,

@@ -61,6 +61,7 @@ public class AddToProgramDialog extends ImporterDialog {
 		folderButton.setEnabled(false);
 		languageButton.setEnabled(false);
 		nameTextField.setEnabled(false);
+		mirrorFsCheckBox.setVisible(false);
 		validateFormInput();
 	}
 
@@ -78,8 +79,8 @@ public class AddToProgramDialog extends ImporterDialog {
 
 		LoadSpec loadSpec = getSelectedLoadSpec(loader);
 
-		String result =
-			loader.validateOptions(byteProvider, loadSpec, getOptions(loadSpec), addToProgram);
+		String result = loader.validateOptions(byteProvider, loadSpec, getOptions(loadSpec, false),
+			addToProgram);
 
 		if (result != null) {
 			setStatusText(result);
@@ -103,7 +104,8 @@ public class AddToProgramDialog extends ImporterDialog {
 		LoadSpec selectedLoadSpec = getSelectedLoadSpec(selectedLoader);
 
 		if (options == null) {
-			options = selectedLoader.getDefaultOptions(byteProvider, selectedLoadSpec, null, true);
+			options =
+				selectedLoader.getDefaultOptions(byteProvider, selectedLoadSpec, null, true, false);
 		}
 		TaskLauncher.launchNonModal("Import File", monitor -> {
 			ImporterUtilities.addContentToProgram(tool, addToProgram, fsrl, selectedLoadSpec,
@@ -113,11 +115,12 @@ public class AddToProgramDialog extends ImporterDialog {
 	}
 
 	@Override
-	protected List<Option> getOptions(LoadSpec loadSpec) {
-		if (options != null) {
+	protected List<Option> getOptions(LoadSpec loadSpec, boolean forceRefresh) {
+		if (options != null && !forceRefresh) {
 			return options;
 		}
-		return loadSpec.getLoader().getDefaultOptions(byteProvider, loadSpec, addToProgram, true);
+		return loadSpec.getLoader()
+				.getDefaultOptions(byteProvider, loadSpec, addToProgram, true, false);
 	}
 
 	/**

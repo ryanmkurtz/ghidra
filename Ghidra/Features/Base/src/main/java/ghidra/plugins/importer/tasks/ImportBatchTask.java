@@ -26,6 +26,7 @@ import ghidra.app.util.Option;
 import ghidra.app.util.bin.ByteProvider;
 import ghidra.app.util.importer.MessageLog;
 import ghidra.app.util.opinion.*;
+import ghidra.app.util.opinion.Loader.ImporterSettings;
 import ghidra.formats.gfilesystem.*;
 import ghidra.framework.main.AppInfo;
 import ghidra.framework.model.*;
@@ -146,11 +147,13 @@ public class ImportBatchTask extends Task {
 			try {
 				MessageLog messageLog = new MessageLog();
 				Project project = AppInfo.getActiveProject();
-				try (LoadResults<? extends DomainObject> loadResults = loadSpec.getLoader()
-						.load(byteProvider, fixupProjectFilename(destInfo.second), project,
-							destInfo.first.getPathname(), loadSpec,
-							getOptionsFor(batchLoadConfig, loadSpec, byteProvider), messageLog,
-							this, monitor)) {
+				ImporterSettings settings =
+					new ImporterSettings(byteProvider, fixupProjectFilename(destInfo.second),
+						project, null, destInfo.first.getPathname(), false, loadSpec,
+						getOptionsFor(batchLoadConfig, loadSpec, byteProvider), this, messageLog,
+						monitor);
+				try (LoadResults<? extends DomainObject> loadResults =
+					loadSpec.getLoader().load(settings)) {
 
 					// TODO: accumulate batch results
 					if (loadResults != null) {
@@ -170,7 +173,8 @@ public class ImportBatchTask extends Task {
 			catch (CancelledException e) {
 				Msg.debug(this, "Batch Import cancelled");
 			}
-			catch (IOException | VersionException | IllegalArgumentException e) {
+			catch (IOException | VersionException | IllegalArgumentException
+					| InvalidNameException e) {
 				Msg.error(this, "Import failed for " + batchLoadConfig.getPreferredFileName(), e);
 			}
 		}
@@ -280,8 +284,8 @@ public class ImportBatchTask extends Task {
 
 	private List<Option> getOptionsFor(BatchLoadConfig batchLoadConfig, LoadSpec loadSpec,
 			ByteProvider byteProvider) {
-		List<Option> options =
-			batchLoadConfig.getLoader().getDefaultOptions(byteProvider, loadSpec, null, false);
+		List<Option> options = batchLoadConfig.getLoader()
+				.getDefaultOptions(byteProvider, loadSpec, null, false, false);
 		return options;
 	}
 }

@@ -19,15 +19,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
 
-import org.apache.commons.io.FilenameUtils;
-
 import ghidra.app.plugin.processors.generic.MemoryBlockDefinition;
 import ghidra.app.util.Option;
 import ghidra.app.util.OptionUtils;
 import ghidra.app.util.bin.ByteProvider;
 import ghidra.app.util.importer.MessageLog;
 import ghidra.formats.gfilesystem.FSRL;
-import ghidra.formats.gfilesystem.FSUtilities;
 import ghidra.framework.model.*;
 import ghidra.framework.store.LockException;
 import ghidra.program.database.ProgramDB;
@@ -81,6 +78,8 @@ public abstract class AbstractProgramLoader implements Loader {
 	 *   reserves the right to change it for each {@link Loaded} result. The  {@link Loaded} 
 	 *   {@link Program}s should be queried for their true project folder paths using 
 	 *   {@link Loaded#getProjectFolderPath()}.
+	 * @param mirrorFolderPath The project folder path that filesystem mirroring should be rooted at,
+	 *   or {@code null} if mirroring is not enabled.
 	 * @param loadSpec The {@link LoadSpec} to use during load.
 	 * @param options The load options.
 	 * @param log The message log.
@@ -93,8 +92,8 @@ public abstract class AbstractProgramLoader implements Loader {
 	 * @throws CancelledException if the user cancelled the load.
 	 */
 	protected abstract List<Loaded<Program>> loadProgram(ByteProvider provider, String loadedName,
-			Project project, String projectFolderPath, LoadSpec loadSpec, List<Option> options,
-			MessageLog log, Object consumer, TaskMonitor monitor)
+			Project project, String projectFolderPath, String mirrorFolderPath, LoadSpec loadSpec,
+			List<Option> options, MessageLog log, Object consumer, TaskMonitor monitor)
 			throws IOException, LoadException, CancelledException;
 
 	/**
@@ -119,16 +118,16 @@ public abstract class AbstractProgramLoader implements Loader {
 
 	@Override
 	public final LoadResults<? extends DomainObject> load(ByteProvider provider, String loadedName,
-			Project project, String projectFolderPath, LoadSpec loadSpec, List<Option> options,
-			MessageLog messageLog, Object consumer, TaskMonitor monitor) throws IOException,
-			CancelledException, VersionException, LoadException {
+			Project project, String projectFolderPath, String mirrorFolderPath, LoadSpec loadSpec,
+			List<Option> options, MessageLog messageLog, Object consumer, TaskMonitor monitor)
+			throws IOException, CancelledException, VersionException, LoadException {
 
 		if (!loadSpec.isComplete()) {
 			throw new LoadException("Load spec is incomplete");
 		}
 
 		List<Loaded<Program>> loadedPrograms = loadProgram(provider, loadedName, project,
-			projectFolderPath, loadSpec, options, messageLog, consumer, monitor);
+			projectFolderPath, mirrorFolderPath, loadSpec, options, messageLog, consumer, monitor);
 
 		boolean success = false;
 		try {
@@ -260,21 +259,6 @@ public abstract class AbstractProgramLoader implements Loader {
 	 */
 	protected boolean shouldApplyProcessorLabelsByDefault() {
 		return false;
-	}
-
-	/**
-	 * Joins the given path elements to form a single path.  Empty and null path elements
-	 * are ignored. The returned path's separators are converted to unix-style and
-	 * windows-specific characters like {@code :} are stripped out, making the path suitable
-	 * to be a project path
-	 * 
-	 * @param pathElements The path elements to append to one another
-	 * @return A single path consisting of the given path elements appended together
-	 * @see FSUtilities#appendPath(String...)
-	 */
-	protected String joinPaths(String... pathElements) {
-		String str = FSUtilities.appendPath(pathElements);
-		return str != null ? FilenameUtils.separatorsToUnix(str).replaceAll(":", "") : null;
 	}
 
 	/**

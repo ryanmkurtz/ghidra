@@ -161,8 +161,8 @@ public class MotorolaHexLoader extends AbstractProgramLoader {
 
 	@Override
 	protected List<Loaded<Program>> loadProgram(ByteProvider provider, String programName,
-			Project project, String programFolderPath, LoadSpec loadSpec, List<Option> options,
-			MessageLog log, Object consumer, TaskMonitor monitor)
+			Project project, String programFolderPath, String mirrorFolderPath, LoadSpec loadSpec,
+			List<Option> options, MessageLog log, Object consumer, TaskMonitor monitor)
 			throws IOException, LoadException, CancelledException {
 		LanguageCompilerSpecPair pair = loadSpec.getLanguageCompilerSpec();
 		Language importerLanguage = getLanguageService().getLanguage(pair.languageID);
@@ -172,7 +172,8 @@ public class MotorolaHexLoader extends AbstractProgramLoader {
 		Program prog = createProgram(provider, programName, null, getName(), importerLanguage,
 			importerCompilerSpec, consumer);
 		List<Loaded<Program>> loadedList =
-			List.of(new Loaded<>(prog, programName, project, programFolderPath, consumer));
+			List.of(new Loaded<>(prog, programName, project, programFolderPath, mirrorFolderPath,
+				provider.getFSRL(), consumer));
 		boolean success = false;
 		try {
 			loadInto(provider, loadSpec, options, log, prog, monitor);

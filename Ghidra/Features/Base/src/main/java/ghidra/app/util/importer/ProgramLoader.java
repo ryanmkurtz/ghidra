@@ -62,6 +62,7 @@ public class ProgramLoader {
 		private byte[] bytes;
 		private Project project;
 		private String projectFolderPath;
+		private String mirrorFolderPath;
 		private String importNameOverride;
 		private Predicate<Loader> loaderFilter = LoaderService.ACCEPT_ALL;
 		private List<Pair<String, String>> loaderArgs = new ArrayList<>();
@@ -188,6 +189,20 @@ public class ProgramLoader {
 		 */
 		public Builder projectFolderPath(String path) {
 			this.projectFolderPath = path;
+			return this;
+		}
+
+		/**
+		 * Sets the project folder path for filesystem layout mirroring to be rooted at.
+		 * <p>
+		 * By default, the filesystem layout is not mirrored.
+		 * 
+		 * @param path The project folder path for filesystem layout mirroring to be rooted at, or
+		 *   {@code null} to disable file system layout mirroring
+		 * @return This {@link Builder}
+		 */
+		public Builder mirrorFolderPath(String path) {
+			this.mirrorFolderPath = path;
 			return this;
 		}
 
@@ -378,7 +393,7 @@ public class ProgramLoader {
 			this.compilerSpecId = cspec != null ? cspec.getCompilerSpecID() : null;
 			return this;
 		}
-		
+
 		/**
 		 * Sets the {@link MessageLog log} to use during import.
 		 * <p>
@@ -464,8 +479,9 @@ public class ProgramLoader {
 				Msg.info(ProgramLoader.class, "Using Library Search Path: " +
 					Arrays.toString(LibrarySearchPathManager.getLibraryPaths()));
 				LoadResults<? extends DomainObject> loadResults = loadSpec.getLoader()
-						.load(p, importName, project, projectFolderPath, loadSpec, loaderOptions,
-							log, Objects.requireNonNullElse(consumer, this), monitor);
+						.load(p, importName, project, projectFolderPath, mirrorFolderPath, loadSpec,
+							loaderOptions, log, Objects.requireNonNullElse(consumer, this),
+							monitor);
 
 				// Optionally echo loader message log to application.log
 				if (!Loader.loggingDisabled && log.hasMessages()) {
@@ -568,7 +584,8 @@ public class ProgramLoader {
 		 */
 		private List<Option> getLoaderOptions(ByteProvider p, LoadSpec loadSpec)
 				throws LanguageNotFoundException, LoadException {
-			List<Option> options = loadSpec.getLoader().getDefaultOptions(p, loadSpec, null, false);
+			List<Option> options = loadSpec.getLoader()
+					.getDefaultOptions(p, loadSpec, null, false, mirrorFolderPath != null);
 			if (options == null) {
 				throw new LoadException("Cannot load with null options");
 			}

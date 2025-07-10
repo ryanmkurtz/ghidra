@@ -20,7 +20,11 @@ import java.io.IOException;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
+import org.apache.commons.io.FilenameUtils;
+
+import ghidra.formats.gfilesystem.*;
 import ghidra.framework.model.*;
+import ghidra.program.database.ProgramLinkContentHandler;
 import ghidra.util.InvalidNameException;
 import ghidra.util.exception.*;
 import ghidra.util.task.TaskMonitor;
@@ -38,6 +42,8 @@ public class Loaded<T extends DomainObject> implements AutoCloseable {
 	protected final String name;
 	protected Project project;
 	protected String projectFolderPath;
+	protected String mirrorFolderPath;
+	protected FSRL fsrl;
 	protected Object loadedConsumer;
 
 	protected DomainFile domainFile;
@@ -55,6 +61,8 @@ public class Loaded<T extends DomainObject> implements AutoCloseable {
 	 * @param projectFolderPath The project folder path this will get saved to during a 
 	 *   {@link #save(TaskMonitor)} operation.  If null or empty, the root project folder will be 
 	 *   used.
+	 * @param mirrorFolderPath The project folder path that filesystem mirroring should be rooted at,
+	 *   or {@code null} if mirroring is not enabled.
 	 * @param consumer A reference to the object "consuming" the returned {@link Loaded} 
 	 *   {@link DomainObject}, used to ensure the underlying {@link DomainObject} is only closed 
 	 *   when every consumer is done with it (see {@link #close()}). NOTE:  Wrapping a 
@@ -62,12 +70,13 @@ public class Loaded<T extends DomainObject> implements AutoCloseable {
 	 *   given {@link DomainObject} to this {@link Loaded}'s {@link #close()} method. 
 	 */
 	public Loaded(T domainObject, String name, Project project, String projectFolderPath,
-			Object consumer) {
+			String mirrorFolderPath, FSRL fsrl, Object consumer) {
 		this.domainObject = domainObject;
 		this.name = name;
 		this.project = project;
+		this.fsrl = fsrl;
 		this.loadedConsumer = consumer;
-		setProjectFolderPath(projectFolderPath);
+		setProjectFolderPath(projectFolderPath, mirrorFolderPath);
 	}
 
 	/**
@@ -165,7 +174,7 @@ public class Loaded<T extends DomainObject> implements AutoCloseable {
 	 * @return the project folder path
 	 */
 	public String getProjectFolderPath() {
-		return projectFolderPath;
+		return joinPaths(mirrorFolderPath, projectFolderPath);
 	}
 
 	/**
@@ -175,15 +184,22 @@ public class Loaded<T extends DomainObject> implements AutoCloseable {
 	 * @param projectFolderPath The project folder path this will get saved to during a 
 	 *   {@link #save(TaskMonitor)} operation.  If null or empty, the root project folder will be 
 	 *   used.
+	 * @param mirrorFolderPath The project folder path that filesystem mirroring should be rooted at,
+	 *   or {@code null} if mirroring is not enabled.
 	 */
-	public void setProjectFolderPath(String projectFolderPath) {
+	public void setProjectFolderPath(String projectFolderPath, String mirrorFolderPath) {
 		if (projectFolderPath == null || projectFolderPath.isBlank()) {
 			projectFolderPath = "/";
 		}
 		else if (!projectFolderPath.endsWith("/")) {
 			projectFolderPath += "/";
 		}
-		this.projectFolderPath = projectFolderPath;
+
+		// Windows paths might have a colon in them which aren't valid project path characters, so
+		// remove them
+		this.projectFolderPath = projectFolderPath.replaceAll(":", "");
+		this.mirrorFolderPath =
+			mirrorFolderPath != null ? mirrorFolderPath.replaceAll(":", "") : null;
 	}
 
 	/**
@@ -220,15 +236,37 @@ public class Loaded<T extends DomainObject> implements AutoCloseable {
 			// Allow the save to proceed.
 			domainFile = null;
 		}
+		
+		String projectLinkTarget = null;
+		if (mirrorFolderPath != null && fsrl != null) {
+			try (RefdFile ref = FileSystemService.getInstance().getRefdFile(fsrl, monitor)) {
+				GFile resolvedLink = ref.fsRef.getFilesystem().resolveSymlinks(ref.file);
+				if (resolvedLink != ref.file) {
+					projectLinkTarget = joinPaths(mirrorFolderPath, resolvedLink.getPath());
+				}
+			}
+		}
 
 		int uniqueNameIndex = 0;
 		String uniqueName = name;
+		ProjectData projectData = project.getProjectData();
 		try {
-			DomainFolder programFolder = ProjectDataUtils.createDomainFolderPath(
-				project.getProjectData().getRootFolder(), projectFolderPath);
+			DomainFolder folder = ProjectDataUtils.createDomainFolderPath(
+				projectData.getRootFolder(), joinPaths(mirrorFolderPath, projectFolderPath));
 			while (!monitor.isCancelled()) {
 				try {
-					domainFile = programFolder.createFile(uniqueName, domainObject, monitor);
+					if (projectLinkTarget != null) {
+						domainFile = folder.createLinkFile(projectData, projectLinkTarget, false,
+							uniqueName, ProgramLinkContentHandler.INSTANCE);
+						DomainFolder linkTargetFolder = ProjectDataUtils.createDomainFolderPath(
+							projectData.getRootFolder(), FilenameUtils.getPath(projectLinkTarget));
+						linkTargetFolder.createFile(FilenameUtils.getName(projectLinkTarget),
+							domainObject, monitor);
+					}
+					else {
+						folder.createFile(uniqueName, domainObject, monitor);
+					}
+
 					return domainFile;
 				}
 				catch (DuplicateFileException e) {
@@ -293,5 +331,20 @@ public class Loaded<T extends DomainObject> implements AutoCloseable {
 	@Override
 	public String toString() {
 		return getProjectFolderPath() + getName();
+	}
+
+	/**
+	 * Joins the given path elements to form a single path.  Empty and null path elements
+	 * are ignored. The returned path's separators are converted to unix-style and
+	 * windows-specific characters like {@code :} are stripped out, making the path suitable
+	 * to be a project path
+	 * 
+	 * @param pathElements The path elements to append to one another
+	 * @return A single path consisting of the given path elements appended together
+	 * @see FSUtilities#appendPath(String...)
+	 */
+	private String joinPaths(String... pathElements) {
+		String str = FSUtilities.appendPath(pathElements);
+		return str != null ? FilenameUtils.separatorsToUnix(str).replaceAll(":", "") : null;
 	}
 }

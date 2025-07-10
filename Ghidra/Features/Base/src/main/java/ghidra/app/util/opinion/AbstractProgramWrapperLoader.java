@@ -53,8 +53,8 @@ public abstract class AbstractProgramWrapperLoader extends AbstractProgramLoader
 
 	@Override
 	protected List<Loaded<Program>> loadProgram(ByteProvider provider, String programName,
-			Project project, String programFolderPath, LoadSpec loadSpec, List<Option> options,
-			MessageLog log, Object consumer, TaskMonitor monitor)
+			Project project, String programFolderPath, String mirrorFolderPath, LoadSpec loadSpec,
+			List<Option> options, MessageLog log, Object consumer, TaskMonitor monitor)
 			throws IOException, CancelledException {
 
 		LanguageCompilerSpecPair pair = loadSpec.getLanguageCompilerSpec();
@@ -67,8 +67,8 @@ public abstract class AbstractProgramWrapperLoader extends AbstractProgramLoader
 
 		Program program = createProgram(provider, programName, imageBaseAddr, getName(), language,
 			compilerSpec, consumer);
-		List<Loaded<Program>> loadedList = List.of(
-			new Loaded<Program>(program, programName, project, programFolderPath, consumer));
+		Loaded<Program> loaded = new Loaded<Program>(program, programName, project,
+			programFolderPath, mirrorFolderPath, provider.getFSRL(), consumer);
 
 		int transactionID = program.startTransaction("Loading");
 		boolean success = false;
@@ -76,12 +76,12 @@ public abstract class AbstractProgramWrapperLoader extends AbstractProgramLoader
 			load(provider, loadSpec, options, program, monitor, log);
 			createDefaultMemoryBlocks(program, language, log);
 			success = true;
-			return loadedList;
+			return List.of(loaded);
 		}
 		finally {
 			program.endTransaction(transactionID, true); // More efficient to commit when program will be discarded
 			if (!success) {
-				loadedList.forEach(Loaded::close);
+				loaded.close();
 			}
 		}
 	}

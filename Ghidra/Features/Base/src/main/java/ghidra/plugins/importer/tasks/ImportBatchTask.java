@@ -148,7 +148,7 @@ public class ImportBatchTask extends Task {
 				Project project = AppInfo.getActiveProject();
 				try (LoadResults<? extends DomainObject> loadResults = loadSpec.getLoader()
 						.load(byteProvider, fixupProjectFilename(destInfo.second), project,
-							destInfo.first.getPathname(), loadSpec,
+							destInfo.first.getPathname(), null, loadSpec,
 							getOptionsFor(batchLoadConfig, loadSpec, byteProvider), messageLog,
 							this, monitor)) {
 

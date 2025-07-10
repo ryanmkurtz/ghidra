@@ -73,12 +73,13 @@ public class GzfLoader implements Loader {
 
 	@Override
 	public LoadResults<? extends DomainObject> load(ByteProvider provider, String programName,
-			Project project, String projectFolderPath, LoadSpec loadSpec, List<Option> options,
-			MessageLog messageLog, Object consumer, TaskMonitor monitor)
+			Project project, String projectFolderPath, String mirrorFolderPath, LoadSpec loadSpec,
+			List<Option> options, MessageLog messageLog, Object consumer, TaskMonitor monitor)
 			throws IOException, CancelledException, VersionException {
 
 		Program program = loadPackedProgramDatabase(provider, programName, consumer, monitor);
-		return new LoadResults<>(program, programName, project, projectFolderPath, consumer);
+		return new LoadResults<>(new Loaded<>(program, programName, project, projectFolderPath,
+			mirrorFolderPath, provider.getFSRL(), consumer));
 	}
 
 	private Program loadPackedProgramDatabase(ByteProvider provider, String programName,

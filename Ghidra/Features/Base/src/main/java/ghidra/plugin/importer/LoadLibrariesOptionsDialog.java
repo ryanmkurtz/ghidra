@@ -73,7 +73,7 @@ public class LoadLibrariesOptionsDialog extends OptionsDialog {
 			MessageLog messageLog = new MessageLog();
 			try (LoadResults<? extends DomainObject> loadResults = loadSpec.getLoader()
 						.load(provider, program.getDomainFile().getName(), tool.getProject(),
-							program.getDomainFile().getParent().getPathname(), loadSpec,
+						program.getDomainFile().getParent().getPathname(), null, loadSpec,
 						getOptions(), messageLog, consumer, monitor)) {
 
 				loadResults.save(monitor);

@@ -372,8 +372,9 @@ public class ImporterUtilities {
 				if (program == null) {
 					return;
 				}
-				try (LoadResults<? extends DomainObject> loadResults = new LoadResults<>(program,
-					program.getName(), tool.getProject(), destFolder.getPathname(), consumer)) {
+				try (LoadResults<? extends DomainObject> loadResults =
+					new LoadResults<>(new Loaded<>(program, program.getName(), tool.getProject(),
+						destFolder.getPathname(), null, refdFile.file.getFSRL(), consumer))) {
 					doPostImportProcessing(tool, programManager, fsrl, loadResults, "", monitor);
 				}
 			}
@@ -421,14 +422,17 @@ public class ImporterUtilities {
 	 * @param programManager program manager to open imported file with or null
 	 * @param fsrl import file location
 	 * @param destFolder project destination folder
+	 * @param mirrorFolderPath The project folder path that filesystem mirroring should be rooted at,
+	 *   or {@code null} if mirroring is not enabled.
 	 * @param loadSpec import {@link LoadSpec}
 	 * @param programName program name
 	 * @param options import options
 	 * @param monitor task monitor
 	 */
 	public static void importSingleFile(PluginTool tool, ProgramManager programManager, FSRL fsrl,
-			DomainFolder destFolder, LoadSpec loadSpec, String programName, List<Option> options,
-			TaskMonitor monitor) {
+			String projectFolderPath, String mirrorFolderPath, LoadSpec loadSpec,
+			String programName,
+			List<Option> options, TaskMonitor monitor) {
 
 		Objects.requireNonNull(monitor);
 
@@ -437,8 +441,8 @@ public class ImporterUtilities {
 			Object consumer = new Object();
 			MessageLog messageLog = new MessageLog();
 			try (LoadResults<? extends DomainObject> loadResults = loadSpec.getLoader()
-					.load(bp, programName, tool.getProject(), destFolder.getPathname(), loadSpec,
-						options, messageLog, consumer, monitor)) {
+					.load(bp, programName, tool.getProject(), projectFolderPath, mirrorFolderPath,
+						loadSpec, options, messageLog, consumer, monitor)) {
 				loadResults.save(monitor);
 				doPostImportProcessing(tool, programManager, fsrl, loadResults,
 					messageLog.toString(), monitor);

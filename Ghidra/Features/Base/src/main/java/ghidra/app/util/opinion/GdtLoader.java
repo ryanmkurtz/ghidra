@@ -54,13 +54,14 @@ public class GdtLoader implements Loader {
 
 	@Override
 	public LoadResults<? extends DomainObject> load(ByteProvider provider, String filename,
-			Project project, String projectFolderPath, LoadSpec loadSpec, List<Option> options,
-			MessageLog messageLog, Object consumer, TaskMonitor monitor)
+			Project project, String projectFolderPath, String mirrorFolderPath, LoadSpec loadSpec,
+			List<Option> options, MessageLog messageLog, Object consumer, TaskMonitor monitor)
 			throws IOException, CancelledException, VersionException {
 
 		DataTypeArchive dtArchive =
 			loadPackedProgramDatabase(provider, filename, consumer, monitor);
-		return new LoadResults<>(dtArchive, filename, project, projectFolderPath, consumer);
+		return new LoadResults<>(new Loaded<>(dtArchive, filename, project, projectFolderPath,
+			mirrorFolderPath, provider.getFSRL(), consumer));
 	}
 
 	private DataTypeArchive loadPackedProgramDatabase(ByteProvider provider, String programName,

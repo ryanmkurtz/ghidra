@@ -1591,7 +1591,7 @@ public class HeadlessAnalyzer {
 			// Note that saveDomainFolder is set by pre/post-scripts, so it can only be used
 			// after analysis happens.
 			if (saveDomainFolder != null) {
-				primary.setProjectFolderPath(saveDomainFolder.getPathname());
+				primary.setProjectFolderPath(saveDomainFolder.getPathname(), null);
 				if (!checkOverwrite(primary)) {
 					return false;
 				}

@@ -178,8 +178,8 @@ public class XmlLoader extends AbstractProgramLoader {
 
 	@Override
 	protected List<Loaded<Program>> loadProgram(ByteProvider provider, String programName,
-			Project project, String programFolderPath, LoadSpec loadSpec, List<Option> options,
-			MessageLog log, Object consumer, TaskMonitor monitor)
+			Project project, String programFolderPath, String mirrorFolderPath, LoadSpec loadSpec,
+			List<Option> options, MessageLog log, Object consumer, TaskMonitor monitor)
 			throws IOException, LoadException, CancelledException {
 		List<Loaded<Program>> results = new ArrayList<>();
 
@@ -200,7 +200,8 @@ public class XmlLoader extends AbstractProgramLoader {
 		Program prog = createProgram(provider, programName, imageBase, getName(), importerLanguage,
 			importerCompilerSpec, consumer);
 		List<Loaded<Program>> loadedList =
-			List.of(new Loaded<>(prog, programName, project, programFolderPath, consumer));
+			List.of(new Loaded<>(prog, programName, project, programFolderPath, mirrorFolderPath,
+				provider.getFSRL(), consumer));
 		boolean success = false;
 		try {
 			success = doImport(result.lastXmlMgr, options, log, prog, monitor, false);

@@ -65,8 +65,8 @@ public class ApkLoader extends DexLoader {
 
 	@Override
 	protected List<Loaded<Program>> loadProgram(ByteProvider provider, String programName,
-			Project project, String programFolderPath, LoadSpec loadSpec, List<Option> options,
-			MessageLog log, Object consumer, TaskMonitor monitor)
+			Project project, String programFolderPath, String mirrorFolderPath, LoadSpec loadSpec,
+			List<Option> options, MessageLog log, Object consumer, TaskMonitor monitor)
 			throws IOException, LoadException, CancelledException {
 
 		boolean success = false;
@@ -89,8 +89,8 @@ public class ApkLoader extends DexLoader {
 					// defer to the super class (DexLoader) to actually load the DEX file
 					List<Loaded<Program>> loadedPrograms =
 						super.loadProgram(dexProvider, classesDexFile.getName(), project,
-							joinPaths(programFolderPath, programName), loadSpec, options, log,
-							consumer, monitor);
+							LoaderUtils.createProjectPath(programFolderPath, programName),
+							mirrorFolderPath, loadSpec, options, log, consumer, monitor);
 
 					allLoadedPrograms.addAll(loadedPrograms);
 				}

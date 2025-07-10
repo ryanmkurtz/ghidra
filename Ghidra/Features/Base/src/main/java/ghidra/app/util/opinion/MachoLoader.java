@@ -142,7 +142,7 @@ public class MachoLoader extends AbstractLibrarySupportLoader {
 
 	@Override
 	public List<Option> getDefaultOptions(ByteProvider provider, LoadSpec loadSpec,
-			DomainObject domainObject, boolean loadIntoProgram) {
+			DomainObject domainObject, boolean loadIntoProgram, boolean mirrorFsLayout) {
 		List<Option> list =
 			super.getDefaultOptions(provider, loadSpec, domainObject, loadIntoProgram);
 		if (!loadIntoProgram) {
@@ -267,10 +267,10 @@ public class MachoLoader extends AbstractLibrarySupportLoader {
 	 * {@inheritDoc}
 	 */
 	@Override
-	protected FSRL resolveLibraryFile(GFileSystem fs, String library) throws IOException {
-		FSRL fsrl = super.resolveLibraryFile(fs, library);
-		if (fsrl != null) {
-			return fsrl;
+	protected GFile resolveLibraryFile(GFileSystem fs, String library) throws IOException {
+		GFile f = super.resolveLibraryFile(fs, library);
+		if (f != null) {
+			return f;
 		}
 		String libraryParentPath = FilenameUtils.getFullPath(library);
 		String libraryName = FilenameUtils.getName(library);
@@ -278,13 +278,13 @@ public class MachoLoader extends AbstractLibrarySupportLoader {
 		if (libraryParentDir != null) {
 			for (GFile file : fs.getListing(libraryParentDir)) {
 				if (file.isDirectory() && file.getName().equals("Versions")) {
-					String versionsPath = joinPaths(libraryParentPath, file.getName());
+					String versionsPath = FSUtilities.appendPath(libraryParentPath, file.getName());
 					List<GFile> versionListion = fs.getListing(file);
 					if (!versionListion.isEmpty()) {
 						GFile specificVersionDir = versionListion.get(0);
 						if (specificVersionDir.isDirectory()) {
-							return resolveLibraryFile(fs,
-								joinPaths(versionsPath, specificVersionDir.getName(), libraryName));
+							return resolveLibraryFile(fs, FSUtilities.appendPath(versionsPath,
+								specificVersionDir.getName(), libraryName));
 						}
 					}
 				}
@@ -292,7 +292,7 @@ public class MachoLoader extends AbstractLibrarySupportLoader {
 					continue;
 				}
 				if (file.getName().equals(libraryName)) {
-					return file.getFSRL();
+					return file;
 				}
 			}
 		}

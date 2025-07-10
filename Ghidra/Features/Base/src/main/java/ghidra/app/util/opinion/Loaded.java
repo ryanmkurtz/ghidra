@@ -21,6 +21,7 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 import ghidra.framework.model.*;
+import ghidra.program.database.ProgramLinkContentHandler;
 import ghidra.util.InvalidNameException;
 import ghidra.util.exception.*;
 import ghidra.util.task.TaskMonitor;
@@ -39,8 +40,40 @@ public class Loaded<T extends DomainObject> implements AutoCloseable {
 	protected Project project;
 	protected String projectFolderPath;
 	protected Object loadedConsumer;
+	protected String projectLinkTarget;
 
 	protected DomainFile domainFile;
+
+	/**
+	 * Creates a new {@link Loaded} object.
+	 * <p>
+	 * This object needs to be {@link #close() closed} when done with it.
+	 * 
+	 * @param domainObject The loaded {@link DomainObject}
+	 * @param name The name of the loaded {@link DomainObject}.  If a {@link #save(TaskMonitor)} 
+	 *   occurs, this will attempted to be used for the resulting {@link DomainFile}'s name.
+	 * @param project If not null, the project this will get saved to during a 
+	 *   {@link #save(TaskMonitor)} operation
+	 * @param projectFolderPath The project folder path this will get saved to during a 
+	 *   {@link #save(TaskMonitor)} operation.  If null or empty, the root project folder will be 
+	 *   used.
+	 * @param consumer A reference to the object "consuming" the returned {@link Loaded} 
+	 *   {@link DomainObject}, used to ensure the underlying {@link DomainObject} is only closed 
+	 *   when every consumer is done with it (see {@link #close()}). NOTE:  Wrapping a 
+	 *   {@link DomainObject} in a {@link Loaded} transfers responsibility of releasing the 
+	 *   given {@link DomainObject} to this {@link Loaded}'s {@link #close()} method. 
+	 * @param projectLinkTarget The target of the link being loaded, or {@code null} if we are not
+	 *   loading a link
+	 */
+	public Loaded(T domainObject, String name, Project project, String projectFolderPath,
+			Object consumer, String projectLinkTarget) {
+		this.domainObject = domainObject;
+		this.name = name;
+		this.project = project;
+		this.loadedConsumer = consumer;
+		this.projectLinkTarget = projectLinkTarget;
+		setProjectFolderPath(projectFolderPath);
+	}
 
 	/**
 	 * Creates a new {@link Loaded} object.
@@ -63,11 +96,7 @@ public class Loaded<T extends DomainObject> implements AutoCloseable {
 	 */
 	public Loaded(T domainObject, String name, Project project, String projectFolderPath,
 			Object consumer) {
-		this.domainObject = domainObject;
-		this.name = name;
-		this.project = project;
-		this.loadedConsumer = consumer;
-		setProjectFolderPath(projectFolderPath);
+		this(domainObject, name, project, projectFolderPath, consumer, null);
 	}
 
 	/**
@@ -223,12 +252,19 @@ public class Loaded<T extends DomainObject> implements AutoCloseable {
 
 		int uniqueNameIndex = 0;
 		String uniqueName = name;
+		ProjectData projectData = project.getProjectData();
 		try {
-			DomainFolder programFolder = ProjectDataUtils.createDomainFolderPath(
-				project.getProjectData().getRootFolder(), projectFolderPath);
+			DomainFolder programFolder = ProjectDataUtils
+					.createDomainFolderPath(projectData.getRootFolder(), projectFolderPath);
 			while (!monitor.isCancelled()) {
 				try {
-					domainFile = programFolder.createFile(uniqueName, domainObject, monitor);
+					if (projectLinkTarget != null) {
+						domainFile = programFolder.createLinkFile(projectData, projectLinkTarget,
+							false, uniqueName, ProgramLinkContentHandler.INSTANCE);
+					}
+					else {
+						domainFile = programFolder.createFile(uniqueName, domainObject, monitor);
+					}
 					return domainFile;
 				}
 				catch (DuplicateFileException e) {

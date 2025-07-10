@@ -90,6 +90,9 @@ public abstract class AbstractLibrarySupportLoader extends AbstractProgramLoader
 	public static final String LIBRARY_DEST_FOLDER_OPTION_NAME = "Library Destination Folder";
 	static final String LIBRARY_DEST_FOLDER_OPTION_DEFAULT = "";
 
+	public static final String MIRROR_LAYOUT_OPTION_NAME = "Mirror Library Disk Layout";
+	static final boolean MIRROR_LAYOUT_OPTION_DEFAULT = true;
+
 	/**
 	 * A hidden option used by the {@link ImporterPlugin}'s "Load Libraries" action to inform this
 	 * {@link Loader} that the {@link Program} to import has already been saved to the project and
@@ -300,6 +303,8 @@ public abstract class AbstractLibrarySupportLoader extends AbstractProgramLoader
 			Loader.COMMAND_LINE_ARG_PREFIX + "-libraryLoadDepth"));
 		list.add(new DomainFolderOption(LIBRARY_DEST_FOLDER_OPTION_NAME,
 			Loader.COMMAND_LINE_ARG_PREFIX + "-libraryDestinationFolder"));
+		list.add(new Option(MIRROR_LAYOUT_OPTION_NAME, MIRROR_LAYOUT_OPTION_DEFAULT, Boolean.class,
+			Loader.COMMAND_LINE_ARG_PREFIX + "-libraryMirrorLayout"));
 		list.add(new Option(LOAD_ONLY_LIBRARIES_OPTION_NAME, Boolean.class,
 			LOAD_ONLY_LIBRARIES_OPTION_DEFAULT,
 			Loader.COMMAND_LINE_ARG_PREFIX + "-loadOnlyLibraries", null, null, true));
@@ -315,6 +320,7 @@ public abstract class AbstractLibrarySupportLoader extends AbstractProgramLoader
 				String name = option.getName();
 				if (name.equals(LINK_EXISTING_OPTION_NAME) ||
 					name.equals(LOAD_LIBRARY_OPTION_NAME) ||
+					name.equals(MIRROR_LAYOUT_OPTION_NAME) ||
 					name.equals(LOAD_ONLY_LIBRARIES_OPTION_NAME)) {
 					if (!Boolean.class.isAssignableFrom(option.getValueClass())) {
 						return "Invalid type for option: " + name + " - " + option.getValueClass();
@@ -396,6 +402,17 @@ public abstract class AbstractLibrarySupportLoader extends AbstractProgramLoader
 	protected boolean isLoadLibraries(List<Option> options) {
 		return OptionUtils.getOption(LOAD_LIBRARY_OPTION_NAME, options,
 			LOAD_LIBRARY_OPTION_DEFAULT);
+	}
+
+	/**
+	 * Checks to see if library organization mirrors filesystem layout
+	 * 
+	 * @param options a {@link List} of {@link Option}s
+	 * @return True if library organization mirrors filesystem layout; false if flat layout
+	 */
+	protected boolean isMirroredLayout(List<Option> options) {
+		return OptionUtils.getOption(MIRROR_LAYOUT_OPTION_NAME, options,
+			MIRROR_LAYOUT_OPTION_DEFAULT);
 	}
 
 	/**
@@ -716,15 +733,16 @@ public abstract class AbstractLibrarySupportLoader extends AbstractProgramLoader
 
 		boolean success = false;
 		try {
-			List<FSRL> candidateLibraryFsrls =
+			List<GFile> candidateLibraryFiles =
 				findLibraryOnDisk(library, searchPaths, log, monitor);
-			if (candidateLibraryFsrls.isEmpty()) {
+			if (candidateLibraryFiles.isEmpty()) {
 				log.appendMsg("Library not found.");
 				return null;
 			}
 
-			for (FSRL candidateLibraryFsrl : candidateLibraryFsrls) {
+			for (GFile candidateLibraryFile : candidateLibraryFiles) {
 				monitor.checkCancelled();
+				FSRL candidateLibraryFsrl = candidateLibraryFile.getFSRL();
 				List<String> newLibraryList = new ArrayList<>();
 				libraryProgram = loadLibrary(simpleLibraryName, candidateLibraryFsrl,
 					desiredLoadSpec, newLibraryList, options, consumer, log, monitor);
@@ -738,13 +756,23 @@ public abstract class AbstractLibrarySupportLoader extends AbstractProgramLoader
 					depth, desiredLoadSpec, options, log, monitor);
 				success = true;
 				String folderPath = libraryDestFolderPath;
+				String linkTarget = null;
 				if (folderPath != null) {
 					if (isAbsolute) {
 						folderPath = joinPaths(folderPath, FilenameUtils.getFullPath(library));
 					}
+					else if (isMirroredLayout(options)) {
+						String fsrlToPath = candidateLibraryFsrl.getPath();
+						folderPath = joinPaths(folderPath, FilenameUtils.getFullPath(fsrlToPath));
+						GFile resolvedLink = candidateLibraryFile.getFilesystem()
+								.resolveSymlinks(candidateLibraryFile);
+						if (resolvedLink != null) {
+							linkTarget = joinPaths(folderPath, resolvedLink.getPath());
+						}
+					}
 				}
 				return new Loaded<Program>(libraryProgram, simpleLibraryName, project, folderPath,
-					consumer);
+					consumer, linkTarget);
 			}
 		}
 		finally {
@@ -781,6 +809,29 @@ public abstract class AbstractLibrarySupportLoader extends AbstractProgramLoader
 			List<LibrarySearchPath> searchPaths, List<Option> options, TaskMonitor monitor)
 			throws CancelledException {
 		if (rootSearchFolder == null) {
+			return null;
+		}
+
+		if (isMirroredLayout(options)) {
+			// Perform the lookup based on file system search path layout within the project
+			for (LibrarySearchPath searchPath : searchPaths) {
+				monitor.checkCancelled();
+
+				GFileSystem fs = searchPath.fsRef().getFilesystem();
+				String fsPath = fs.getFSRL().getPath();
+				if (fs instanceof LocalFileSystemSub) {
+					String containerFsPath = fs.getFSRL().getContainer().getPath();
+					fsPath = joinPaths(containerFsPath, fsPath);
+				}
+				if (searchPath.relativeFsPath() != null) {
+					fsPath = joinPaths(fsPath, searchPath.relativeFsPath());
+				}
+				String projectPath = joinPaths(rootSearchFolder.getPathname(), fsPath, library);
+				DomainFile file = rootSearchFolder.getProjectData().getFile(projectPath);
+				if (file != null) {
+					return file;
+				}
+			}
 			return null;
 		}
 
@@ -839,24 +890,24 @@ public abstract class AbstractLibrarySupportLoader extends AbstractProgramLoader
 	 * @return A {@link List} of {@link GFile files} that match the requested library path
 	 * @throws CancelledException if the user cancelled the operation
 	 */
-	private List<FSRL> findLibraryOnDisk(String library, List<LibrarySearchPath> searchPaths,
+	private List<GFile> findLibraryOnDisk(String library, List<LibrarySearchPath> searchPaths,
 			MessageLog log, TaskMonitor monitor) throws CancelledException {
 
-		List<FSRL> results = new ArrayList<>();
+		List<GFile> results = new ArrayList<>();
 
 		try {
 			for (LibrarySearchPath searchPath : searchPaths) {
 				monitor.checkCancelled();
 				String fullLibraryPath = joinPaths(searchPath.relativeFsPath(), library);
 				GFileSystem fs = searchPath.fsRef().getFilesystem();
-				FSRL fsrl = resolveLibraryFile(fs, fullLibraryPath);
-				Optional.ofNullable(fsrl).ifPresent(results::add);
+				GFile file = resolveLibraryFile(fs, fullLibraryPath);
+				Optional.ofNullable(file).ifPresent(results::add);
 			}
 
 			if (results.isEmpty() && new File(library).isAbsolute()) {
 				LocalFileSystem localFS = FileSystemService.getInstance().getLocalFS();
-				FSRL fsrl = resolveLibraryFile(localFS, library);
-				Optional.ofNullable(fsrl).ifPresent(results::add);
+				GFile file = resolveLibraryFile(localFS, library);
+				Optional.ofNullable(file).ifPresent(results::add);
 			}
 		}
 		catch (IOException e) {
@@ -1210,17 +1261,18 @@ public abstract class AbstractLibrarySupportLoader extends AbstractProgramLoader
 	}
 
 	/**
-	 * Resolves the given library path to an existing {@link FSRL}.  Some {@link Loader}s
+	 * Resolves the given library path to an existing {@link GFile}.  Some {@link Loader}s
 	 * have relaxed requirements on what counts as a valid library filename match.  For example, 
 	 * case-insensitive lookup may be allowed, and filename extensions may be optional.
 	 * 
 	 * @param fs The {@link GFileSystem file system} to resolve in
 	 * @param library The library. This will be either an absolute path, a relative path, or just a 
 	 *   filename.
-	 * @return The library resolved to an existing {@link FSRL}, or null if it did not resolve
+	 * @return The library resolved to an existing {@link GFile}, or null if it did not resolve to
+	 *   a file
 	 * @throws IOException If an IO-related problem occurred
 	 */
-	protected FSRL resolveLibraryFile(GFileSystem fs, String library) throws IOException {
+	protected GFile resolveLibraryFile(GFileSystem fs, String library) throws IOException {
 		Comparator<String> baseNameComp = getLibraryNameComparator();
 		Comparator<String> nameComp = isOptionalLibraryFilenameExtensions() &&
 			FilenameUtils.getExtension(library).isEmpty()
@@ -1229,7 +1281,7 @@ public abstract class AbstractLibrarySupportLoader extends AbstractProgramLoader
 					: baseNameComp;
 
 		GFile foundFile = fs.lookup(library, nameComp);
-		return foundFile != null && !foundFile.isDirectory() ? foundFile.getFSRL() : null;
+		return foundFile != null && !foundFile.isDirectory() ? foundFile : null;
 	}
 
 	/**

@@ -54,8 +54,8 @@ public class GdtLoader implements Loader {
 
 	@Override
 	public LoadResults<? extends DomainObject> load(ByteProvider provider, String filename,
-			Project project, String projectFolderPath, LoadSpec loadSpec, List<Option> options,
-			MessageLog messageLog, Object consumer, TaskMonitor monitor)
+			Project project, String projectFolderPath, boolean mirrorFsLayout, LoadSpec loadSpec,
+			List<Option> options, MessageLog messageLog, Object consumer, TaskMonitor monitor)
 			throws IOException, CancelledException, VersionException {
 
 		DataTypeArchive dtArchive =

@@ -56,8 +56,7 @@ import ghidra.program.model.address.AddressFactory;
 import ghidra.program.model.lang.LanguageCompilerSpecPair;
 import ghidra.program.model.lang.LanguageNotFoundException;
 import ghidra.util.*;
-import ghidra.util.layout.PairLayout;
-import ghidra.util.layout.VerticalLayout;
+import ghidra.util.layout.*;
 import ghidra.util.task.TaskBuilder;
 
 /**
@@ -74,6 +73,7 @@ public class ImporterDialog extends DialogComponentProvider {
 	private DomainFolder destinationFolder;
 	private boolean languageNeeded;
 	private String suggestedDestinationPath;
+	private String previousName;
 
 	protected ByteProvider byteProvider;
 	protected JTextField nameTextField;
@@ -81,6 +81,7 @@ public class ImporterDialog extends DialogComponentProvider {
 	protected JButton folderButton;
 	protected JButton languageButton;
 	protected JTextField languageTextField;
+	protected JCheckBox mirrorFsCheckBox;
 	protected JButton optionsButton;
 	protected JTextField folderNameTextField;
 	protected GhidraComboBox<Loader> loaderComboBox;
@@ -323,11 +324,19 @@ public class ImporterDialog extends DialogComponentProvider {
 
 	private Component buildButtonPanel() {
 		JPanel panel = new JPanel(new BorderLayout());
-		JPanel innerPanel = new JPanel(new VerticalLayout(5));
+		JPanel innerPanel = new JPanel(new HorizontalLayout(5));
+		innerPanel.add(buildMirrorFsCheckbox());
 		innerPanel.add(buildOptionsButton());
 		panel.add(innerPanel, BorderLayout.EAST);
 		panel.getAccessibleContext().setAccessibleName("Buttons");
 		return panel;
+	}
+
+	private Component buildMirrorFsCheckbox() {
+		mirrorFsCheckBox = new JCheckBox("Mirror Filesystem", false);
+		mirrorFsCheckBox.addActionListener(e -> mirrorFs());
+		mirrorFsCheckBox.getAccessibleContext().setAccessibleName("Mirror");
+		return mirrorFsCheckBox;
 	}
 
 	private Component buildOptionsButton() {
@@ -350,7 +359,7 @@ public class ImporterDialog extends DialogComponentProvider {
 			//@formatter:off
 			new TaskBuilder("Import File", monitor -> {
 				ImporterUtilities.importSingleFile(tool, programManager, fsrl, importFolder,
-					loadSpec, programName, options, monitor);
+					mirrorFsCheckBox.isSelected(), loadSpec, programName, options, monitor);
 			})
 			.setLaunchDelay(0)
 			.launchNonModal();
@@ -398,9 +407,25 @@ public class ImporterDialog extends DialogComponentProvider {
 
 	protected List<Option> getOptions(LoadSpec loadSpec) {
 		if (options == null) {
-			options = loadSpec.getLoader().getDefaultOptions(byteProvider, loadSpec, null, false);
+			options = loadSpec.getLoader()
+					.getDefaultOptions(byteProvider, loadSpec, null, false,
+						mirrorFsCheckBox.isSelected());
 		}
 		return options;
+	}
+
+	private void mirrorFs() {
+		nameTextField.setEnabled(!mirrorFsCheckBox.isSelected());
+		if (mirrorFsCheckBox.isSelected()) {
+			previousName = getName();
+			String s = fsrl.getPath();
+			nameTextField.setText(s);
+			nameTextField.setCaretPosition(s.length());
+		}
+		else if (previousName != null) {
+			nameTextField.setText(previousName);
+			nameTextField.setCaretPosition(previousName.length());
+		}
 	}
 
 	private void showOptions() {

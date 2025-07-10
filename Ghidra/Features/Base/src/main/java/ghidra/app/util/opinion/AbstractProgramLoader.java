@@ -119,9 +119,9 @@ public abstract class AbstractProgramLoader implements Loader {
 
 	@Override
 	public final LoadResults<? extends DomainObject> load(ByteProvider provider, String loadedName,
-			Project project, String projectFolderPath, LoadSpec loadSpec, List<Option> options,
-			MessageLog messageLog, Object consumer, TaskMonitor monitor) throws IOException,
-			CancelledException, VersionException, LoadException {
+			Project project, String projectFolderPath, boolean mirrorFsLayout, LoadSpec loadSpec,
+			List<Option> options, MessageLog messageLog, Object consumer, TaskMonitor monitor)
+			throws IOException, CancelledException, VersionException, LoadException {
 
 		if (!loadSpec.isComplete()) {
 			throw new LoadException("Load spec is incomplete");

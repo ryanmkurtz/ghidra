@@ -101,6 +101,8 @@ public interface Loader extends ExtensionPoint, Comparable<Loader> {
 	 *   reserves the right to change it for each {@link Loaded} result. The {@link LoadResults} 
 	 *   should be queried for their true project folder paths using 
 	 *   {@link Loaded#getProjectFolderPath()}.
+	 * @param mirrorFsLayout True if the filesystem layout should be mirrored when loading;
+	 *   otherwise, false
 	 * @param loadSpec The {@link LoadSpec} to use during load.
 	 * @param options The load options.
 	 * @param messageLog The message log.
@@ -117,9 +119,9 @@ public interface Loader extends ExtensionPoint, Comparable<Loader> {
 	 *   which was created with a newer or unsupported version of Ghidra
 	 */
 	public LoadResults<? extends DomainObject> load(ByteProvider provider, String loadedName,
-			Project project, String projectFolderPath, LoadSpec loadSpec, List<Option> options,
-			MessageLog messageLog, Object consumer, TaskMonitor monitor) throws IOException,
-			CancelledException, VersionException, LoadException;
+			Project project, String projectFolderPath, boolean mirrorFsLayout, LoadSpec loadSpec,
+			List<Option> options, MessageLog messageLog, Object consumer, TaskMonitor monitor)
+			throws IOException, CancelledException, VersionException, LoadException;
 
 	/**
 	 * Loads bytes into the specified {@link Program}.  This method will not create any new 
@@ -148,9 +150,29 @@ public interface Loader extends ExtensionPoint, Comparable<Loader> {
 	 * @param loadIntoProgram True if the load is adding to an existing {@link DomainObject}; 
 	 *   otherwise, false.
 	 * @return A list of the {@link Loader}'s default options.
+	 * @deprecated use {@link #getDefaultOptions(ByteProvider, LoadSpec, DomainObject, boolean, boolean)}
+	 *   instead
 	 */
+	@Deprecated(since = "12.0")
 	public List<Option> getDefaultOptions(ByteProvider provider, LoadSpec loadSpec,
 			DomainObject domainObject, boolean loadIntoProgram);
+
+	/**
+	 * Gets the default {@link Loader} options.
+	 * 
+	 * @param provider The bytes of the thing being loaded.
+	 * @param loadSpec The {@link LoadSpec}.
+	 * @param domainObject The {@link DomainObject} being loaded.
+	 * @param loadIntoProgram True if the load is adding to an existing {@link DomainObject}; 
+	 *   otherwise, false.
+	 * @param mirrorFsLayout True if the filesystem layout should be mirrored when loading;
+	 *   otherwise, false
+	 * @return A list of the {@link Loader}'s default options.
+	 */
+	default public List<Option> getDefaultOptions(ByteProvider provider, LoadSpec loadSpec,
+			DomainObject domainObject, boolean loadIntoProgram, boolean mirrorFsLayout) {
+		return getDefaultOptions(provider, loadSpec, domainObject, loadIntoProgram);
+	}
 
 	/**
 	 * Validates the {@link Loader}'s options and returns null if all options are valid; otherwise, 

@@ -421,14 +421,16 @@ public class ImporterUtilities {
 	 * @param programManager program manager to open imported file with or null
 	 * @param fsrl import file location
 	 * @param destFolder project destination folder
+	 * @param mirrorFsLayout True if the filesystem layout should be mirrored when importing;
+	 *   otherwise, false
 	 * @param loadSpec import {@link LoadSpec}
 	 * @param programName program name
 	 * @param options import options
 	 * @param monitor task monitor
 	 */
 	public static void importSingleFile(PluginTool tool, ProgramManager programManager, FSRL fsrl,
-			DomainFolder destFolder, LoadSpec loadSpec, String programName, List<Option> options,
-			TaskMonitor monitor) {
+			DomainFolder destFolder, boolean mirrorFsLayout, LoadSpec loadSpec, String programName,
+			List<Option> options, TaskMonitor monitor) {
 
 		Objects.requireNonNull(monitor);
 
@@ -437,8 +439,8 @@ public class ImporterUtilities {
 			Object consumer = new Object();
 			MessageLog messageLog = new MessageLog();
 			try (LoadResults<? extends DomainObject> loadResults = loadSpec.getLoader()
-					.load(bp, programName, tool.getProject(), destFolder.getPathname(), loadSpec,
-						options, messageLog, consumer, monitor)) {
+					.load(bp, programName, tool.getProject(), destFolder.getPathname(),
+						mirrorFsLayout, loadSpec, options, messageLog, consumer, monitor)) {
 				loadResults.save(monitor);
 				doPostImportProcessing(tool, programManager, fsrl, loadResults,
 					messageLog.toString(), monitor);

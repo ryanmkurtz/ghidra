@@ -21,7 +21,6 @@ import java.math.BigInteger;
 import java.util.*;
 
 import ghidra.app.util.MemoryBlockUtils;
-import ghidra.app.util.Option;
 import ghidra.app.util.bin.ByteProvider;
 import ghidra.app.util.bin.format.ne.*;
 import ghidra.app.util.importer.MessageLog;
@@ -84,8 +83,11 @@ public class NeLoader extends AbstractOrdinalSupportLoader {
 	}
 
 	@Override
-	public void load(ByteProvider provider, LoadSpec loadSpec, List<Option> options, Program prog,
-			TaskMonitor monitor, MessageLog log) throws IOException, CancelledException {
+	public void load(Program prog, ImporterSettings settings)
+			throws IOException, CancelledException {
+
+		MessageLog log = settings.log();
+		TaskMonitor monitor = settings.monitor();
 
 		if (monitor.isCancelled()) {
 			return;
@@ -94,10 +96,11 @@ public class NeLoader extends AbstractOrdinalSupportLoader {
 
 		initVars();
 
-		FileBytes fileBytes = MemoryBlockUtils.createFileBytes(prog, provider, monitor);
+		FileBytes fileBytes = MemoryBlockUtils.createFileBytes(prog, settings.provider(), monitor);
 		SegmentedAddressSpace space =
 			(SegmentedAddressSpace) prog.getAddressFactory().getDefaultAddressSpace();
-		NewExecutable ne = new NewExecutable(provider, space.getAddress(SEGMENT_START, 0));
+		NewExecutable ne =
+			new NewExecutable(settings.provider(), space.getAddress(SEGMENT_START, 0));
 		WindowsHeader wh = ne.getWindowsHeader();
 		InformationBlock ib = wh.getInformationBlock();
 		SegmentTable st = wh.getSegmentTable();

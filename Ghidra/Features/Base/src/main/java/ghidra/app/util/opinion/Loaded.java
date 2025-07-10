@@ -15,13 +15,26 @@
  */
 package ghidra.app.util.opinion;
 
+import static ghidra.formats.gfilesystem.fileinfo.FileAttributeType.*;
+
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.Path;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
+import org.apache.commons.io.FilenameUtils;
+
+import ghidra.app.util.opinion.Loader.ImporterSettings;
+import ghidra.formats.gfilesystem.*;
+import ghidra.formats.gfilesystem.fileinfo.FileAttributes;
+import ghidra.formats.gfilesystem.fileinfo.FileType;
+import ghidra.framework.data.FolderLinkContentHandler;
 import ghidra.framework.model.*;
+import ghidra.program.database.ProgramLinkContentHandler;
 import ghidra.util.InvalidNameException;
+import ghidra.util.Msg;
 import ghidra.util.exception.*;
 import ghidra.util.task.TaskMonitor;
 
@@ -36,8 +49,11 @@ public class Loaded<T extends DomainObject> implements AutoCloseable {
 
 	protected final T domainObject;
 	protected final String name;
+	protected FSRL fsrl;
 	protected Project project;
-	protected String projectFolderPath;
+	protected String projectRootPath;
+	protected String rootRelativeFolderPath;
+	protected boolean mirrorFsLayout;
 	protected Object loadedConsumer;
 
 	protected DomainFile domainFile;
@@ -50,24 +66,46 @@ public class Loaded<T extends DomainObject> implements AutoCloseable {
 	 * @param domainObject The loaded {@link DomainObject}
 	 * @param name The name of the loaded {@link DomainObject}.  If a {@link #save(TaskMonitor)} 
 	 *   occurs, this will attempted to be used for the resulting {@link DomainFile}'s name.
+	 * @param fsrl The {@link FSRL} of the loaded {@link DomainObject}
 	 * @param project If not null, the project this will get saved to during a 
 	 *   {@link #save(TaskMonitor)} operation
-	 * @param projectFolderPath The project folder path this will get saved to during a 
-	 *   {@link #save(TaskMonitor)} operation.  If null or empty, the root project folder will be 
-	 *   used.
+	 * @param projectRootPath The project folder path that all {@link Loaded} {@link DomainObject}s
+	 *   will be saved relative to. If {@code null}, "/" will be used.
+	 * @param rootRelativeFolderPath The project folder path relative to the 
+	 *   {@code projectRootPath} that the primary {@link Loaded} {@link DomainObject} will be saved 
+	 *   to. Non-primary {@link Loaded} {@link DomainObject}s project paths may should be queried 
+	 *   for their resulting folder paths using {@link Loaded#getProjectFolderPath()}.
+	 * @param mirrorFsLayout True if the filesystem layout should be mirrored when loading;
+	 *   otherwise, false
 	 * @param consumer A reference to the object "consuming" the returned {@link Loaded} 
 	 *   {@link DomainObject}, used to ensure the underlying {@link DomainObject} is only closed 
 	 *   when every consumer is done with it (see {@link #close()}). NOTE:  Wrapping a 
 	 *   {@link DomainObject} in a {@link Loaded} transfers responsibility of releasing the 
 	 *   given {@link DomainObject} to this {@link Loaded}'s {@link #close()} method. 
 	 */
-	public Loaded(T domainObject, String name, Project project, String projectFolderPath,
-			Object consumer) {
+	public Loaded(T domainObject, String name, FSRL fsrl, Project project, String projectRootPath,
+			String rootRelativeFolderPath, boolean mirrorFsLayout, Object consumer) {
 		this.domainObject = domainObject;
 		this.name = name;
+		this.fsrl = fsrl;
 		this.project = project;
+		this.mirrorFsLayout = mirrorFsLayout;
 		this.loadedConsumer = consumer;
-		setProjectFolderPath(projectFolderPath);
+		setProjectFolderPath(projectRootPath, rootRelativeFolderPath);
+	}
+
+	/**
+	 * Creates a new {@link Loaded} object.
+	 * <p>
+	 * This object needs to be {@link #close() closed} when done with it.
+	 * 
+	 * @param domainObject The loaded {@link DomainObject}
+	 * @param settings The {@link Loader.ImporterSettings}.
+	 */
+	public Loaded(T domainObject, ImporterSettings settings) {
+		this(domainObject, settings.name(), settings.provider().getFSRL(), settings.project(),
+			settings.projectRootPath(), settings.rootRelativeFolderPath(),
+			settings.mirrorFsLayout(), settings.consumer());
 	}
 
 	/**
@@ -165,25 +203,33 @@ public class Loaded<T extends DomainObject> implements AutoCloseable {
 	 * @return the project folder path
 	 */
 	public String getProjectFolderPath() {
-		return projectFolderPath;
+		return LoaderUtils.createProjectPath(projectRootPath, rootRelativeFolderPath);
 	}
 
 	/**
 	 * Sets the project folder path this will get saved to during a {@link #save(TaskMonitor)} 
 	 * operation.
 	 * 
-	 * @param projectFolderPath The project folder path this will get saved to during a 
-	 *   {@link #save(TaskMonitor)} operation.  If null or empty, the root project folder will be 
-	 *   used.
+	 * @param projectRootPath The project folder path that all {@link Loaded} {@link DomainObject}s
+	 *   will be saved relative to. If {@code null}, "/" will be used.
+	 * @param rootRelativeFolderPath A suggested folder path relative to the {@code projectRootPath}
+	 *   for the {@link Loaded} {@link DomainObject}s. This is just a suggestion, and a 
+	 *   {@link Loader} implementation reserves the right to change it for each {@link Loaded} 
+	 *   result. The {@link LoadResults} should be queried for their true folder paths using 
+	 *   {@link Loaded#getProjectFolderPath()}.
 	 */
-	public void setProjectFolderPath(String projectFolderPath) {
-		if (projectFolderPath == null || projectFolderPath.isBlank()) {
-			projectFolderPath = "/";
+	public void setProjectFolderPath(String projectRootPath, String rootRelativeFolderPath) {
+		if (rootRelativeFolderPath == null || rootRelativeFolderPath.isBlank()) {
+			rootRelativeFolderPath = "/";
 		}
-		else if (!projectFolderPath.endsWith("/")) {
-			projectFolderPath += "/";
+		else if (!rootRelativeFolderPath.endsWith("/")) {
+			rootRelativeFolderPath += "/";
 		}
-		this.projectFolderPath = projectFolderPath;
+
+		// Windows paths might have a colon in them which aren't valid project path characters, so
+		// remove them
+		this.projectRootPath = projectRootPath != null ? projectRootPath.replaceAll(":", "") : null;
+		this.rootRelativeFolderPath = rootRelativeFolderPath.replaceAll(":", "");
 	}
 
 	/**
@@ -201,9 +247,10 @@ public class Loaded<T extends DomainObject> implements AutoCloseable {
 	 * @throws ClosedException if the loaded {@link DomainObject} was already closed
 	 * @throws IOException If there was an IO-related error, an invalid name was specified, or it
 	 *   was already successfully saved and still exists
+	 * @throws InvalidNameException if saving with an invalid name
 	 */
 	public DomainFile save(TaskMonitor monitor)
-			throws CancelledException, ClosedException, IOException {
+			throws CancelledException, ClosedException, IOException, InvalidNameException {
 
 		if (domainObject.isClosed()) {
 			throw new ClosedException(
@@ -221,25 +268,26 @@ public class Loaded<T extends DomainObject> implements AutoCloseable {
 			domainFile = null;
 		}
 
+		if (mirrorFsLayout && fsrl != null) {
+			domainFile = mirror(monitor);
+			return domainFile;
+		}
+
 		int uniqueNameIndex = 0;
 		String uniqueName = name;
-		try {
-			DomainFolder programFolder = ProjectDataUtils.createDomainFolderPath(
-				project.getProjectData().getRootFolder(), projectFolderPath);
-			while (!monitor.isCancelled()) {
-				try {
-					domainFile = programFolder.createFile(uniqueName, domainObject, monitor);
-					return domainFile;
-				}
-				catch (DuplicateFileException e) {
-					uniqueName = name + "." + uniqueNameIndex;
-					++uniqueNameIndex;
-				}
+		DomainFolder programFolder = ProjectDataUtils.createDomainFolderPath(
+			project.getProjectData().getRootFolder(), getProjectFolderPath());
+		while (!monitor.isCancelled()) {
+			try {
+				domainFile = programFolder.createFile(uniqueName, domainObject, monitor);
+				return domainFile;
+			}
+			catch (DuplicateFileException e) {
+				uniqueName = name + "." + uniqueNameIndex;
+				++uniqueNameIndex;
 			}
 		}
-		catch (InvalidNameException e) {
-			throw new IOException(e);
-		}
+
 		throw new CancelledException();
 	}
 
@@ -293,5 +341,109 @@ public class Loaded<T extends DomainObject> implements AutoCloseable {
 	@Override
 	public String toString() {
 		return getProjectFolderPath() + getName();
+	}
+
+	/**
+	 * A project link and its associated metadata that was created during the mirror process
+	 * 
+	 * @param linkFile The {@link DomainFile project link}. It may link to a {@link DomainFile} or
+	 *   a {@link DomainFolder}.
+	 * @param projectLinkTarget The project path of the link's target
+	 * @param symlink The original target value of the link. It may be either relative, or absolute.
+	 * @param relative True if the {@code symlink} is relative; false if it is absolute
+	 */
+	private record MirroredLink(DomainFile linkFile, String projectLinkTarget, String symlink,
+			boolean relative) {}
+
+	private DomainFile mirror(TaskMonitor monitor)
+			throws IOException, InvalidNameException, CancelledException {
+		DomainFolder mirrorRootProjectFolder = ProjectDataUtils
+				.createDomainFolderPath(project.getProjectData().getRootFolder(), projectRootPath);
+		String currentPath = null;
+		Set<String> processedPaths = new HashSet<>();
+		String[] pathElements = FSUtilities.splitPath(fsrl.getPath());
+		try (RefdFile ref = FileSystemService.getInstance().getRefdFile(fsrl, monitor)) {
+			for (int i = 0; i < pathElements.length; i++) {
+				String pathElement = pathElements[i];
+				if (i == 0) {
+					if (!pathElement.isEmpty()) {
+						throw new IOException("FSRL '%s' is not absolute!".formatted(fsrl));
+					}
+					currentPath = "/";
+					continue;
+				}
+				currentPath = FSUtilities.appendPath(currentPath, pathElement);
+				if (processedPaths.contains(currentPath)) {
+					continue;
+				}
+				GFileSystem fs = ref.fsRef.getFilesystem();
+				GFile currentFile = fs.lookup(currentPath);
+				String currentParentDirPath = currentFile.getParentFile().getPath();
+				DomainFolder parentProjectFolder = ProjectDataUtils.getDomainFolder(
+					mirrorRootProjectFolder, LoaderUtils.createProjectPath(currentParentDirPath));
+				FileAttributes fattrs = fs.getFileAttributes(currentFile, monitor);
+				switch (fattrs.get(FILE_TYPE_ATTR, FileType.class, FileType.UNKNOWN)) {
+					case FILE:
+						try {
+							return parentProjectFolder.createFile(currentFile.getName(),
+								domainObject, monitor);
+						}
+						catch (DuplicateFileException e) {
+							DomainFile f = parentProjectFolder.getFile(currentFile.getName());
+							Msg.warn(this, "Skipping save of existing file: " + f);
+							return f;
+						}
+					case DIRECTORY:
+						ProjectDataUtils.createDomainFolderPath(mirrorRootProjectFolder,
+							LoaderUtils.createProjectPath(currentPath));
+						processedPaths.add((currentPath));
+						break;
+					case SYMBOLIC_LINK:
+						MirroredLink mirroredLink =
+							mirrorLinkInProject(currentFile, parentProjectFolder, monitor);
+						String symlink = mirroredLink.relative()
+								? FSUtilities.appendPath(currentParentDirPath,
+									mirroredLink.symlink())
+								: mirroredLink.symlink();
+						symlink = Path.of(symlink).normalize().toString(); // fixup any '.' and '..'
+						String[] oldElements = pathElements;
+						String[] newElements = FSUtilities.splitPath(symlink);
+						pathElements = Arrays.copyOf(newElements,
+							newElements.length + oldElements.length - i - 1);
+						System.arraycopy(oldElements, i + 1, pathElements, newElements.length,
+							pathElements.length - newElements.length);
+						i = -1;
+						break;
+					default:
+						throw new IOException("Unexpected FileType!");
+				}
+			}
+			throw new IOException("Path did not point to a file!");
+		}
+	}
+
+	private MirroredLink mirrorLinkInProject(GFile file, DomainFolder folder, TaskMonitor monitor)
+			throws IOException {
+		GFileSystem fs = file.getFilesystem();
+		FileAttributes fattrs = fs.getFileAttributes(file, monitor);
+		if (!fattrs.get(FILE_TYPE_ATTR, FileType.class, null).equals(FileType.SYMBOLIC_LINK)) {
+			return null;
+		}
+		String symlinkDest = fattrs.get(SYMLINK_DEST_ATTR, String.class, null);
+		if (symlinkDest == null) {
+			throw new IOException("Missing symbolic link destination!");
+		}
+		boolean relative = FilenameUtils.getPrefixLength(symlinkDest) == 0;
+		String projectLinkTarget = relative
+				? LoaderUtils.createProjectPath(projectRootPath,
+					FilenameUtils.getFullPath(file.getPath()), symlinkDest)
+				: LoaderUtils.createProjectPath(projectRootPath, symlinkDest);
+		DomainFile df = folder.getFile(file.getName());
+		if (df == null) {
+			df = folder.createLinkFile(project.getProjectData(), projectLinkTarget, relative,
+				file.getName(), file.isDirectory() ? FolderLinkContentHandler.INSTANCE
+						: ProgramLinkContentHandler.INSTANCE);
+		}
+		return new MirroredLink(df, projectLinkTarget, symlinkDest, relative);
 	}
 }

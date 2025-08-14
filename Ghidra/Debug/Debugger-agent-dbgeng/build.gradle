@@ -30,6 +30,34 @@ dependencies {
 
 ext.tlb = file("build/os/win_x86_64/dbgmodel.tlb")
 
+task prebuildTlb(type: Exec) {
+	assert isCurrentX86_64() && isCurrentWindows() : "Can only build TLB on Windows x86"
+	assert file(BIN_REPO).exists() : "Bin repo doesn't exist"
+
+	def tlbFile = file("${BIN_REPO}/${getGhidraRelativePath(project)}/os/win_x86_64/dbgmodel.tlb")
+	def tmpBatch = file("build/buildTlb.bat")
+	def idl = file("src/main/py/src/ghidradbg/dbgmodel/DbgModel.idl")
+	inputs.file(idl)
+	outputs.file(tlb)
+
+	doFirst {
+		file(tlb).parentFile.mkdirs()
+		def midlCmd = "midl /tlb \"${tlb}\" \"${idl}\""
+		println "Executing: " + midlCmd
+
+		tmpBatch.withWriter { out ->
+			out.println "call " + VISUAL_STUDIO_VCVARS_CMD
+			out.println midlCmd
+		}
+	}
+
+	doLast {
+		assert file(tlb).exists() : "Failed to build dbgmodel.tlb"
+	}
+
+	commandLine "cmd", "/c", tmpBatch
+}
+
 if ("win_x86_64".equals(getCurrentPlatformName())) {
 
 	String makeName = "win_x86_64DbgmodelTlbMake"

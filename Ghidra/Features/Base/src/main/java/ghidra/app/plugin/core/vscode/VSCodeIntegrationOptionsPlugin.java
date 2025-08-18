@@ -47,6 +47,14 @@ public class VSCodeIntegrationOptionsPlugin extends Plugin implements Applicatio
 	private static final String VSCODE_EXE_PATH_DESC = "Path to Visual Studio Code executable";
 	private static final File VSCODE_EXE_PATH_DEFAULT = getDefaultVSCodeExecutable();
 
+	public static final String VSCODE_ARG1_OPTION = "Visual Studio Code Argument 1";
+	private static final String VSCODE_ARG1_DESC = "Argument 1 for Visual Studio Code executable";
+	private static final String VSCODE_ARG1_DEFAULT = "";
+
+	public static final String VSCODE_ARG2_OPTION = "Visual Studio Code Argument 2";
+	private static final String VSCODE_ARG2_DESC = "Argument 2 for Visual Studio Code executable";
+	private static final String VSCODE_ARG2_DEFAULT = "";
+
 	public VSCodeIntegrationOptionsPlugin(PluginTool tool) {
 		super(tool);
 	}
@@ -57,6 +65,10 @@ public class VSCodeIntegrationOptionsPlugin extends Plugin implements Applicatio
 		ToolOptions options = tool.getOptions(PLUGIN_OPTIONS_NAME);
 		options.registerOption(VSCODE_EXE_PATH_OPTION, OptionType.FILE_TYPE,
 			VSCODE_EXE_PATH_DEFAULT, null, VSCODE_EXE_PATH_DESC);
+		options.registerOption(VSCODE_ARG1_OPTION, OptionType.STRING_TYPE,
+			VSCODE_ARG1_DEFAULT, null, VSCODE_ARG1_DESC);
+		options.registerOption(VSCODE_ARG2_OPTION, OptionType.STRING_TYPE,
+			VSCODE_ARG2_DEFAULT, null, VSCODE_ARG2_DESC);
 		options.setOptionsHelpLocation(
 			new HelpLocation("VSCodeIntegration", "VSCodeIntegrationOptions"));
 	}

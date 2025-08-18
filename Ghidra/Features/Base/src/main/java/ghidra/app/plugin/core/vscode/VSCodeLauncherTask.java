@@ -59,6 +59,7 @@ class VSCodeLauncherTask extends Task {
 		// location present the user with the options window, and when they close that window, try 
 		// again.
 		File vscodeExecutableFile;
+		List<String> vscodeArgs = vscodeService.getVSCodeArguments();
 		try {
 			vscodeExecutableFile = vscodeService.getVSCodeExecutableFile();
 		}
@@ -96,6 +97,7 @@ class VSCodeLauncherTask extends Task {
 			args.add("-a");
 			args.add(workspaceFile.getAbsolutePath());
 			args.add(file.getAbsolutePath());
+			args.addAll(vscodeArgs);
 			new ProcessBuilder(args).redirectErrorStream(true).start();
 		}
 		catch (Exception e) {

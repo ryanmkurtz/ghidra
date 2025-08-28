@@ -516,31 +516,6 @@ public abstract class AbstractLibrarySupportLoader extends AbstractProgramLoader
 	}
 
 	/**
-	 * Specifies if the library filenames specified by this loader should be exact case match
-	 * or case-insensitive.
-	 * <p>
-	 * Derived loader classes should override this method and specify if the OS that normally
-	 * handles this type of binary is case-insensitive.
-	 *
-	 * @return True if case-insensitive or false if case-sensitive.
-	 */
-	protected boolean isCaseInsensitiveLibraryFilenames() {
-		return false;
-	}
-
-	/**
-	 * Specifies if this loader can refer to library filenames without filename extensions.
-	 * <p>
-	 * Derived loader classes should override this method if library filename extensions are
-	 * optional.  If they are required, there is no need to override this method.
-	 * 
-	 * @return True if library filename extensions are optional; otherwise, false
-	 */
-	protected boolean isOptionalLibraryFilenameExtensions() {
-		return false;
-	}
-
-	/**
 	 * Creates a {@link ByteProvider} for the given library {@link FSRL}
 	 * 
 	 * @param libFsrl The library {@link FSRL} to get a {@link ByteProvider} for
@@ -747,8 +722,7 @@ public abstract class AbstractLibrarySupportLoader extends AbstractProgramLoader
 	}
 
 	/**
-	 * Find the library within the specified {@link DomainFolder root search folder}.  This method 
-	 * will handle relative path normalization.
+	 * Find the library within the specified {@link DomainFolder}.
 	 * <p>
 	 * If the library path is a simple name without any path separators, only the given folder 
 	 * will be searched.
@@ -759,22 +733,23 @@ public abstract class AbstractLibrarySupportLoader extends AbstractProgramLoader
 	 * If the library path has a path and it wasn't found under the given folder, the
 	 * filename part of library path will be used to search the given folder for matches.
 	 * 
-	 * @param library library to find
-	 * @param rootSearchFolder {@link DomainFolder root folder} within which imported libraries will
+	 * @param library The library to find. Depending on the type of library, this could be a simple
+	 *   filename or an absolute path.
+	 * @param folder {@link DomainFolder root folder} within which imported libraries will
 	 *   be searched. If null this method will return null.
 	 * @param searchPaths A {@link List} of {@link LibrarySearchPath}s that will be searched
 	 * @param settings The {@link Loader.ImporterSettings}
 	 * @return The found {@link DomainFile} or null if not found
 	 * @throws CancelledException if the user cancelled the load
 	 */
-	protected DomainFile findLibraryInProject(String library, DomainFolder rootSearchFolder,
+	protected DomainFile findLibraryInProject(String library, DomainFolder folder,
 			List<LibrarySearchPath> searchPaths, ImporterSettings settings)
 			throws CancelledException {
-		if (rootSearchFolder == null) {
+		if (folder == null) {
 			return null;
 		}
 
-		ProjectData projectData = rootSearchFolder.getProjectData();
+		ProjectData projectData = folder.getProjectData();
 
 		if (isMirroredLayout(settings)) {
 			// Perform the lookup based on file system search path layout within the project
@@ -785,13 +760,14 @@ public abstract class AbstractLibrarySupportLoader extends AbstractProgramLoader
 				String fsPath = FSUtilities.mirroredProjectPath(
 					FSUtilities.appendPath(fs.getFSRL().getPath(), searchPath.relativeFsPath()));
 				String projectPath =
-					FSUtilities.appendPath(rootSearchFolder.getPathname(), fsPath, library);
-				String parentProjectPath = FilenameUtils.getFullPath(projectPath);
-				DomainFolder folder = projectData.getFolder(parentProjectPath);
-				if (folder == null) {
+					FSUtilities.appendPath(folder.getPathname(), fsPath, library);
+				DomainFolder parentFolder =
+					projectData.getFolder(FilenameUtils.getFullPath(projectPath));
+				if (parentFolder == null) {
 					continue;
 				}
-				DomainFile ret = matchLibraryInFolder(FilenameUtils.getName(library), folder);
+				DomainFile ret =
+					lookupLibraryInFolder(FilenameUtils.getName(library), parentFolder);
 				if (ret != null) {
 					return ret;
 				}
@@ -799,53 +775,37 @@ public abstract class AbstractLibrarySupportLoader extends AbstractProgramLoader
 			return null;
 		}
 
-		// Lookup by full project path
-		// NOTE: probably no need to support optional extensions and case-insensitivity for this case
 		if (isAbsoluteLibraryPath(library)) {
-			String projectPath = FSUtilities.appendPath(rootSearchFolder.getPathname(), library);
-			DomainFile ret = projectData.getFile(projectPath);
-			if (ret != null) {
-				return ret;
+			String parentProjectPath =
+				FSUtilities.appendPath(folder.getPathname(), FilenameUtils.getFullPath(library));
+			folder = projectData.getFolder(parentProjectPath);
+			if (folder == null) {
+				return null;
 			}
 		}
 
-		return matchLibraryInFolder(FilenameUtils.getName(library), rootSearchFolder);
-	}
-
-	/**
-	 * Searches the given {@link DomainFolder} for the given name, ignoring case and file extension
-	 * if applicable
-	 * 
-	 * @param libraryName The library name to search for
-	 * @param folder The {@link DomainFolder} to search in
-	 * @return A matching library {@link DomainFile}, or {@code null} if one was not found
-	 * @see #isCaseInsensitiveLibraryFilenames()
-	 * @see #isOptionalLibraryFilenameExtensions()
-	 */
-	private DomainFile matchLibraryInFolder(String libraryName, DomainFolder folder) {
-		// Quick lookup by library filename (ignoring full library path) in given folder.
-		// We try this first to hopefully avoid needing to iterate over the files in the folder
-		// factoring in case and extensions
+		String libraryName = FilenameUtils.getName(library);
 		DomainFile file = folder.getFile(libraryName);
 		if (file != null) {
 			return file;
 		}
 
-		if (isCaseInsensitiveLibraryFilenames() || isOptionalLibraryFilenameExtensions()) {
-			boolean noExtension = FilenameUtils.getExtension(libraryName).equals("");
-			Comparator<String> comparator = getLibraryNameComparator();
-			for (DomainFile f : folder.getFiles()) {
-				String candidateName = f.getName();
-				if (isOptionalLibraryFilenameExtensions() && noExtension) {
-					candidateName = FilenameUtils.getBaseName(candidateName);
-				}
-				if (comparator.compare(candidateName, libraryName) == 0) {
-					return f;
-				}
-			}
-		}
+		return lookupLibraryInFolder(libraryName, folder);
+	}
 
-		return null;
+	/**
+	 * Looks in the given {@link DomainFolder} for the given name using the loader's 
+	 * {@link #getLibraryNameComparator() library name comparator}
+	 * 
+	 * @param libraryName The library name to search for (no path included)
+	 * @param folder The {@link DomainFolder} to search in
+	 * @return A matching library {@link DomainFile}, or {@code null} if one was not found
+	 */
+	protected DomainFile lookupLibraryInFolder(String libraryName, DomainFolder folder) {
+		return Arrays.stream(folder.getFiles())
+				.filter(df -> getLibraryNameComparator().compare(df.getName(), libraryName) == 0)
+				.findFirst()
+				.orElse(null);
 	}
 
 	/**
@@ -853,10 +813,6 @@ public abstract class AbstractLibrarySupportLoader extends AbstractProgramLoader
 	 * {@link GFile files}.
 	 * <p>
 	 * Each search path directory will be searched for the library file in order.
-	 * <p>
-	 * If the library file specifies a path, it is treated as a relative subdirectory of
-	 * each search path directory that is searched, and if not found, the filename part of
-	 * the library is used to search just the search path directory.
 	 * <p>
 	 * If the library specifies an absolute path, its native path is also searched on the local 
 	 * filesystem.
@@ -880,13 +836,13 @@ public abstract class AbstractLibrarySupportLoader extends AbstractProgramLoader
 				String fullLibraryPath =
 					FSUtilities.appendPath(searchPath.relativeFsPath(), library);
 				GFileSystem fs = searchPath.fsRef().getFilesystem();
-				GFile file = resolveLibraryFile(fs, fullLibraryPath);
+				GFile file = lookupLibraryInFs(fullLibraryPath, fs);
 				Optional.ofNullable(file).ifPresent(results::add);
 			}
 
 			if (results.isEmpty() && isAbsoluteLibraryPath(library)) {
 				LocalFileSystem localFS = FileSystemService.getInstance().getLocalFS();
-				GFile file = resolveLibraryFile(localFS, library);
+				GFile file = lookupLibraryInFs(library, localFS);
 				Optional.ofNullable(file).ifPresent(results::add);
 			}
 		}
@@ -1144,31 +1100,16 @@ public abstract class AbstractLibrarySupportLoader extends AbstractProgramLoader
 	 * Find the library within the given {@link List} of {@link Loaded} {@link Program}s
 	 * 
 	 * @param loadedPrograms the list of {@link Loaded} {@link Program}s
-	 * @param libraryName The library name to lookup.  Depending on the type of library, this could
+	 * @param library The library name to lookup.  Depending on the type of library, this could
 	 *   be a simple filename or an absolute path.
 	 * @return The found {@link Loaded} {@link Program} or null if not found
 	 */
 	protected Loaded<Program> findLibraryInLoadedList(List<Loaded<Program>> loadedPrograms,
-			String libraryName) {
-		Comparator<String> comparator = getLibraryNameComparator();
-		boolean noExtension = FilenameUtils.getExtension(libraryName).equals("");
-		boolean absolute = isAbsoluteLibraryPath(libraryName);
-		for (Loaded<Program> loadedProgram : loadedPrograms) {
-			String candidateName = FilenameUtils.getName(loadedProgram.getName());
-			if (isOptionalLibraryFilenameExtensions() && noExtension) {
-				candidateName = FilenameUtils.getBaseName(candidateName);
-			}
-			if (absolute) {
-				String loadedProgramPath = loadedProgram.getProjectFolderPath() + candidateName;
-				if (loadedProgramPath.endsWith(libraryName)) {
-					return loadedProgram;
-				}
-			}
-			else if (comparator.compare(candidateName, libraryName) == 0) {
-				return loadedProgram;
-			}
-		}
-		return null;
+			String library) {
+		return loadedPrograms.stream()
+				.filter(e -> getLibraryNameComparator().compare(e.getName(), library) == 0)
+				.findFirst()
+				.orElse(null);
 	}
 
 	/**
@@ -1194,38 +1135,28 @@ public abstract class AbstractLibrarySupportLoader extends AbstractProgramLoader
 	}
 
 	/**
-	 * Resolves the given library path to an existing {@link GFile}.  Some {@link Loader}s
-	 * have relaxed requirements on what counts as a valid library filename match.  For example, 
-	 * case-insensitive lookup may be allowed, and filename extensions may be optional.
+	 * Looks in the given {@link GFileSystem} for the given library using the loader's 
+	 * {@link #getLibraryNameComparator() library name comparator}
 	 * 
-	 * @param fs The {@link GFileSystem file system} to resolve in
-	 * @param library The library. This will be either an absolute path, a relative path, or just a 
-	 *   filename.
-	 * @return The library resolved to an existing {@link GFile}, or null if it did not resolve to
-	 *   a file
+	 * @param fs The {@link GFileSystem file system} to look in in
+	 * @param library The library. Depending on the type of library, this could be a simple filename
+	 *   or an absolute path.
+	 * @return A matching library {@link GFile}, or {@code null} if one was not found
 	 * @throws IOException If an IO-related problem occurred
 	 */
-	protected GFile resolveLibraryFile(GFileSystem fs, String library) throws IOException {
-		Comparator<String> baseNameComp = getLibraryNameComparator();
-		Comparator<String> nameComp = isOptionalLibraryFilenameExtensions() &&
-			FilenameUtils.getExtension(library).isEmpty()
-					? (s1, s2) -> baseNameComp.compare(FilenameUtils.getBaseName(s1),
-						FilenameUtils.getBaseName(s2))
-					: baseNameComp;
-
-		GFile foundFile = fs.lookup(library, nameComp);
+	protected GFile lookupLibraryInFs(String library, GFileSystem fs) throws IOException {
+		GFile foundFile = fs.lookup(library, getLibraryNameComparator());
 		return foundFile != null && !foundFile.isDirectory() ? foundFile : null;
 	}
 
 	/**
-	 * Gets a {@link Comparator} for comparing library filenames
-	 * 
-	 * @return A {@link Comparator} for comparing library filenames
+	 * {@return a {@link Comparator} for comparing library names}
+	 * <p>
+	 * No assumptions should be made about whether the library name includes path information or
+	 * not.
 	 */
-	private Comparator<String> getLibraryNameComparator() {
-		return isCaseInsensitiveLibraryFilenames()
-				? String.CASE_INSENSITIVE_ORDER
-				: (s1, s2) -> s1.compareTo(s2);
+	protected Comparator<String> getLibraryNameComparator() {
+		return (s1, s2) -> FilenameUtils.getName(s1).compareTo(FilenameUtils.getName(s2));
 	}
 
 	/**

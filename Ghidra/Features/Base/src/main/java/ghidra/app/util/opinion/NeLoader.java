@@ -20,6 +20,8 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.util.*;
 
+import org.apache.commons.io.FilenameUtils;
+
 import ghidra.app.util.MemoryBlockUtils;
 import ghidra.app.util.bin.ByteProvider;
 import ghidra.app.util.bin.format.ne.*;
@@ -174,13 +176,9 @@ public class NeLoader extends AbstractOrdinalSupportLoader {
 	}
 
 	@Override
-	protected boolean isOptionalLibraryFilenameExtensions() {
-		return true;
-	}
-
-	@Override
-	protected boolean isCaseInsensitiveLibraryFilenames() {
-		return true;
+	protected Comparator<String> getLibraryNameComparator() {
+		return (s1, s2) -> String.CASE_INSENSITIVE_ORDER.compare(FilenameUtils.getBaseName(s1),
+			FilenameUtils.getBaseName(s2));
 	}
 
 	//////////////////////////////////////////////////////////////////

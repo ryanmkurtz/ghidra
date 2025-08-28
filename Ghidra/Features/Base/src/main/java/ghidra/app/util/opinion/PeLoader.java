@@ -19,6 +19,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
 
+import org.apache.commons.io.FilenameUtils;
+
 import com.google.common.primitives.Bytes;
 
 import ghidra.app.plugin.core.analysis.rust.RustConstants;
@@ -214,8 +216,9 @@ public class PeLoader extends AbstractPeDebugLoader {
 	}
 
 	@Override
-	protected boolean isCaseInsensitiveLibraryFilenames() {
-		return true;
+	protected Comparator<String> getLibraryNameComparator() {
+		return (s1, s2) -> String.CASE_INSENSITIVE_ORDER.compare(FilenameUtils.getName(s1),
+			FilenameUtils.getName(s2));
 	}
 
 	private boolean shouldParseCliHeaders(List<Option> options) {

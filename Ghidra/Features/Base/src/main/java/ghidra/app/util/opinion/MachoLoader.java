@@ -271,8 +271,8 @@ public class MachoLoader extends AbstractLibrarySupportLoader {
 	 * {@inheritDoc}
 	 */
 	@Override
-	protected GFile resolveLibraryFile(GFileSystem fs, String library) throws IOException {
-		GFile f = super.resolveLibraryFile(fs, library);
+	protected GFile lookupLibraryInFs(String library, GFileSystem fs) throws IOException {
+		GFile f = super.lookupLibraryInFs(library, fs);
 		if (f != null) {
 			return f;
 		}
@@ -287,8 +287,8 @@ public class MachoLoader extends AbstractLibrarySupportLoader {
 					if (!versionListion.isEmpty()) {
 						GFile specificVersionDir = versionListion.get(0);
 						if (specificVersionDir.isDirectory()) {
-							return resolveLibraryFile(fs, FSUtilities.appendPath(versionsPath,
-								specificVersionDir.getName(), libraryName));
+							return lookupLibraryInFs(FSUtilities.appendPath(versionsPath,
+								specificVersionDir.getName(), libraryName), fs);
 						}
 					}
 				}
@@ -301,6 +301,49 @@ public class MachoLoader extends AbstractLibrarySupportLoader {
 			}
 		}
 		return null;
+	}
+
+	/**
+	 * Special Mach-O library file resolver to account for a "Versions" subdirectory being inserted
+	 * in the library lookup path.  For example, a reference to:
+	 * <p>
+	 * {@code /System/Library/Frameworks/Foundation.framework/Foundation}
+	 * <p>
+	 * might be found at:
+	 * <p>
+	 * {@code /System/Library/Frameworks/Foundation.framework/Versions/C/Foundation}
+	 * <hr>
+	 * {@inheritDoc}
+	 */
+	@Override
+	protected DomainFile lookupLibraryInFolder(String libraryName, DomainFolder folder) {
+		DomainFolder versionsFolder = folder.getFolder("Versions");
+		if (versionsFolder != null) {
+			DomainFolder[] versions = versionsFolder.getFolders();
+			if (versions.length > 0) {
+				folder = versions[0];
+			}
+		}
+		return super.lookupLibraryInFolder(libraryName, folder);
+	}
+
+	/**
+	 * Special Mach-O library {@link Comparator} to account for a "Versions" subdirectory being 
+	 * inserted in the library lookup path.  For example, a reference to:
+	 * <p>
+	 * {@code /System/Library/Frameworks/Foundation.framework/Foundation}
+	 * <p>
+	 * might be found at:
+	 * <p>
+	 * {@code /System/Library/Frameworks/Foundation.framework/Versions/C/Foundation}
+	 * <hr>
+	 * {@inheritDoc}
+	 */
+	@Override
+	protected Comparator<String> getLibraryNameComparator() {
+		String versionRegex = "Versions/.+/";
+		return (s1, s2) -> s1.replaceAll(versionRegex, "")
+				.compareTo(s2.replaceAll(versionRegex, ""));
 	}
 
 	/**

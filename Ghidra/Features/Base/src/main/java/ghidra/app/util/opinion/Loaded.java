@@ -32,6 +32,7 @@ import ghidra.formats.gfilesystem.fileinfo.FileAttributes;
 import ghidra.framework.data.FolderLinkContentHandler;
 import ghidra.framework.model.*;
 import ghidra.program.database.ProgramLinkContentHandler;
+import ghidra.program.model.listing.Program;
 import ghidra.util.InvalidNameException;
 import ghidra.util.Msg;
 import ghidra.util.exception.*;
@@ -408,8 +409,15 @@ public class Loaded<T extends DomainObject> implements AutoCloseable {
 				}
 				else {
 					try {
-						return parentProjectFolder.createFile(currentFile.getName(), domainObject,
-							monitor);
+						DomainFile df = parentProjectFolder.createFile(currentFile.getName(),
+							domainObject, monitor);
+						if (domainObject instanceof Program program) {
+							program.withTransaction("Updating Program Info", () -> {
+								program.setExecutablePath(df.getPathname());
+								FSRL.writeToProgramInfo(program, currentFile.getFSRL());
+							});
+						}
+						return df;
 					}
 					catch (DuplicateFileException e) {
 						DomainFile f = parentProjectFolder.getFile(currentFile.getName());

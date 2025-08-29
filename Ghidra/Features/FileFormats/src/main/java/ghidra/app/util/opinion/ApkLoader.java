@@ -85,7 +85,6 @@ public class ApkLoader extends DexLoader {
 				try (ByteProvider dexProvider =
 					zipFS.getByteProvider(classesDexFile, monitor)) {
 					// defer to the super class (DexLoader) to actually load the DEX file
-					//ImporterSettings newSettings = new ImporterSettings(dexProvider, classesDexFile.getName(), project, )
 					ImporterSettings newSettings = new ImporterSettings(dexProvider,
 						classesDexFile.getName(), settings.project(), settings.projectRootPath(),
 						settings.mirrorFsLayout(), settings.loadSpec(), settings.options(),

@@ -360,7 +360,8 @@ public class ImporterDialog extends DialogComponentProvider {
 		//@formatter:off
 		new TaskBuilder("Import File", monitor -> {
 			ImporterUtilities.importSingleFile(tool, programManager, fsrl, 
-				destinationFolder.getPathname(), mirrorFsCheckBox.isSelected(), loadSpec, removeTrailingSlashes(getName()), options, monitor);
+				destinationFolder.getPathname(), mirrorFsCheckBox.isSelected(), loadSpec, 
+				removeTrailingSlashes(getName()), options, monitor);
 		})
 		.setLaunchDelay(0)
 		.launchNonModal();

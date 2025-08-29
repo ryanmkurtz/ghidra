@@ -180,8 +180,7 @@ public class MachoLoader extends AbstractLibrarySupportLoader {
 	protected boolean isValidSearchPath(FSRL fsrl, ImporterSettings settings)
 			throws CancelledException {
 		FileSystemService fsService = FileSystemService.getInstance();
-		try (ByteProvider provider =
-			fsService.getByteProvider(fsrl, loggingDisabled, settings.monitor())) {
+		try (ByteProvider provider = fsService.getByteProvider(fsrl, false, settings.monitor())) {
 			if (!DyldCacheUtils.isDyldCache(provider)) {
 				return true;
 			}

@@ -2,6 +2,9 @@
 Module.manifest||GHIDRA||||END|
 README.md||GHIDRA||||END|
 data/aarch64-pltThunks.xml||GHIDRA||||END|
+data/extensions/objc/objc_msgSend_stub.xml||GHIDRA||||END|
+data/extensions/objc/objc_release_fixup.xml||GHIDRA||||END|
+data/extensions/objc/objc_retain_fixup.xml||GHIDRA||||END|
 data/languages/AARCH64.cspec||GHIDRA||||END|
 data/languages/AARCH64.dwarf||GHIDRA||||END|
 data/languages/AARCH64.ldefs||GHIDRA||||END|

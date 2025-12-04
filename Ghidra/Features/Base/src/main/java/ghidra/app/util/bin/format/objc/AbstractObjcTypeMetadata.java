@@ -18,7 +18,6 @@ package ghidra.app.util.bin.format.objc;
 import java.io.Closeable;
 import java.io.IOException;
 
-import ghidra.app.util.bin.format.objc.objc1.Objc1TypeMetadata;
 import ghidra.app.util.importer.MessageLog;
 import ghidra.program.model.listing.Program;
 import ghidra.util.exception.CancelledException;
@@ -60,7 +59,7 @@ public abstract class AbstractObjcTypeMetadata implements Closeable {
 	 * @param message The message to log
 	 */
 	public void log(String message) {
-		log.appendMsg(Objc1TypeMetadata.class.getSimpleName(), message);
+		log.appendMsg(getClass().getSimpleName(), message);
 	}
 
 	@Override

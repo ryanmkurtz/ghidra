@@ -40,6 +40,7 @@ import ghidra.app.util.bin.format.macho.dyld.DyldChainedPtr.DyldChainType;
 import ghidra.app.util.bin.format.macho.dyld.DyldFixup;
 import ghidra.app.util.bin.format.macho.relocation.*;
 import ghidra.app.util.bin.format.macho.threadcommand.ThreadCommand;
+import ghidra.app.util.bin.format.objc.ObjcUtils;
 import ghidra.app.util.bin.format.objc.objc1.Objc1Constants;
 import ghidra.app.util.importer.MessageLog;
 import ghidra.framework.options.Options;
@@ -1814,17 +1815,22 @@ public class MachoProgramBuilder {
 	}
 
 	protected void setCompiler() throws CancelledException {
-		// Check for Rust
+		if (ObjcUtils.isObjc(program)) {
+			try {
+				program.setCompiler(ObjcUtils.OBJC_COMPILER);
+				int extensionCount = ObjcUtils.addExtensions(program, monitor);
+				log.appendMsg("Installed " + extensionCount + " Objective-C cspec extensions");
+			}
+			catch (IOException e) {
+				log.appendMsg("Objective-C error: " + e.getMessage());
+			}
+			return;
+		}
+
 		try {
-			SegmentCommand segment = machoHeader.getSegment(SegmentNames.SEG_TEXT);
-			if (segment == null) {
-				return;
-			}
-			Section section = segment.getSectionByName(SectionNames.TEXT_CONST);
-			if (section == null) {
-				return;
-			}
-			if (RustUtilities.isRust(program,
+			Section section =
+				machoHeader.getSection(SegmentNames.SEG_TEXT, SectionNames.TEXT_CONST);
+			if (section != null && RustUtilities.isRust(program,
 				memory.getBlock(space.getAddress(section.getAddress())), monitor)) {
 				program.setCompiler(RustConstants.RUST_COMPILER);
 				int extensionCount = RustUtilities.addExtensions(program, monitor,

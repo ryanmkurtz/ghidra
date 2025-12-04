@@ -1,87 +1,60 @@
-/* ###
- * IP: GHIDRA
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
 package ghidra.app.plugin.core.analysis;
 
+import java.io.IOException;
 import java.util.*;
+import java.util.stream.Collectors;
+
+import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import ghidra.app.decompiler.*;
 import ghidra.app.decompiler.parallel.*;
 import ghidra.app.services.*;
 import ghidra.app.util.bin.format.macho.SectionNames;
+import ghidra.app.util.bin.format.objc.ObjcUtils;
 import ghidra.app.util.bin.format.objc.objc1.Objc1Constants;
-import ghidra.app.util.bin.format.objc.objc2.Objc2Constants;
+import ghidra.app.util.bin.format.objc.objc2.*;
 import ghidra.app.util.importer.MessageLog;
 import ghidra.program.model.address.*;
-import ghidra.program.model.data.DataType;
+import ghidra.program.model.data.*;
+import ghidra.program.model.lang.CompilerSpec;
 import ghidra.program.model.listing.*;
+import ghidra.program.model.listing.Function.FunctionUpdateType;
 import ghidra.program.model.mem.Memory;
 import ghidra.program.model.mem.MemoryBlock;
 import ghidra.program.model.pcode.*;
 import ghidra.program.model.scalar.Scalar;
 import ghidra.program.model.symbol.*;
-import ghidra.util.exception.CancelledException;
+import ghidra.util.exception.*;
 import ghidra.util.task.TaskMonitor;
+import util.CollectionUtils;
 
-public class ObjectiveC2_DecompilerMessageAnalyzer extends AbstractAnalyzer {
+/**
+ * Analyzes {@code _objc_msgSend} information 
+ */
+public class ObjcMessageAnalyzer extends AbstractAnalyzer {
+	private static final String NAME = "Objective-C Message Analyzer";
+	private static final String DESCRIPTION = "Analyzes _objc_msgSend information.";
 
-	private static final String NAME = "Objective-C 2 Decompiler Message";
-	private static final String DESCRIPTION =
-		"An analyzer for extracting Objective-C 2.0 message information.";
+	private static final DataTypePath ID_PATH =
+		new DataTypePath(Objc2Constants.CATEGORY_PATH, "ID");
+	private static final DataTypePath SEL_PATH =
+		new DataTypePath(Objc2Constants.CATEGORY_PATH, "SEL");
 
+	private final static String STUB_NAMESPACE = "objc_stub";
 	private final int MAX_RECURSION_DEPTH = 10;
 
-	/* ************************************************************************** */
-	/* ************************************************************************** */
-	public ObjectiveC2_DecompilerMessageAnalyzer() {
+	private Objc2TypeMetadata typeMetadata;
+	private Map<String, List<Objc2Class>> classMap;
+
+	private record Message(String receiver, String selector, PcodeOpAST op, boolean isStret,
+			Address addr) {}
+
+	public ObjcMessageAnalyzer() {
 		super(NAME, DESCRIPTION, AnalyzerType.FUNCTION_ANALYZER);
 		setDefaultEnablement(true);
-		// The Objective-C 2.0 analyzer should always run after the class
-		// analyzer. And everything
-		// else apparently.
-		// It knows the deal!
-		setPriority(new AnalysisPriority(10000000));
-	}
-
-	@Override
-	public boolean added(Program program, AddressSetView set, TaskMonitor monitor, MessageLog log)
-			throws CancelledException {
-		monitor.initialize(set.getNumAddresses());
-
-		AddressIterator iterator = set.getAddresses(true);
-
-		ArrayList<Function> functions = new ArrayList<>();
-		while (iterator.hasNext()) {
-			if (monitor.isCancelled()) {
-				break;
-			}
-			monitor.incrementProgress(1);
-			Address address = iterator.next();
-
-			Function function = program.getListing().getFunctionAt(address);
-			if (isFunctionInTextSection(program, function)) {
-				functions.add(function);
-			}
-		}
-		try {
-			runDecompilerAnalysis(program, functions, monitor);
-		}
-		catch (Exception e) {
-			// Oh well.
-		}
-		return true;
+		setSupportsOneTimeAnalysis();
+		setPriority(AnalysisPriority.DATA_ANALYSIS.before().before());
 	}
 
 	@Override
@@ -89,90 +62,227 @@ public class ObjectiveC2_DecompilerMessageAnalyzer extends AbstractAnalyzer {
 		return Objc2Constants.isObjectiveC2(program);
 	}
 
-	/* ************************************************************************** */
-	/* ************************************************************************** */
-
-	private void runDecompilerAnalysis(Program program, List<Function> functions,
-			TaskMonitor monitor) throws InterruptedException, Exception {
-
-		DecompileConfigurer configurer = decompiler -> setupDecompiler(program, decompiler);
-
-		DecompilerCallback<Void> callback = new DecompilerCallback<Void>(program, configurer) {
-
-			@Override
-			public Void process(DecompileResults results, TaskMonitor m) throws Exception {
-
-				inspectFunction(program, results, monitor);
-				return null;
-			}
-		};
+	@Override
+	public boolean added(Program program, AddressSetView set, TaskMonitor monitor, MessageLog log)
+			throws CancelledException {
+		set = set.intersect(program.getMemory().getLoadedAndInitializedAddressSet());
 
 		try {
-			ParallelDecompiler.decompileFunctions(callback, functions, monitor);
+			if (typeMetadata == null) {
+				typeMetadata = new Objc2TypeMetadata(program, monitor, log);
+				classMap = typeMetadata.getClasses()
+						.stream()
+						.collect(Collectors.groupingBy(e -> e.getData().getName()));
+			}
+		}
+		catch (IOException e) {
+			log.appendMsg("Failed to parse Objective-C type metadata: " + e.getMessage());
+			return false;
+		}
+
+		// Fix __objc_msgSend() function signatures
+		fixMsgSendSignatures(program, monitor, log);
+
+		// Set up a standalone decompiler for later use
+		DecompileConfigurer configurer = d -> setupDecompiler(program, d);
+		DecompInterface decompiler = new DecompInterface();
+		configurer.configure(decompiler);
+		decompiler.openProgram(program);
+
+		// Use parallel decompiler to override _objc_msgSend() calls to their proper destinations
+		DecompilerCallback<Void> callback =
+			new DecompilerCallback<>(program, configurer) {
+				@Override
+				public Void process(DecompileResults results, TaskMonitor m) throws Exception {
+					fixMsgSendCalls(program, results.getHighFunction(), decompiler, log, monitor);
+					return null;
+				}
+			};
+		try {
+			ParallelDecompiler.decompileFunctions(callback, getFunctionsInTextSection(program, set),
+				monitor);
+		}
+		catch (Exception e) {
+			if (e.getCause() instanceof CancelledException ce) {
+				throw ce;
+			}
+			log.appendException(e);
 		}
 		finally {
 			callback.dispose();
+			decompiler.closeProgram();
+		}
+		return true;
+	}
+
+	@Override
+	public void analysisEnded(Program program) {
+		if (typeMetadata != null) {
+			typeMetadata.close();
+			typeMetadata = null;
 		}
 	}
 
-	private void inspectFunction(Program program, DecompileResults results, TaskMonitor monitor) {
-		String currentClassName = null;
-		String currentMethodName = null;
-
-		HighFunction highFunction = results.getHighFunction();
-		if (highFunction == null) {
+	private void fixMsgSendSignatures(Program program, TaskMonitor monitor, MessageLog log)
+			throws CancelledException {
+		
+		// Get the data types that we'll need to use
+		ProgramBasedDataTypeManager dtm = program.getDataTypeManager();
+		DataType ptr = program.getDefaultPointerSize() == 8 ? Pointer64DataType.dataType
+				: Pointer32DataType.dataType;
+		DataType id = dtm.getDataType(ID_PATH);
+		DataType sel = dtm.getDataType(SEL_PATH);
+		if (id == null || sel == null) {
+			log.appendMsg("%s or %s data types were not found".formatted(ID_PATH, SEL_PATH));
 			return;
 		}
 
-		Function function = results.getFunction();
-		Iterator<PcodeOpAST> pcodeOps = highFunction.getPcodeOps();
-		while (pcodeOps.hasNext()) {
-			if (monitor.isCancelled()) {
-				return;
+		for (Function func : program.getFunctionManager().getFunctions(program.getMemory(), true)) {
+			monitor.checkCancelled();
+
+			String name = func.getName();
+			Namespace global = program.getGlobalNamespace();
+			boolean isStub = isObjcMsgSendStub(program, func.getEntryPoint());
+
+			if (!name.startsWith(Objc1Constants.OBJC_MSG_SEND) && !isStub) {
+				continue;
 			}
-			currentClassName = null;
-			currentMethodName = null;
-			PcodeOpAST op = pcodeOps.next();
+
+			try {
+				// Set up the parameter list
+				ArrayList<Parameter> params = new ArrayList<>();
+				if (name.endsWith("stret")) {
+					params.add(new ParameterImpl("stretAddr", ptr, program));
+				}
+				params.add(
+					new ParameterImpl(name.endsWith("Super") ? "super" : "self", id, program));
+				if (!isStub) {
+					params.add(new ParameterImpl("op", sel, program));
+				}
+
+				// Set up the return value
+				Variable returnVar = new ReturnParameterImpl(id, program);
+
+				// Set up the calling convention
+				String cc = CompilerSpec.CALLING_CONVENTION_unknown;
+				if (isStub) {
+					if (dtm.getCallingConvention(ObjcUtils.OBJC_MSGSEND_STUBS_CC) != null) {
+						cc = ObjcUtils.OBJC_MSGSEND_STUBS_CC;
+					}
+				}
+
+				// Update the namespace
+				func.setParentNamespace(isStub ? getStubsNamespace(program) : global);
+
+				// Update the function name
+				String stubPrefix = Objc1Constants.OBJC_MSG_SEND + "$";
+				if (isStub && name.startsWith(stubPrefix)) {
+					func.setName(name.substring(stubPrefix.length()), SourceType.ANALYSIS);
+				}
+
+				// Update the function
+				func.updateFunction(cc, returnVar, params,
+					FunctionUpdateType.DYNAMIC_STORAGE_ALL_PARAMS, true, SourceType.ANALYSIS);
+				func.setVarArgs(true);
+				func.setParentNamespace(isStub ? getStubsNamespace(program) : global);
+			}
+			catch (DuplicateNameException | InvalidInputException | CircularDependencyException e) {
+				log.appendMsg("Failed to fix up function signature function for: " + func);
+			}
+		}
+	}
+
+	private List<Message> findMessages(Program program, HighFunction highFunction,
+			DecompInterface decompiler, TaskMonitor monitor) throws CancelledException {
+		List<Message> messages = new ArrayList<>();
+		Function function = highFunction.getFunction();
+		for (PcodeOpAST op : CollectionUtils.asIterable(highFunction.getPcodeOps())) {
+			monitor.checkCancelled();
+
 			String mnemonic = op.getMnemonic();
-			if (mnemonic == null || (!mnemonic.equals("CALL") && !mnemonic.equals("CALLIND"))) {
+			if (!StringUtils.equals(mnemonic, "CALL") && !StringUtils.equals(mnemonic, "CALLIND")) {
 				continue;
 			}
 			Varnode[] inputs = op.getInputs();
-			if (!isObjcCall(program, inputs[0], monitor)) {
+			Address callTarget = getAddressFromVarnode(program, inputs[0], 0, monitor);
+			if (!isObjcMsgSendCall(program, inputs[0], callTarget, monitor)) {
 				continue;
 			}
-			boolean isStret = isStretCall(program, inputs[0], monitor);
-			for (int i = 1; i < inputs.length; i++) {
-				String name;
-				boolean isClass = isClass(i, isStret);
-				boolean isMessage = isMessage(i, isStret);
-				name = getNameForVarnode(program, function, inputs[i], isClass, isMessage, 0, 1,
-					monitor);
-				if (isClass) {
-					currentClassName = name;
-				}
-				else if (isMessage) {
-					currentMethodName = name;
-				}
-				if (currentClassName != null && currentMethodName != null) {
-					break;
-				}
+			boolean isStret = isStructReturnCall(program, inputs[0], monitor);
+			boolean isStub = isObjcMsgSendStub(program, callTarget);
+			Varnode receiverParam = inputs[isStret ? 2 : 1];
+			Varnode selectorParam = !isStub ? inputs[isStret ? 3 : 2] : null;
+			String receiver =
+				getNameForVarnode(program, function, receiverParam, true, false, 0, 1, monitor);
+			String selector = isStub ? processStub(program, callTarget, decompiler, monitor)
+					: getNameForVarnode(program, function, selectorParam, false, true, 0, 1,
+						monitor);
+			if (ObjectUtils.allNotNull(receiver, selector)) {
+				messages.add(new Message(receiver, selector, op, isStret, callTarget));
 			}
+		}
+		return messages;
+	}
 
-			if (currentClassName == null || currentMethodName == null) {
-				continue;
+	private String processStub(Program program, Address stubAddr, DecompInterface decompiler,
+			TaskMonitor monitor) throws CancelledException {
+		Function func = program.getFunctionManager().getFunctionAt(stubAddr);
+		DecompileResults results = decompiler.decompileFunction(func, 5, monitor);
+		HighFunction highFunction = results.getHighFunction();
+		if (highFunction == null) {
+			return null;
+		}
+		List<Message> messages = findMessages(program, highFunction, decompiler, monitor);
+		if (messages.isEmpty()) {
+			return null;
+		}
+		String selector = messages.getFirst().selector;
+		if (func.getName().startsWith("FUN_")) {
+			try {
+				func.setName(selector, SourceType.ANALYSIS);
 			}
+			catch (InvalidInputException | DuplicateNameException e) {
+				// oh well, just cosmetic
+			}
+		}
+		return messages.getFirst().selector;
+	}
 
+	private void fixMsgSendCalls(Program program, HighFunction highFunction,
+			DecompInterface decompiler, MessageLog log, TaskMonitor monitor)
+			throws CancelledException {
+		if (highFunction == null) {
+			return;
+		}
+		Function function = highFunction.getFunction();
+		List<Message> messages = findMessages(program, highFunction, decompiler, monitor);
+		for (Message msg : messages) {
+			monitor.checkCancelled();
 			List<String> parameters = new ArrayList<>();
-			int paramStart = isStret ? 4 : 3;
+			Varnode[] inputs = msg.op.getInputs();
+			int paramStart = msg.isStret ? 4 : 3;
 			for (int i = paramStart; i < inputs.length; i++) {
 				String paramValue =
 					getNameForVarnode(program, function, inputs[i], false, false, 0, 1, monitor);
 				parameters.add(getIvarNameFromQualifiedName(paramValue));
 			}
-			setCommentAndReference(program, currentClassName, currentMethodName, op, parameters);
+			setCommentAndReference(program, msg.receiver, msg.selector, msg.op, parameters);
 		}
-
+	}
+	
+	private Namespace getStubsNamespace(Program program) {
+		SymbolTable symTable = program.getSymbolTable();
+		Namespace global = program.getGlobalNamespace();
+		Namespace namespace = symTable.getNamespace(STUB_NAMESPACE, global);
+		if (namespace == null) {
+			try {
+				namespace = symTable.createNameSpace(global, STUB_NAMESPACE, SourceType.ANALYSIS);
+			}
+			catch (DuplicateNameException | InvalidInputException e) {
+				return null;
+			}
+		}
+		return namespace;
 	}
 
 	private void setCommentAndReference(Program program, String currentClassName,
@@ -220,20 +330,38 @@ public class ObjectiveC2_DecompilerMessageAnalyzer extends AbstractAnalyzer {
 		instruction.setComment(CommentType.EOL, builder.toString());
 	}
 
-	private boolean isObjcCall(Program program, Varnode input, TaskMonitor monitor) {
-		Address address = getAddressFromVarnode(program, input, 0, monitor);
-		if (address == null) {
+	private boolean isObjcMsgSendCall(Program program, Varnode input, Address callTarget,
+			TaskMonitor monitor) throws CancelledException {
+		Symbol symbol = getSymbolFromVarnode(program, input, monitor);
+		if (symbol == null) {
 			return false;
 		}
+		String name = symbol.getName();
+		if (name.startsWith(Objc1Constants.OBJC_MSG_SEND) ||
+			name.equals(Objc1Constants.READ_UNIX2003) ||
+			name.startsWith("thunk" + Objc1Constants.OBJC_MSG_SEND) ||
+			name.startsWith("PTR_" + Objc1Constants.OBJC_MSG_SEND)) {
+			return true;
+		}
+		return isObjcMsgSendStub(program, callTarget);
+	}
+
+	private boolean isObjcMsgSendStub(Program program, Address addr) {
+		return program.getMemory().getBlock(addr).getName().equals(Objc2Constants.OBJC2_STUBS);
+	}
+
+	private boolean isObjcAllocCall(Program program, Varnode input, TaskMonitor monitor)
+			throws CancelledException {
 		Symbol symbol = getSymbolFromVarnode(program, input, monitor);
-		return isObjcNameMatch(symbol);
+		if (symbol == null) {
+			return false;
+		}
+		String name = symbol.getName();
+		return name.startsWith("_objc_alloc");
 	}
 
 	private Address getAddressFromVarnode(Program program, Varnode input, int depth,
-			TaskMonitor monitor) {
-		if (monitor.isCancelled()) {
-			return null;
-		}
+			TaskMonitor monitor) throws CancelledException {
 		if (input == null) {
 			return null;
 		}
@@ -247,9 +375,7 @@ public class ObjectiveC2_DecompilerMessageAnalyzer extends AbstractAnalyzer {
 			}
 			Varnode[] inputs = def.getInputs();
 			for (Varnode subInput : inputs) {
-				if (monitor.isCancelled()) {
-					return null;
-				}
+				monitor.checkCancelled();
 				Address address = getAddressFromVarnode(program, subInput, depth + 1, monitor);
 				if (address == null) {
 					continue;
@@ -263,14 +389,14 @@ public class ObjectiveC2_DecompilerMessageAnalyzer extends AbstractAnalyzer {
 		return input.getAddress();
 	}
 
-	private Symbol getSymbolFromVarnode(Program program, Varnode input, TaskMonitor monitor) {
+	private Symbol getSymbolFromVarnode(Program program, Varnode input, TaskMonitor monitor)
+			throws CancelledException {
 		Address address = getAddressFromVarnode(program, input, 0, monitor);
 		if (address == null) {
 			return null;
 		}
 		SymbolTable symbolTable = program.getSymbolTable();
-		Symbol symbol = symbolTable.getPrimarySymbol(address);
-		return symbol;
+		return symbolTable.getPrimarySymbol(address);
 	}
 
 	private String getNameForVarnode(Program program, Function function, Varnode input,
@@ -299,8 +425,8 @@ public class ObjectiveC2_DecompilerMessageAnalyzer extends AbstractAnalyzer {
 				return name;
 			}
 			Varnode[] inputs = def.getInputs();
-
-			if (isObjcCall(program, inputs[0], monitor)) {
+			Address addr = getAddressFromVarnode(program, inputs[0], 0, monitor);
+			if (isObjcMsgSendCall(program, inputs[0], addr, monitor)) {
 				Symbol objcSymbol = getSymbolFromVarnode(program, inputs[0], monitor);
 				int classIndex = 1;
 				if (objcSymbol.getName().contains("stret")) {
@@ -318,6 +444,10 @@ public class ObjectiveC2_DecompilerMessageAnalyzer extends AbstractAnalyzer {
 				}
 				numInputs = 1;
 			}
+			else if (isClass && isObjcAllocCall(program, inputs[0], monitor)) {
+				int classIndex = 1;
+				inputs = new Varnode[] { inputs[classIndex] };
+			}
 
 			int index = getIndexOfAddress(inputs);
 			if (index != -1) {
@@ -331,9 +461,6 @@ public class ObjectiveC2_DecompilerMessageAnalyzer extends AbstractAnalyzer {
 				// If a name was found, just unwind the recursion. If it is just
 				// a constant (ex. when determining parameters) keep looking
 				// to see if we can find an actual name.
-				if (name != null && !stringIsLong(name)) {
-					break;
-				}
 				name = getNameForVarnode(program, function, subInput, isClass, isMethod, depth + 1,
 					inputs.length, monitor);
 			}
@@ -383,6 +510,7 @@ public class ObjectiveC2_DecompilerMessageAnalyzer extends AbstractAnalyzer {
 			if (name != null && name.equals("param_1")) {
 				if (numInputs == 1) {
 					if (isClass) {
+						highVar.getDataType();
 						Namespace namespace = function.getParentNamespace();
 						if (namespace != null) {
 							name = namespace.getName();
@@ -398,19 +526,6 @@ public class ObjectiveC2_DecompilerMessageAnalyzer extends AbstractAnalyzer {
 			name = "0x" + Long.toString(input.getOffset(), 16);
 		}
 		return name;
-	}
-
-	private boolean stringIsLong(String value) {
-		if (value.startsWith("0x")) {
-			value = value.substring(2);
-		}
-		try {
-			Long.parseUnsignedLong(value, 16);
-		}
-		catch (NumberFormatException e) {
-			return false;
-		}
-		return true;
 	}
 
 	private String getNameFromOffset(Program program, long offset, Varnode input, boolean isClass,
@@ -512,7 +627,7 @@ public class ObjectiveC2_DecompilerMessageAnalyzer extends AbstractAnalyzer {
 				}
 			}
 			else {
-				name = getClassName(program, address);
+				name = getClassName2(program, address);
 				if (name == null) {
 					name = getValueAtAddress(program, address);
 				}
@@ -653,22 +768,36 @@ public class ObjectiveC2_DecompilerMessageAnalyzer extends AbstractAnalyzer {
 		return address;
 	}
 
-	// Tries to lay down a reference to the function that is actually being
-	// called
+	// Tries to lay down a reference to the function that is actually being called
 	private void setReference(Address fromAddress, Program program, String currentClassName,
 			String currentMethodName) {
 		SymbolTable symbolTable = program.getSymbolTable();
 		Symbol classSymbol = symbolTable.getClassSymbol(currentClassName, (Namespace) null);
 		if (classSymbol == null) {
+			// TODO: Probably an external class. We could potentially add the method as a new
+			// function in the EXTERNAL block, but we'd have to do that in an efficient and
+			// thread-safe manner.  Doing so would also require an exclusive checkout, which isn't
+			// great. Maybe the loader could reserve chunks for each class symbol it finds, and
+			// this could know about the chunks/know where to fill things in.
 			return;
 		}
 		Namespace namespace = (Namespace) classSymbol.getObject();
 		List<Symbol> functionSymbols = symbolTable.getSymbols(currentMethodName, namespace);
+		if (functionSymbols.isEmpty()) {
+			List<Objc2Class> classList = classMap.get(namespace.getName());
+			if (classList.size() == 1) {
+				Objc2Class superClass = classList.getFirst().getSuperClass();
+				setReference(fromAddress, program, superClass.getData().getName(),
+					currentMethodName);
+				return;
+			}
+		}
+
 		if (functionSymbols.size() == 1) {
 			Address toAddress = functionSymbols.get(0).getAddress();
 			ReferenceManager referenceManager = program.getReferenceManager();
 			Reference reference = referenceManager.addMemoryReference(fromAddress, toAddress,
-				RefType.UNCONDITIONAL_CALL, SourceType.ANALYSIS, 0);
+				RefType.CALL_OVERRIDE_UNCONDITIONAL, SourceType.ANALYSIS, 0);
 			referenceManager.setPrimary(reference, true);
 		}
 	}
@@ -682,13 +811,13 @@ public class ObjectiveC2_DecompilerMessageAnalyzer extends AbstractAnalyzer {
 		if (symbolName.contains("_OBJC_CLASS_$_")) {
 			symbolName = symbolName.substring("_OBJC_CLASS_$_".length());
 		}
-		else if (symbolName.contains("_objc_msgSend")) {
+		else if (symbolName.contains(Objc1Constants.OBJC_MSG_SEND)) {
 			return null;
 		}
 		return symbolName;
 	}
 
-	private String getClassName(Program program, Address toAddress) {
+	private String getClassName2(Program program, Address toAddress) {
 		try {
 			boolean is32Bit = false;
 
@@ -731,42 +860,22 @@ public class ObjectiveC2_DecompilerMessageAnalyzer extends AbstractAnalyzer {
 		return null;
 	}
 
-	private boolean isFunctionInTextSection(Program program, Function function) {
-		if (function == null) {
-			return false;
+	private List<Function> getFunctionsInTextSection(Program program, AddressSetView set) {
+		List<Function> ret = new ArrayList<>();
+		Memory mem = program.getMemory();
+		for (Function function : program.getFunctionManager().getFunctions(set, true)) {
+			Address address = function.getEntryPoint();
+			MemoryBlock block = mem.getBlock(address);
+			if (block != null && block.getName().equals(SectionNames.TEXT)) {
+				ret.add(function);
+			}
+			
 		}
-		Address address = function.getEntryPoint();
-		Memory memory = program.getMemory();
-		MemoryBlock block = memory.getBlock(address);
-		if (block.getName().equals("__text")) {
-			return true;
-		}
-		return false;
+		return ret;
 	}
 
-	private boolean isClass(int index, boolean isStret) {
-		boolean isClass;
-		if (isStret) {
-			isClass = index == 2;
-		}
-		else {
-			isClass = index == 1;
-		}
-		return isClass;
-	}
-
-	private boolean isMessage(int index, boolean isStret) {
-		boolean isMessage;
-		if (isStret) {
-			isMessage = index == 3;
-		}
-		else {
-			isMessage = index == 2;
-		}
-		return isMessage;
-	}
-
-	private boolean isStretCall(Program program, Varnode input, TaskMonitor monitor) {
+	private boolean isStructReturnCall(Program program, Varnode input, TaskMonitor monitor)
+			throws CancelledException {
 		Address address = getAddressFromVarnode(program, input, 0, monitor);
 		if (address == null) {
 			return false;
@@ -785,20 +894,11 @@ public class ObjectiveC2_DecompilerMessageAnalyzer extends AbstractAnalyzer {
 				return false;
 			}
 			Function function = program.getListing().getFunctionAt(address);
-			if (function.getName().equals("_objc_msgSendSuper2")) {
+			if (function.getName().startsWith("_objc_msgSendSuper2")) {
 				return true;
 			}
 		}
 		return false;
-	}
-
-	private boolean isObjcNameMatch(Symbol symbol) {
-		if (symbol == null) {
-			return false;
-		}
-		String name = symbol.getName();
-		return name.startsWith(Objc1Constants.OBJC_MSG_SEND) ||
-			name.equals(Objc1Constants.READ_UNIX2003);
 	}
 
 	private boolean isMessageRefsBlock(MemoryBlock block) {
@@ -834,7 +934,7 @@ public class ObjectiveC2_DecompilerMessageAnalyzer extends AbstractAnalyzer {
 
 	private boolean isDataBlock(MemoryBlock block) {
 		if (block != null) {
-			if (block.getName().equals("__data")) {
+			if (block.getName().equals(SectionNames.DATA)) {
 				return true;
 			}
 		}
@@ -843,7 +943,8 @@ public class ObjectiveC2_DecompilerMessageAnalyzer extends AbstractAnalyzer {
 
 	private boolean isObjcDataBlock(MemoryBlock block) {
 		if (block != null) {
-			if (block.getName().equals("__objc_data")) {
+
+			if (block.getName().equals(Objc2Constants.OBJC2_DATA)) {
 				return true;
 			}
 		}
@@ -877,4 +978,5 @@ public class ObjectiveC2_DecompilerMessageAnalyzer extends AbstractAnalyzer {
 		options.setEliminateUnreachable(false);
 		decompiler.setOptions(options);
 	}
+
 }

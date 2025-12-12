@@ -8,6 +8,15 @@
 # the physical memory available to the OS. Uncomment MAXMEM setting if non-default value is needed.
 MAXMEM=2G
 
+# Allow the above MAXMEM to be overridden by externally set environment variables
+# - GHIDRA_MAXMEM: Desired maximum heap memory for all Ghidra instances
+# - GHIDRA_HEADLESS_MAXMEM: Desired maximum heap memory only for headless Ghidra instances
+GHIDRA_MAXMEM=${GHIDRA_MAXMEM:=${MAXMEM}}
+GHIDRA_HEADLESS_MAXMEM=${GHIDRA_HEADLESS_MAXMEM:=${GHIDRA_MAXMEM}}
+
+echo "$GHIDRA_MAXMEM"
+echo "$GHIDRA_HEADLESS_MAXMEM"
+
 # Launch mode can be changed to one of the following: fg, debug, debug-suspend
 LAUNCH_MODE=fg
 
@@ -29,4 +38,4 @@ SCRIPT_DIR="${SCRIPT_FILE%/*}"
 
 # Launch HeadlessAnalyzer.
 # DEBUG_ADDRESS set via environment for launch.sh
-DEBUG_ADDRESS=${DEBUG_ADDRESS} "${SCRIPT_DIR}"/launch.sh "${LAUNCH_MODE}" jdk Ghidra-Headless "${MAXMEM}" "${VMARG_LIST}" ghidra.app.util.headless.AnalyzeHeadless "$@"
+DEBUG_ADDRESS=${DEBUG_ADDRESS} "${SCRIPT_DIR}"/launch.sh "${LAUNCH_MODE}" jdk Ghidra-Headless "${GHIDRA_HEADLESS_MAXMEM}" "${VMARG_LIST}" ghidra.app.util.headless.AnalyzeHeadless "$@"

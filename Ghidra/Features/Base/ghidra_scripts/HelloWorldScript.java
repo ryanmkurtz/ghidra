@@ -25,6 +25,6 @@ public class HelloWorldScript extends GhidraScript {
 
 	@Override
 	public void run() throws Exception {
-		println("Hello World");
+		println("" + Runtime.getRuntime().maxMemory() / 1024 / 1024 / 1024);
 	}
 }

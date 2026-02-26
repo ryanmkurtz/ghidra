@@ -15,10 +15,9 @@
  */
 package ghidra.pcode.emu.jit.analysis;
 
+import java.lang.classfile.CodeBuilder;
 import java.util.*;
 import java.util.Map.Entry;
-
-import org.objectweb.asm.Opcodes;
 
 import ghidra.pcode.emu.jit.JitCompiler;
 import ghidra.pcode.emu.jit.analysis.JitType.FloatJitType;
@@ -100,14 +99,14 @@ import ghidra.program.model.pcode.PcodeOp;
  * The native translation to bytecode:
  * 
  * <pre>
- * FLOAD  1 # r0
- * FLOAD  2 # r1
- * FADD
- * FSTORE 3 # $U00:4
- * LDC    0
- * ILOAD  3 # $U00:4
- * ISUB
- * ISTORE 4 # r2
+ * fload  1 # r0
+ * fload  2 # r1
+ * fadd
+ * fstore 3 # $U00:4
+ * ldc    0
+ * iload  3 # $U00:4
+ * isub
+ * istore 4 # r2
  * </pre>
  * <p>
  * Will cause an error when loading the class. This is because the local variable 3 must be one of
@@ -116,8 +115,8 @@ import ghidra.program.model.pcode.PcodeOp;
  * type {@code float} to local variable 3, and change the erroneous {@code ILOAD 3} to:
  * 
  * <pre>
- * FLOAD  3
- * INVOKESTATIC {@link Float#floatToRawIntBits(float)}
+ * fload  3
+ * invokestatic {@link Float#floatToRawIntBits(float)}
  * </pre>
  * <p>
  * At this point, the bit-vector contents of {@code $U00:4} are on the stack, but for all the JVM
@@ -140,7 +139,7 @@ import ghidra.program.model.pcode.PcodeOp;
  * <p>
  * Consider {@code r2 = INT_MULT r0, r1} where the registers are all 5 bytes. Thus, the registers
  * are allocated as JVM locals of type {@code long}. We load {@code r0} and {@code r1} onto the
- * stack, and then we emit an {@link Opcodes#LMUL}. Technically, the result is another JVM
+ * stack, and then we emit an {@link CodeBuilder#lmul}. Technically, the result is another JVM
  * {@code long}, which maps to an 8-byte p-code integer. Thus, we must apply a mask to "convert" the
  * result to a 5-byte p-code integer before storing the result in {@code r2}'s JVM local.
  * 

@@ -19,8 +19,6 @@ import java.lang.invoke.MethodHandles;
 import java.lang.invoke.MethodHandles.Lookup;
 import java.util.EnumSet;
 
-import org.objectweb.asm.ClassWriter;
-
 import ghidra.pcode.emu.jit.analysis.*;
 import ghidra.pcode.emu.jit.decode.JitPassageDecoder;
 import ghidra.pcode.emu.jit.folding.FoldRevalidator;
@@ -195,7 +193,7 @@ public class JitCompiler {
 		PRINT_SYNTH,
 		/** Print each eliminated op */
 		PRINT_OUM,
-		/** Enable ASM's trace for each generated classfile */
+		/** Disassemble (via javap) each generated classfile to stderr */
 		TRACE_CLASS,
 		/** Enable per-op outline of bytecode generation */
 		DEEP_TRACE,
@@ -214,25 +212,18 @@ public class JitCompiler {
 	//EnumSet.of(Diag.PRINT_PASSAGE, Diag.DEEP_TRACE);
 
 	/**
-	 * Exclude a given address offset from ASM's {@link ClassWriter#COMPUTE_MAXS} and
-	 * {@link ClassWriter#COMPUTE_FRAMES}.
+	 * Exclude a given address offset from automatic stack map computation.
 	 * <p>
-	 * Unfortunately, when automatic computation of frames and maxes fails, the ASM library offers
-	 * little in terms of diagnostics. It usually crashes with an NPE or an AIOOBE. Worse, when this
-	 * happens, it fails to output any of the classfile trace. To help with this, a developer may
-	 * identify the address of the passage seed that causes such a failure and set this variable to
-	 * its offset. This will prevent ASM from attempting this computation so that it at least prints
-	 * the trace and dumps out the classfile to disk (if those {@link Diag}nostics are enabled).
+	 * When automatic computation of frames fails, a developer may identify the address of the
+	 * passage seed that causes such a failure and set this variable to its offset. This will cause
+	 * the Class-File API to drop stack maps
+	 * ({@link java.lang.classfile.ClassFile.StackMapsOption#DROP_STACK_MAPS}) so that the classfile
+	 * can at least be dumped to disk for examination (if those {@linkplain Diag diagnostics} are
+	 * enabled). The resulting class will not be loadable by the JVM, but offline tools like
+	 * {@code javap} can still inspect it.
 	 * <p>
-	 * Once the trace/classfile is obtained, set this back to -1 and then apply debug prints in the
-	 * crashing method. Since it's probably in the ASM library, you'll need to use your IDE /
-	 * debugger to inject those prints. The way to do this in Eclipse is to set a "conditional
-	 * breakpoint" then have the condition print the value and return false, so that execution
-	 * continues. Sadly, this will still slow execution down considerably, so you'll want to set
-	 * some other conditional breakpoint to catch when the troublesome passage is being translated.
-	 * Probably the most helpful thing to print is the bytecode offset of each basic block ASM is
-	 * processing as it computes the frames. Once it crashes, look at the last couple of bytecode
-	 * offsets in the dumped classfile.
+	 * Once the classfile is obtained, set this back to -1 and investigate the issue using debug
+	 * prints or a debugger.
 	 */
 	public static final long EXCLUDE_MAXS = -1L;
 

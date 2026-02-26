@@ -107,7 +107,7 @@ public enum CBranchOpGen implements OpGen<JitCBranchOp> {
 				RetReq<TRef<EntryPoint>> retReq, JitCodeGenerator<THIS> gen, JitCBranchOp op,
 				RIntBranch branch, JitBlock block) {
 			BlockFlow flow = block.flowsFrom().get(branch);
-			Lbl<Bot> label = gen.labelForBlock(flow.to());
+			Lbl<Bot> label = gen.labelForBlock(flow.to(), em);
 			BlockTransition<THIS> transition = VarGen.computeBlockTransition(localThis, gen, flow);
 
 			if (!transition.needed()) {

@@ -17,10 +17,9 @@ package ghidra.pcode.emu.jit.analysis;
 
 import static ghidra.pcode.emu.jit.analysis.JitVarScopeModel.maxAddr;
 
+import java.lang.classfile.CodeBuilder;
 import java.math.BigInteger;
 import java.util.*;
-
-import org.objectweb.asm.Opcodes;
 
 import ghidra.app.plugin.processors.sleigh.SleighLanguage;
 import ghidra.pcode.emu.jit.JitBytesPcodeExecutorState;
@@ -144,8 +143,8 @@ import ghidra.program.model.pcode.Varnode;
  * This actually extends a little beyond allocation, but this is a suitable place for it: All SSA
  * values are assigned a handler, including constants and memory variables. Variables which access
  * the same varnode get the same handler. For varnodes that are allocated in a JVM local, we create
- * a handler that generates loads and stores to that local, e.g., {@link Opcodes#ILOAD iload}. For
- * constant varnodes, we create a handler that generates {@link Opcodes#LDC ldc} instructions. For
+ * a handler that generates loads and stores to that local, e.g., {@link CodeBuilder#iload}. For
+ * constant varnodes, we create a handler that generates {@link CodeBuilder#ldc} instructions. For
  * memory varnodes, we create a handler that generates a sequence of method invocations on the
  * {@link JitBytesPcodeExecutorState state}. The code generator will delegate to these handlers in
  * order to generate reads and writes of the corresponding variables, as well as to prepare any

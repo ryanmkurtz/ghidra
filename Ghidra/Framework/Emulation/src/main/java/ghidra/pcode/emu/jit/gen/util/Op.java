@@ -15,12 +15,12 @@
  */
 package ghidra.pcode.emu.jit.gen.util;
 
-import java.util.List;
-import java.util.Map;
+import java.lang.classfile.CodeBuilder;
+import java.lang.classfile.instruction.SwitchCase;
+import java.lang.constant.*;
+import java.util.*;
 import java.util.Map.Entry;
 import java.util.function.Function;
-
-import org.objectweb.asm.*;
 
 import ghidra.pcode.emu.jit.JitCompiler;
 import ghidra.pcode.emu.jit.JitCompiler.Diag;
@@ -74,7 +74,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: aaload");
 		}
-		em.mv.visitInsn(Opcodes.AALOAD);
+		em.cb.aaload();
 		return (Emitter) em;
 	}
 
@@ -98,7 +98,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: aastore");
 		}
-		em.mv.visitInsn(Opcodes.AASTORE);
+		em.cb.aastore();
 		return (Emitter) em;
 	}
 
@@ -117,7 +117,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: aconst_null     %s".formatted(type));
 		}
-		em.mv.visitInsn(Opcodes.ACONST_NULL);
+		em.cb.aconst_null();
 		return (Emitter) em;
 	}
 
@@ -136,7 +136,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: aload           %s".formatted(local));
 		}
-		em.mv.visitVarInsn(Opcodes.ALOAD, local.index());
+		em.cb.aload(local.index());
 		return (Emitter) em;
 	}
 
@@ -157,7 +157,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: anewarray       %s".formatted(elemType));
 		}
-		em.mv.visitTypeInsn(Opcodes.ANEWARRAY, elemType.internalName());
+		em.cb.anewarray(elemType.classDesc());
 		return (Emitter) em;
 	}
 
@@ -179,7 +179,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: areturn         %s".formatted(retReq));
 		}
-		em.mv.visitInsn(Opcodes.ARETURN);
+		em.cb.areturn();
 		return (Emitter) em;
 	}
 
@@ -200,7 +200,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: arraylength     %s".formatted(elemType));
 		}
-		em.mv.visitInsn(Opcodes.ARRAYLENGTH);
+		em.cb.arraylength();
 		return (Emitter) em;
 	}
 
@@ -220,7 +220,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: arraylength");
 		}
-		em.mv.visitInsn(Opcodes.ARRAYLENGTH);
+		em.cb.arraylength();
 		return (Emitter) em;
 	}
 
@@ -242,7 +242,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: astore          %s".formatted(local));
 		}
-		em.mv.visitVarInsn(Opcodes.ASTORE, local.index());
+		em.cb.astore(local.index());
 		return (Emitter) em;
 	}
 
@@ -262,7 +262,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: athrow");
 		}
-		em.mv.visitInsn(Opcodes.ATHROW);
+		em.cb.athrow();
 		return (Emitter) em;
 	}
 
@@ -283,7 +283,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: baload");
 		}
-		em.mv.visitInsn(Opcodes.BALOAD);
+		em.cb.baload();
 		return (Emitter) em;
 	}
 
@@ -304,7 +304,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: baload");
 		}
-		em.mv.visitInsn(Opcodes.BALOAD);
+		em.cb.baload();
 		return (Emitter) em;
 	}
 
@@ -327,7 +327,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: bastore");
 		}
-		em.mv.visitInsn(Opcodes.BASTORE);
+		em.cb.bastore();
 		return (Emitter) em;
 	}
 
@@ -350,7 +350,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: bastore");
 		}
-		em.mv.visitInsn(Opcodes.BASTORE);
+		em.cb.bastore();
 		return (Emitter) em;
 	}
 
@@ -371,7 +371,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: caload");
 		}
-		em.mv.visitInsn(Opcodes.CALOAD);
+		em.cb.caload();
 		return (Emitter) em;
 	}
 
@@ -394,7 +394,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: castore");
 		}
-		em.mv.visitInsn(Opcodes.CASTORE);
+		em.cb.castore();
 		return (Emitter) em;
 	}
 
@@ -417,7 +417,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: checkcast       %s".formatted(type));
 		}
-		em.mv.visitTypeInsn(Opcodes.CHECKCAST, type.internalName());
+		em.cb.checkcast(type.classDesc());
 		return (Emitter) em;
 	}
 
@@ -436,7 +436,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: d2f");
 		}
-		em.mv.visitInsn(Opcodes.D2F);
+		em.cb.d2f();
 		return (Emitter) em;
 	}
 
@@ -455,7 +455,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: d2i");
 		}
-		em.mv.visitInsn(Opcodes.D2I);
+		em.cb.d2i();
 		return (Emitter) em;
 	}
 
@@ -474,7 +474,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: d2l");
 		}
-		em.mv.visitInsn(Opcodes.D2L);
+		em.cb.d2l();
 		return (Emitter) em;
 	}
 
@@ -495,7 +495,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: dadd");
 		}
-		em.mv.visitInsn(Opcodes.DADD);
+		em.cb.dadd();
 		return (Emitter) em;
 	}
 
@@ -516,7 +516,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: daload");
 		}
-		em.mv.visitInsn(Opcodes.DALOAD);
+		em.cb.daload();
 		return (Emitter) em;
 	}
 
@@ -539,7 +539,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: dastore");
 		}
-		em.mv.visitInsn(Opcodes.DASTORE);
+		em.cb.dastore();
 		return (Emitter) em;
 	}
 
@@ -560,7 +560,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: dcmpg");
 		}
-		em.mv.visitInsn(Opcodes.DCMPG);
+		em.cb.dcmpg();
 		return (Emitter) em;
 	}
 
@@ -581,7 +581,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: dcmpl");
 		}
-		em.mv.visitInsn(Opcodes.DCMPL);
+		em.cb.dcmpl();
 		return (Emitter) em;
 	}
 
@@ -602,7 +602,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: ddiv");
 		}
-		em.mv.visitInsn(Opcodes.DDIV);
+		em.cb.ddiv();
 		return (Emitter) em;
 	}
 
@@ -619,7 +619,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: dload           %s".formatted(local));
 		}
-		em.mv.visitVarInsn(Opcodes.DLOAD, local.index());
+		em.cb.dload(local.index());
 		return (Emitter) em;
 	}
 
@@ -640,7 +640,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: dmul");
 		}
-		em.mv.visitInsn(Opcodes.DMUL);
+		em.cb.dmul();
 		return (Emitter) em;
 	}
 
@@ -659,7 +659,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: dneg");
 		}
-		em.mv.visitInsn(Opcodes.DNEG);
+		em.cb.dneg();
 		return (Emitter) em;
 	}
 
@@ -680,7 +680,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: drem");
 		}
-		em.mv.visitInsn(Opcodes.DREM);
+		em.cb.drem();
 		return (Emitter) em;
 	}
 
@@ -700,7 +700,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: dreturn         %s".formatted(retReq));
 		}
-		em.mv.visitInsn(Opcodes.DRETURN);
+		em.cb.dreturn();
 		return (Emitter) em;
 	}
 
@@ -720,7 +720,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: dstore          %s".formatted(local));
 		}
-		em.mv.visitVarInsn(Opcodes.DSTORE, local.index());
+		em.cb.dstore(local.index());
 		return (Emitter) em;
 	}
 
@@ -741,7 +741,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: dsub");
 		}
-		em.mv.visitInsn(Opcodes.DSUB);
+		em.cb.dsub();
 		return (Emitter) em;
 	}
 
@@ -761,7 +761,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: dup");
 		}
-		em.mv.visitInsn(Opcodes.DUP);
+		em.cb.dup();
 		return (Emitter) em;
 	}
 
@@ -784,7 +784,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: dup_x1");
 		}
-		em.mv.visitInsn(Opcodes.DUP_X1);
+		em.cb.dup_x1();
 		return (Emitter) em;
 	}
 
@@ -810,7 +810,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: dup_x2 (111)");
 		}
-		em.mv.visitInsn(Opcodes.DUP_X2);
+		em.cb.dup_x2();
 		return (Emitter) em;
 	}
 
@@ -833,7 +833,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: dup_x2 (21)");
 		}
-		em.mv.visitInsn(Opcodes.DUP_X2);
+		em.cb.dup_x2();
 		return (Emitter) em;
 	}
 
@@ -856,7 +856,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: dup2 (11)");
 		}
-		em.mv.visitInsn(Opcodes.DUP2);
+		em.cb.dup2();
 		return (Emitter) em;
 	}
 
@@ -876,7 +876,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: dup2 (2)");
 		}
-		em.mv.visitInsn(Opcodes.DUP2);
+		em.cb.dup2();
 		return (Emitter) em;
 	}
 
@@ -899,10 +899,10 @@ public interface Op {
 		N1 extends Ent<N2, V2>,
 		N0 extends Ent<N1, V1>>
 			Emitter<Ent<Ent<Ent<Ent<Ent<N3, V2>, V1>, V3>, V2>, V1>> dup2_x1__111(Emitter<N0> em) {
-		em.mv.visitInsn(Opcodes.DUP2_X1);
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: dup2_x1 (111)");
 		}
+		em.cb.dup2_x1();
 		return (Emitter) em;
 	}
 
@@ -925,7 +925,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: dup2_x1 (12)");
 		}
-		em.mv.visitInsn(Opcodes.DUP2_X1);
+		em.cb.dup2_x1();
 		return (Emitter) em;
 	}
 
@@ -952,10 +952,10 @@ public interface Op {
 		N0 extends Ent<N1, V1>>
 			Emitter<Ent<Ent<Ent<Ent<Ent<Ent<N4, V2>, V1>, V4>, V3>, V2>, V1>>
 			dup2_x2_1111(Emitter<N0> em) {
-		em.mv.visitInsn(Opcodes.DUP2_X2);
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: dup2_x2 (1111)");
 		}
+		em.cb.dup2_x2();
 		return (Emitter) em;
 	}
 
@@ -981,7 +981,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: dup2_x2 (112)");
 		}
-		em.mv.visitInsn(Opcodes.DUP2_X2);
+		em.cb.dup2_x2();
 		return (Emitter) em;
 	}
 
@@ -1007,7 +1007,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: dup2_x2 (211)");
 		}
-		em.mv.visitInsn(Opcodes.DUP2_X2);
+		em.cb.dup2_x2();
 		return (Emitter) em;
 	}
 
@@ -1030,7 +1030,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: dup2_x2 (22)");
 		}
-		em.mv.visitInsn(Opcodes.DUP2_X2);
+		em.cb.dup2_x2();
 		return (Emitter) em;
 	}
 
@@ -1049,7 +1049,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: f2d");
 		}
-		em.mv.visitInsn(Opcodes.F2D);
+		em.cb.f2d();
 		return (Emitter) em;
 	}
 
@@ -1068,7 +1068,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: f2i");
 		}
-		em.mv.visitInsn(Opcodes.F2I);
+		em.cb.f2i();
 		return (Emitter) em;
 	}
 
@@ -1087,7 +1087,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: f2l");
 		}
-		em.mv.visitInsn(Opcodes.F2L);
+		em.cb.f2l();
 		return (Emitter) em;
 	}
 
@@ -1108,7 +1108,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: fadd");
 		}
-		em.mv.visitInsn(Opcodes.FADD);
+		em.cb.fadd();
 		return (Emitter) em;
 	}
 
@@ -1129,7 +1129,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: faload");
 		}
-		em.mv.visitInsn(Opcodes.FALOAD);
+		em.cb.faload();
 		return (Emitter) em;
 	}
 
@@ -1152,7 +1152,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: fastore");
 		}
-		em.mv.visitInsn(Opcodes.FASTORE);
+		em.cb.fastore();
 		return (Emitter) em;
 	}
 
@@ -1173,7 +1173,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: fcmpg");
 		}
-		em.mv.visitInsn(Opcodes.FCMPG);
+		em.cb.fcmpg();
 		return (Emitter) em;
 	}
 
@@ -1194,7 +1194,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: fcmpl");
 		}
-		em.mv.visitInsn(Opcodes.FCMPL);
+		em.cb.fcmpl();
 		return (Emitter) em;
 	}
 
@@ -1215,7 +1215,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: fdiv");
 		}
-		em.mv.visitInsn(Opcodes.FDIV);
+		em.cb.fdiv();
 		return (Emitter) em;
 	}
 
@@ -1232,7 +1232,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: fload           %s".formatted(local));
 		}
-		em.mv.visitVarInsn(Opcodes.FLOAD, local.index());
+		em.cb.fload(local.index());
 		return (Emitter) em;
 	}
 
@@ -1253,7 +1253,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: fmul");
 		}
-		em.mv.visitInsn(Opcodes.FMUL);
+		em.cb.fmul();
 		return (Emitter) em;
 	}
 
@@ -1272,7 +1272,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: fneg");
 		}
-		em.mv.visitInsn(Opcodes.FNEG);
+		em.cb.fneg();
 		return (Emitter) em;
 	}
 
@@ -1293,7 +1293,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: frem");
 		}
-		em.mv.visitInsn(Opcodes.FREM);
+		em.cb.frem();
 		return (Emitter) em;
 	}
 
@@ -1313,7 +1313,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: freturn         %s".formatted(retReq));
 		}
-		em.mv.visitInsn(Opcodes.FRETURN);
+		em.cb.freturn();
 		return (Emitter) em;
 	}
 
@@ -1333,7 +1333,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: fstore          %s".formatted(local));
 		}
-		em.mv.visitVarInsn(Opcodes.FSTORE, local.index());
+		em.cb.fstore(local.index());
 		return (Emitter) em;
 	}
 
@@ -1354,7 +1354,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: fsub");
 		}
-		em.mv.visitInsn(Opcodes.FSUB);
+		em.cb.fsub();
 		return (Emitter) em;
 	}
 
@@ -1386,8 +1386,7 @@ public interface Op {
 					    jvm: getfield        %s %s
 					                         .%s""".formatted(type, owner, name));
 		}
-		em.mv.visitFieldInsn(Opcodes.GETFIELD, owner.type().getInternalName(), name,
-			type.type().getDescriptor());
+		em.cb.getfield(owner.classDesc(), name, type.classDesc());
 		return (Emitter) em;
 	}
 
@@ -1413,8 +1412,7 @@ public interface Op {
 					    jvm: getstatic       %s %s
 					                         .%s""".formatted(type, owner, name));
 		}
-		em.mv.visitFieldInsn(Opcodes.GETSTATIC, owner.type().getInternalName(), name,
-			type.type().getDescriptor());
+		em.cb.getstatic(owner.classDesc(), name, type.classDesc());
 		return (Emitter) em;
 	}
 
@@ -1427,11 +1425,11 @@ public interface Op {
 	 */
 	static <N extends Next>
 			LblEm<N, Dead> goto_(Emitter<N> em) {
-		Lbl<N> target = Lbl.create();
+		Lbl<N> target = Lbl.create(em);
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: goto            %s".formatted(target));
 		}
-		em.mv.visitJumpInsn(Opcodes.GOTO, target.label());
+		em.cb.goto_(target.label());
 		return new LblEm<>(target, (Emitter) em);
 	}
 
@@ -1448,7 +1446,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: goto            %s".formatted(target));
 		}
-		em.mv.visitJumpInsn(Opcodes.GOTO, target.label());
+		em.cb.goto_(target.label());
 		return (Emitter) em;
 	}
 
@@ -1467,7 +1465,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: i2b");
 		}
-		em.mv.visitInsn(Opcodes.I2B);
+		em.cb.i2b();
 		return (Emitter) em;
 	}
 
@@ -1486,7 +1484,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: i2c");
 		}
-		em.mv.visitInsn(Opcodes.I2C);
+		em.cb.i2c();
 		return (Emitter) em;
 	}
 
@@ -1505,7 +1503,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: i2d");
 		}
-		em.mv.visitInsn(Opcodes.I2D);
+		em.cb.i2d();
 		return (Emitter) em;
 	}
 
@@ -1524,13 +1522,13 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: i2f");
 		}
-		em.mv.visitInsn(Opcodes.I2F);
+		em.cb.i2f();
 		return (Emitter) em;
 	}
 
 	/**
 	 * Emit an {@code i2l} instruction
-	 * 
+	 *
 	 * @param <N1> the tail of the stack (...)
 	 * @param <N0> ..., value
 	 * @param em the emitter
@@ -1543,7 +1541,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: i2l");
 		}
-		em.mv.visitInsn(Opcodes.I2L);
+		em.cb.i2l();
 		return (Emitter) em;
 	}
 
@@ -1562,7 +1560,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: i2s");
 		}
-		em.mv.visitInsn(Opcodes.I2S);
+		em.cb.i2s();
 		return (Emitter) em;
 	}
 
@@ -1583,7 +1581,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: iadd");
 		}
-		em.mv.visitInsn(Opcodes.IADD);
+		em.cb.iadd();
 		return (Emitter) em;
 	}
 
@@ -1604,7 +1602,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: iaload");
 		}
-		em.mv.visitInsn(Opcodes.IALOAD);
+		em.cb.iaload();
 		return (Emitter) em;
 	}
 
@@ -1625,7 +1623,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: iand");
 		}
-		em.mv.visitInsn(Opcodes.IAND);
+		em.cb.iand();
 		return (Emitter) em;
 	}
 
@@ -1648,7 +1646,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: iastore");
 		}
-		em.mv.visitInsn(Opcodes.IASTORE);
+		em.cb.iastore();
 		return (Emitter) em;
 	}
 
@@ -1669,7 +1667,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: idiv");
 		}
-		em.mv.visitInsn(Opcodes.IDIV);
+		em.cb.idiv();
 		return (Emitter) em;
 	}
 
@@ -1687,11 +1685,11 @@ public interface Op {
 		N1 extends Ent<N2, TRef<?>>,
 		N0 extends Ent<N1, TRef<?>>>
 			LblEm<N2, N2> if_acmpeq(Emitter<N0> em) {
-		Lbl<N2> target = Lbl.create();
+		Lbl<N2> target = Lbl.create(em);
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: if_acmpeq       %s".formatted(target));
 		}
-		em.mv.visitJumpInsn(Opcodes.IF_ACMPEQ, target.label());
+		em.cb.if_acmpeq(target.label());
 		return new LblEm<>(target, (Emitter) em);
 	}
 
@@ -1713,7 +1711,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: if_acmpeq       %s".formatted(target));
 		}
-		em.mv.visitJumpInsn(Opcodes.IF_ACMPEQ, target.label());
+		em.cb.if_acmpeq(target.label());
 		return (Emitter) em;
 	}
 
@@ -1731,11 +1729,11 @@ public interface Op {
 		N1 extends Ent<N2, TRef<?>>,
 		N0 extends Ent<N1, TRef<?>>>
 			LblEm<N2, N2> if_acmpne(Emitter<N0> em) {
-		Lbl<N2> target = Lbl.create();
+		Lbl<N2> target = Lbl.create(em);
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: if_acmpne       %s".formatted(target));
 		}
-		em.mv.visitJumpInsn(Opcodes.IF_ACMPNE, target.label());
+		em.cb.if_acmpne(target.label());
 		return new LblEm<>(target, (Emitter) em);
 	}
 
@@ -1757,7 +1755,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: if_acmpne       %s".formatted(target));
 		}
-		em.mv.visitJumpInsn(Opcodes.IF_ACMPNE, target.label());
+		em.cb.if_acmpne(target.label());
 		return (Emitter) em;
 	}
 
@@ -1775,11 +1773,11 @@ public interface Op {
 		N1 extends Ent<N2, TInt>,
 		N0 extends Ent<N1, TInt>>
 			LblEm<N2, N2> if_icmpeq(Emitter<N0> em) {
-		Lbl<N2> target = Lbl.create();
+		Lbl<N2> target = Lbl.create(em);
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: if_icmpeq       %s".formatted(target));
 		}
-		em.mv.visitJumpInsn(Opcodes.IF_ICMPEQ, target.label());
+		em.cb.if_icmpeq(target.label());
 		return new LblEm<>(target, (Emitter) em);
 	}
 
@@ -1801,7 +1799,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: if_icmpeq       %s".formatted(target));
 		}
-		em.mv.visitJumpInsn(Opcodes.IF_ICMPEQ, target.label());
+		em.cb.if_icmpeq(target.label());
 		return (Emitter) em;
 	}
 
@@ -1819,11 +1817,11 @@ public interface Op {
 		N1 extends Ent<N2, TInt>,
 		N0 extends Ent<N1, TInt>>
 			LblEm<N2, N2> if_icmpge(Emitter<N0> em) {
-		Lbl<N2> target = Lbl.create();
+		Lbl<N2> target = Lbl.create(em);
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: if_icmpge       %s".formatted(target));
 		}
-		em.mv.visitJumpInsn(Opcodes.IF_ICMPGE, target.label());
+		em.cb.if_icmpge(target.label());
 		return new LblEm<>(target, (Emitter) em);
 	}
 
@@ -1845,7 +1843,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: if_icmpge       %s".formatted(target));
 		}
-		em.mv.visitJumpInsn(Opcodes.IF_ICMPGE, target.label());
+		em.cb.if_icmpge(target.label());
 		return (Emitter) em;
 	}
 
@@ -1863,11 +1861,11 @@ public interface Op {
 		N1 extends Ent<N2, TInt>,
 		N0 extends Ent<N1, TInt>>
 			LblEm<N2, N2> if_icmpgt(Emitter<N0> em) {
-		Lbl<N2> target = Lbl.create();
+		Lbl<N2> target = Lbl.create(em);
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: if_icmpgt       %s".formatted(target));
 		}
-		em.mv.visitJumpInsn(Opcodes.IF_ICMPGT, target.label());
+		em.cb.if_icmpgt(target.label());
 		return new LblEm<>(target, (Emitter) em);
 	}
 
@@ -1889,7 +1887,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: if_icmpgt       %s".formatted(target));
 		}
-		em.mv.visitJumpInsn(Opcodes.IF_ICMPGT, target.label());
+		em.cb.if_icmpgt(target.label());
 		return (Emitter) em;
 	}
 
@@ -1907,11 +1905,11 @@ public interface Op {
 		N1 extends Ent<N2, TInt>,
 		N0 extends Ent<N1, TInt>>
 			LblEm<N2, N2> if_icmple(Emitter<N0> em) {
-		Lbl<N2> target = Lbl.create();
+		Lbl<N2> target = Lbl.create(em);
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: if_icmple       %s".formatted(target));
 		}
-		em.mv.visitJumpInsn(Opcodes.IF_ICMPLE, target.label());
+		em.cb.if_icmple(target.label());
 		return new LblEm<>(target, (Emitter) em);
 	}
 
@@ -1933,7 +1931,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: if_icmple       %s".formatted(target));
 		}
-		em.mv.visitJumpInsn(Opcodes.IF_ICMPLE, target.label());
+		em.cb.if_icmple(target.label());
 		return (Emitter) em;
 	}
 
@@ -1951,11 +1949,11 @@ public interface Op {
 		N1 extends Ent<N2, TInt>,
 		N0 extends Ent<N1, TInt>>
 			LblEm<N2, N2> if_icmplt(Emitter<N0> em) {
-		Lbl<N2> target = Lbl.create();
+		Lbl<N2> target = Lbl.create(em);
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: if_icmplt       %s".formatted(target));
 		}
-		em.mv.visitJumpInsn(Opcodes.IF_ICMPLT, target.label());
+		em.cb.if_icmplt(target.label());
 		return new LblEm<>(target, (Emitter) em);
 	}
 
@@ -1977,7 +1975,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: if_icmplt       %s".formatted(target));
 		}
-		em.mv.visitJumpInsn(Opcodes.IF_ICMPLT, target.label());
+		em.cb.if_icmplt(target.label());
 		return (Emitter) em;
 	}
 
@@ -1995,11 +1993,11 @@ public interface Op {
 		N1 extends Ent<N2, TInt>,
 		N0 extends Ent<N1, TInt>>
 			LblEm<N2, N2> if_icmpne(Emitter<N0> em) {
-		Lbl<N2> target = Lbl.create();
+		Lbl<N2> target = Lbl.create(em);
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: if_icmpne       %s".formatted(target));
 		}
-		em.mv.visitJumpInsn(Opcodes.IF_ICMPNE, target.label());
+		em.cb.if_icmpne(target.label());
 		return new LblEm<>(target, (Emitter) em);
 	}
 
@@ -2021,7 +2019,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: if_icmpne       %s".formatted(target));
 		}
-		em.mv.visitJumpInsn(Opcodes.IF_ICMPNE, target.label());
+		em.cb.if_icmpne(target.label());
 		return (Emitter) em;
 	}
 
@@ -2037,11 +2035,11 @@ public interface Op {
 		N1 extends Next,
 		N0 extends Ent<N1, TInt>>
 			LblEm<N1, N1> ifeq(Emitter<N0> em) {
-		Lbl<N1> target = Lbl.create();
+		Lbl<N1> target = Lbl.create(em);
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: ifeq            %s".formatted(target));
 		}
-		em.mv.visitJumpInsn(Opcodes.IFEQ, target.label());
+		em.cb.ifeq(target.label());
 		return new LblEm<>(target, (Emitter) em);
 	}
 
@@ -2061,7 +2059,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: ifeq            %s".formatted(target));
 		}
-		em.mv.visitJumpInsn(Opcodes.IFEQ, target.label());
+		em.cb.ifeq(target.label());
 		return (Emitter) em;
 	}
 
@@ -2077,11 +2075,11 @@ public interface Op {
 		N1 extends Next,
 		N0 extends Ent<N1, TInt>>
 			LblEm<N1, N1> ifge(Emitter<N0> em) {
-		Lbl<N1> target = Lbl.create();
+		Lbl<N1> target = Lbl.create(em);
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: ifge            %s".formatted(target));
 		}
-		em.mv.visitJumpInsn(Opcodes.IFGE, target.label());
+		em.cb.ifge(target.label());
 		return new LblEm<>(target, (Emitter) em);
 	}
 
@@ -2101,7 +2099,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: ifge            %s".formatted(target));
 		}
-		em.mv.visitJumpInsn(Opcodes.IFGE, target.label());
+		em.cb.ifge(target.label());
 		return (Emitter) em;
 	}
 
@@ -2117,11 +2115,11 @@ public interface Op {
 		N1 extends Next,
 		N0 extends Ent<N1, TInt>>
 			LblEm<N1, N1> ifgt(Emitter<N0> em) {
-		Lbl<N1> target = Lbl.create();
+		Lbl<N1> target = Lbl.create(em);
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: ifgt            %s".formatted(target));
 		}
-		em.mv.visitJumpInsn(Opcodes.IFGT, target.label());
+		em.cb.ifgt(target.label());
 		return new LblEm<>(target, (Emitter) em);
 	}
 
@@ -2141,7 +2139,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: ifgt            %s".formatted(target));
 		}
-		em.mv.visitJumpInsn(Opcodes.IFGT, target.label());
+		em.cb.ifgt(target.label());
 		return (Emitter) em;
 	}
 
@@ -2157,11 +2155,11 @@ public interface Op {
 		N1 extends Next,
 		N0 extends Ent<N1, TInt>>
 			LblEm<N1, N1> ifle(Emitter<N0> em) {
-		Lbl<N1> target = Lbl.create();
+		Lbl<N1> target = Lbl.create(em);
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: ifle            %s".formatted(target));
 		}
-		em.mv.visitJumpInsn(Opcodes.IFLE, target.label());
+		em.cb.ifle(target.label());
 		return new LblEm<>(target, (Emitter) em);
 	}
 
@@ -2181,7 +2179,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: ifle            %s".formatted(target));
 		}
-		em.mv.visitJumpInsn(Opcodes.IFLE, target.label());
+		em.cb.ifle(target.label());
 		return (Emitter) em;
 	}
 
@@ -2197,11 +2195,11 @@ public interface Op {
 		N1 extends Next,
 		N0 extends Ent<N1, TInt>>
 			LblEm<N1, N1> iflt(Emitter<N0> em) {
-		Lbl<N1> target = Lbl.create();
+		Lbl<N1> target = Lbl.create(em);
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: iflt            %s".formatted(target));
 		}
-		em.mv.visitJumpInsn(Opcodes.IFLT, target.label());
+		em.cb.iflt(target.label());
 		return new LblEm<>(target, (Emitter) em);
 	}
 
@@ -2221,7 +2219,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: iflt            %s".formatted(target));
 		}
-		em.mv.visitJumpInsn(Opcodes.IFLT, target.label());
+		em.cb.iflt(target.label());
 		return (Emitter) em;
 	}
 
@@ -2237,11 +2235,11 @@ public interface Op {
 		N1 extends Next,
 		N0 extends Ent<N1, TInt>>
 			LblEm<N1, N1> ifne(Emitter<N0> em) {
-		Lbl<N1> target = Lbl.create();
+		Lbl<N1> target = Lbl.create(em);
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: ifne            %s".formatted(target));
 		}
-		em.mv.visitJumpInsn(Opcodes.IFNE, target.label());
+		em.cb.ifne(target.label());
 		return new LblEm<>(target, (Emitter) em);
 	}
 
@@ -2261,7 +2259,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: ifne            %s".formatted(target));
 		}
-		em.mv.visitJumpInsn(Opcodes.IFNE, target.label());
+		em.cb.ifne(target.label());
 		return (Emitter) em;
 	}
 
@@ -2277,11 +2275,11 @@ public interface Op {
 		N1 extends Next,
 		N0 extends Ent<N1, TRef<?>>>
 			LblEm<N1, N1> ifnonnull(Emitter<N0> em) {
-		Lbl<N1> target = Lbl.create();
+		Lbl<N1> target = Lbl.create(em);
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: ifnonnull       %s".formatted(target));
 		}
-		em.mv.visitJumpInsn(Opcodes.IFNONNULL, target.label());
+		em.cb.ifnonnull(target.label());
 		return new LblEm<>(target, (Emitter) em);
 	}
 
@@ -2301,7 +2299,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: ifnonnull       %s".formatted(target));
 		}
-		em.mv.visitJumpInsn(Opcodes.IFNONNULL, target.label());
+		em.cb.ifnonnull(target.label());
 		return (Emitter) em;
 	}
 
@@ -2317,11 +2315,11 @@ public interface Op {
 		N1 extends Next,
 		N0 extends Ent<N1, TRef<?>>>
 			LblEm<N1, N1> ifnull(Emitter<N0> em) {
-		Lbl<N1> target = Lbl.create();
+		Lbl<N1> target = Lbl.create(em);
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: ifnull          %s".formatted(target));
 		}
-		em.mv.visitJumpInsn(Opcodes.IFNULL, target.label());
+		em.cb.ifnull(target.label());
 		return new LblEm<>(target, (Emitter) em);
 	}
 
@@ -2341,7 +2339,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: ifnull          %s".formatted(target));
 		}
-		em.mv.visitJumpInsn(Opcodes.IFNULL, target.label());
+		em.cb.ifnull(target.label());
 		return (Emitter) em;
 	}
 
@@ -2359,7 +2357,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: iinc            %s %d".formatted(local, increment));
 		}
-		em.mv.visitIincInsn(local.index(), increment);
+		em.cb.iinc(local.index(), increment);
 		return em;
 	}
 
@@ -2376,7 +2374,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: iload           %s".formatted(local));
 		}
-		em.mv.visitVarInsn(Opcodes.ILOAD, local.index());
+		em.cb.iload(local.index());
 		return (Emitter) em;
 	}
 
@@ -2397,7 +2395,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: imul");
 		}
-		em.mv.visitInsn(Opcodes.IMUL);
+		em.cb.imul();
 		return (Emitter) em;
 	}
 
@@ -2416,7 +2414,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: ineg");
 		}
-		em.mv.visitInsn(Opcodes.INEG);
+		em.cb.ineg();
 		return (Emitter) em;
 	}
 
@@ -2436,7 +2434,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: instanceof      %s".formatted(type));
 		}
-		em.mv.visitTypeInsn(Opcodes.INSTANCEOF, type.internalName());
+		em.cb.instanceOf(type.classDesc());
 		return (Emitter) em;
 	}
 
@@ -2446,19 +2444,17 @@ public interface Op {
 	 * <b>WARNING:</b> This is probably not implemented correctly. The JVM spec does not provide an
 	 * example, but the best we can tell, after all the call site resolution machinery, the net
 	 * arguments actually consumed from the stack is determined by the given method descriptor. We
-	 * also just let the ASM types {@link Type}, {@link Handle}, and {@link ConstantDynamic} leak
-	 * from an API perspective.
-	 * 
+	 * also just let the Class-File API types {@link DirectMethodHandleDesc}, {@link ConstantDesc},
+	 * and {@link DynamicCallSiteDesc} leak from an API perspective.
+	 *
 	 * @param <SN> the JVM stack at the call site. Some may be popped as arguments
 	 * @param <MN> the parameters expected by the method descriptor
 	 * @param <MR> the return type from the method descriptor
 	 * @param em the emitter
 	 * @param name the name of the method
 	 * @param desc the method descriptor
-	 * @param bootstrapMethodHandle as in
-	 *            {@link MethodVisitor#visitInvokeDynamicInsn(String, String, Handle, Object...)}
-	 * @param bootstrapMethodArguments as in
-	 *            {@link MethodVisitor#visitInvokeDynamicInsn(String, String, Handle, Object...)}
+	 * @param bootstrapMethodHandle as in {@link CodeBuilder#invokedynamic}
+	 * @param bootstrapMethodArguments as in {@link CodeBuilder#invokedynamic}
 	 * @return an object to complete type checking of the arguments and, if applicable, the result
 	 */
 	static <
@@ -2466,16 +2462,16 @@ public interface Op {
 		MN extends Next,
 		MR extends BType>
 			Inv<MR, SN, MN> invokedynamic__unsupported(Emitter<SN> em, String name,
-					MthDesc<MR, MN> desc, Handle bootstrapMethodHandle,
-					Object... bootstrapMethodArguments) {
+					MthDesc<MR, MN> desc, DirectMethodHandleDesc bootstrapMethodHandle,
+					ConstantDesc... bootstrapMethodArguments) {
 		if (DEEP_TRACE) {
 			System.err.println("""
 					\
 					    jvm: invokedynamic   %s %s %s %s""".formatted(name, desc,
 				bootstrapMethodHandle, bootstrapMethodArguments));
 		}
-		em.mv.visitInvokeDynamicInsn(name, desc.desc(), bootstrapMethodHandle,
-			bootstrapMethodArguments);
+		em.cb.invokedynamic(DynamicCallSiteDesc.of(
+			bootstrapMethodHandle, name, desc.desc(), bootstrapMethodArguments));
 		return new Inv<>(em);
 	}
 
@@ -2504,9 +2500,7 @@ public interface Op {
 					    jvm: invokeinterface %s
 					                         .%s %s""".formatted(ownerType, name, desc));
 		}
-		em.mv.visitMethodInsn(Opcodes.INVOKEINTERFACE, ownerType.internalName(),
-			name,
-			desc.desc(), true);
+		em.cb.invokeinterface(ownerType.classDesc(), name, desc.desc());
 		return new ObjInv<>(em);
 	}
 
@@ -2537,8 +2531,7 @@ public interface Op {
 					                         .%s %s (%s)""".formatted(ownerType, name, desc,
 				isInterface ? "interface" : "class"));
 		}
-		em.mv.visitMethodInsn(Opcodes.INVOKESPECIAL, ownerType.internalName(), name,
-			desc.desc(), isInterface);
+		em.cb.invokespecial(ownerType.classDesc(), name, desc.desc(), isInterface);
 		return new ObjInv<>(em);
 	}
 
@@ -2568,8 +2561,7 @@ public interface Op {
 					                         .%s %s (%s)""".formatted(ownerType, name, desc,
 				isInterface ? "interface" : "class"));
 		}
-		em.mv.visitMethodInsn(Opcodes.INVOKESTATIC, ownerType.internalName(), name,
-			desc.desc(), isInterface);
+		em.cb.invokestatic(ownerType.classDesc(), name, desc.desc(), isInterface);
 		return new Inv<>(em);
 	}
 
@@ -2600,8 +2592,7 @@ public interface Op {
 					                         .%s %s (%s)""".formatted(ownerType, name, desc,
 				isInterface ? "interface" : "class"));
 		}
-		em.mv.visitMethodInsn(Opcodes.INVOKEVIRTUAL, ownerType.internalName(), name,
-			desc.desc(), isInterface);
+		em.cb.invokevirtual(ownerType.classDesc(), name, desc.desc());
 		return new ObjInv<>(em);
 	}
 
@@ -2622,7 +2613,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: ior");
 		}
-		em.mv.visitInsn(Opcodes.IOR);
+		em.cb.ior();
 		return (Emitter) em;
 	}
 
@@ -2643,7 +2634,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: irem");
 		}
-		em.mv.visitInsn(Opcodes.IREM);
+		em.cb.irem();
 		return (Emitter) em;
 	}
 
@@ -2663,7 +2654,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: ireturn         %s".formatted(retReq));
 		}
-		em.mv.visitInsn(Opcodes.IRETURN);
+		em.cb.ireturn();
 		return (Emitter) em;
 	}
 
@@ -2684,7 +2675,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: ishl");
 		}
-		em.mv.visitInsn(Opcodes.ISHL);
+		em.cb.ishl();
 		return (Emitter) em;
 	}
 
@@ -2705,7 +2696,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: ishr");
 		}
-		em.mv.visitInsn(Opcodes.ISHR);
+		em.cb.ishr();
 		return (Emitter) em;
 	}
 
@@ -2725,7 +2716,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: istore          %s".formatted(local));
 		}
-		em.mv.visitVarInsn(Opcodes.ISTORE, local.index());
+		em.cb.istore(local.index());
 		return (Emitter) em;
 	}
 
@@ -2746,7 +2737,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: isub");
 		}
-		em.mv.visitInsn(Opcodes.ISUB);
+		em.cb.isub();
 		return (Emitter) em;
 	}
 
@@ -2767,7 +2758,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: iushr");
 		}
-		em.mv.visitInsn(Opcodes.IUSHR);
+		em.cb.iushr();
 		return (Emitter) em;
 	}
 
@@ -2788,7 +2779,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: ixor");
 		}
-		em.mv.visitInsn(Opcodes.IXOR);
+		em.cb.ixor();
 		return (Emitter) em;
 	}
 
@@ -2826,7 +2817,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: l2d");
 		}
-		em.mv.visitInsn(Opcodes.L2D);
+		em.cb.l2d();
 		return (Emitter) em;
 	}
 
@@ -2845,7 +2836,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: l2f");
 		}
-		em.mv.visitInsn(Opcodes.L2F);
+		em.cb.l2f();
 		return (Emitter) em;
 	}
 
@@ -2864,7 +2855,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: l2i");
 		}
-		em.mv.visitInsn(Opcodes.L2I);
+		em.cb.l2i();
 		return (Emitter) em;
 	}
 
@@ -2885,7 +2876,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: ladd");
 		}
-		em.mv.visitInsn(Opcodes.LADD);
+		em.cb.ladd();
 		return (Emitter) em;
 	}
 
@@ -2906,7 +2897,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: laload");
 		}
-		em.mv.visitInsn(Opcodes.LALOAD);
+		em.cb.laload();
 		return (Emitter) em;
 	}
 
@@ -2927,7 +2918,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: land");
 		}
-		em.mv.visitInsn(Opcodes.LAND);
+		em.cb.land();
 		return (Emitter) em;
 	}
 
@@ -2950,7 +2941,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: lastore");
 		}
-		em.mv.visitInsn(Opcodes.LASTORE);
+		em.cb.lastore();
 		return (Emitter) em;
 	}
 
@@ -2971,14 +2962,14 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: lcmp");
 		}
-		em.mv.visitInsn(Opcodes.LCMP);
+		em.cb.lcmp();
 		return (Emitter) em;
 	}
 
 	/**
 	 * Emit an {@code ldc} instruction for an integer
 	 * <p>
-	 * NOTE: The underlying ASM library may emit alternative instructions at its discretion.
+	 * NOTE: The underlying Class-File API may emit alternative instructions at its discretion.
 	 * 
 	 * @param <N> the tail of the stack (...)
 	 * @param em the emitter
@@ -2990,14 +2981,14 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: ldc (int)       0x%x %d".formatted(value, value));
 		}
-		em.mv.visitLdcInsn(value);
+		em.cb.loadConstant(value);
 		return (Emitter) em;
 	}
 
 	/**
 	 * Emit an {@code ldc} instruction for a long
 	 * <p>
-	 * NOTE: The underlying ASM library may emit alternative instructions at its discretion.
+	 * NOTE: The underlying Class-File API may emit alternative instructions at its discretion.
 	 * 
 	 * @param <N> the tail of the stack (...)
 	 * @param em the emitter
@@ -3009,14 +3000,14 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: ldc (long)      0x%x %d".formatted(value, value));
 		}
-		em.mv.visitLdcInsn(value);
+		em.cb.loadConstant(value);
 		return (Emitter) em;
 	}
 
 	/**
 	 * Emit an {@code ldc} instruction for a float
 	 * <p>
-	 * NOTE: The underlying ASM library may emit alternative instructions at its discretion.
+	 * NOTE: The underlying Class-File API may emit alternative instructions at its discretion.
 	 * 
 	 * @param <N> the tail of the stack (...)
 	 * @param em the emitter
@@ -3028,14 +3019,14 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: ldc (float)     %s".formatted(value));
 		}
-		em.mv.visitLdcInsn(value);
+		em.cb.loadConstant(value);
 		return (Emitter) em;
 	}
 
 	/**
 	 * Emit an {@code ldc} instruction for a double
 	 * <p>
-	 * NOTE: The underlying ASM library may emit alternative instructions at its discretion.
+	 * NOTE: The underlying Class-File API may emit alternative instructions at its discretion.
 	 * 
 	 * @param <N> the tail of the stack (...)
 	 * @param em the emitter
@@ -3047,15 +3038,14 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: ldc (double)    %s".formatted(value));
 		}
-		em.mv.visitLdcInsn(value);
+		em.cb.loadConstant(value);
 		return (Emitter) em;
 	}
 
 	/**
 	 * Emit an {@code ldc} instruction for a reference
 	 * <p>
-	 * NOTE: Only certain reference types are permitted. Some of the permitted types are those
-	 * leaked (API-wise) from the underlying ASM library. The underlying ASM library may emit
+	 * NOTE: Only certain reference types are permitted. The underlying Class-File API may emit
 	 * alternative instructions at its discretion.
 	 * 
 	 * @param <N> the tail of the stack (...)
@@ -3070,7 +3060,9 @@ public interface Op {
 			System.err.println("    jvm: ldc             (%s) %s"
 					.formatted(value.getClass().getSimpleName(), value));
 		}
-		em.mv.visitLdcInsn(value);
+		// value must implement ConstantDesc. T is the runtime type on the stack, which
+		// for String constants is the same as the ConstantDesc type.
+		em.cb.loadConstant((ConstantDesc) value);
 		return (Emitter) em;
 	}
 
@@ -3091,7 +3083,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: ldiv");
 		}
-		em.mv.visitInsn(Opcodes.LDIV);
+		em.cb.ldiv();
 		return (Emitter) em;
 	}
 
@@ -3108,7 +3100,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: lload           %s".formatted(local));
 		}
-		em.mv.visitVarInsn(Opcodes.LLOAD, local.index());
+		em.cb.lload(local.index());
 		return (Emitter) em;
 	}
 
@@ -3129,7 +3121,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: lmul");
 		}
-		em.mv.visitInsn(Opcodes.LMUL);
+		em.cb.lmul();
 		return (Emitter) em;
 	}
 
@@ -3148,7 +3140,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: lneg");
 		}
-		em.mv.visitInsn(Opcodes.LNEG);
+		em.cb.lneg();
 		return (Emitter) em;
 	}
 
@@ -3173,9 +3165,11 @@ public interface Op {
 			}
 			System.err.println("         }");
 		}
-		em.mv.visitLookupSwitchInsn(dflt.label(),
-			cases.keySet().stream().mapToInt(k -> k).toArray(),
-			cases.values().stream().map(Lbl::label).toArray(Label[]::new));
+		em.cb.lookupswitch(dflt.label(),
+			cases.entrySet()
+					.stream()
+					.map(e -> SwitchCase.of(e.getKey(), e.getValue().label()))
+					.toList());
 		return (Emitter) em;
 	}
 
@@ -3196,7 +3190,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: lor");
 		}
-		em.mv.visitInsn(Opcodes.LOR);
+		em.cb.lor();
 		return (Emitter) em;
 	}
 
@@ -3217,7 +3211,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: lrem");
 		}
-		em.mv.visitInsn(Opcodes.LREM);
+		em.cb.lrem();
 		return (Emitter) em;
 	}
 
@@ -3237,7 +3231,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: lreturn         %s".formatted(retReq));
 		}
-		em.mv.visitInsn(Opcodes.LRETURN);
+		em.cb.lreturn();
 		return (Emitter) em;
 	}
 
@@ -3258,7 +3252,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: lshl");
 		}
-		em.mv.visitInsn(Opcodes.LSHL);
+		em.cb.lshl();
 		return (Emitter) em;
 	}
 
@@ -3279,7 +3273,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: lshr");
 		}
-		em.mv.visitInsn(Opcodes.LSHR);
+		em.cb.lshr();
 		return (Emitter) em;
 	}
 
@@ -3299,7 +3293,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: lstore          %s".formatted(local));
 		}
-		em.mv.visitVarInsn(Opcodes.LSTORE, local.index());
+		em.cb.lstore(local.index());
 		return (Emitter) em;
 	}
 
@@ -3320,7 +3314,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: lsub");
 		}
-		em.mv.visitInsn(Opcodes.LSUB);
+		em.cb.lsub();
 		return (Emitter) em;
 	}
 
@@ -3341,7 +3335,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: lushr");
 		}
-		em.mv.visitInsn(Opcodes.LUSHR);
+		em.cb.lushr();
 		return (Emitter) em;
 	}
 
@@ -3362,7 +3356,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: lxor");
 		}
-		em.mv.visitInsn(Opcodes.LXOR);
+		em.cb.lxor();
 		return (Emitter) em;
 	}
 
@@ -3381,7 +3375,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: monitorenter");
 		}
-		em.mv.visitInsn(Opcodes.MONITORENTER);
+		em.cb.monitorenter();
 		return (Emitter) em;
 	}
 
@@ -3400,7 +3394,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: monitorexit");
 		}
-		em.mv.visitInsn(Opcodes.MONITOREXIT);
+		em.cb.monitorexit();
 		return (Emitter) em;
 	}
 
@@ -3421,7 +3415,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: multianewarray  %s %s".formatted(type, dimensions));
 		}
-		em.mv.visitMultiANewArrayInsn(type.internalName(), dimensions);
+		em.cb.multianewarray(type.classDesc(), dimensions);
 		return em;
 	}
 
@@ -3444,7 +3438,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: new             %s".formatted(type));
 		}
-		em.mv.visitTypeInsn(Opcodes.NEW, type.internalName());
+		em.cb.new_(type.classDesc());
 		return (Emitter) em;
 	}
 
@@ -3466,7 +3460,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: newarray        %s".formatted(elemType));
 		}
-		em.mv.visitIntInsn(Opcodes.NEWARRAY, elemType.t());
+		em.cb.newarray(elemType.typeKind());
 		return (Emitter) em;
 	}
 
@@ -3482,7 +3476,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: nop");
 		}
-		em.mv.visitInsn(Opcodes.NOP);
+		em.cb.nop();
 		return em;
 	}
 
@@ -3501,7 +3495,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: pop");
 		}
-		em.mv.visitInsn(Opcodes.POP);
+		em.cb.pop();
 		return (Emitter) em;
 	}
 
@@ -3522,7 +3516,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: pop2 (11)");
 		}
-		em.mv.visitInsn(Opcodes.POP2);
+		em.cb.pop2();
 		return (Emitter) em;
 	}
 
@@ -3541,7 +3535,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: pop2 (2)");
 		}
-		em.mv.visitInsn(Opcodes.POP2);
+		em.cb.pop2();
 		return (Emitter) em;
 	}
 
@@ -3571,8 +3565,7 @@ public interface Op {
 					    jvm: putfield        %s %s
 					                         .%s""".formatted(type, owner, name));
 		}
-		em.mv.visitFieldInsn(Opcodes.PUTFIELD, owner.internalName(), name,
-			type.type().getDescriptor());
+		em.cb.putfield(owner.classDesc(), name, type.classDesc());
 		return (Emitter) em;
 	}
 
@@ -3598,8 +3591,7 @@ public interface Op {
 					    jvm: putstatic       %s %s
 					                         .%s""".formatted(type, owner, name));
 		}
-		em.mv.visitFieldInsn(Opcodes.PUTSTATIC, owner.internalName(), name,
-			type.type().getDescriptor());
+		em.cb.putstatic(owner.classDesc(), name, type.classDesc());
 		return (Emitter) em;
 	}
 
@@ -3636,7 +3628,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: return          %s".formatted(retReq));
 		}
-		em.mv.visitInsn(Opcodes.RETURN);
+		em.cb.return_();
 		return (Emitter) em;
 	}
 
@@ -3657,7 +3649,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: saload");
 		}
-		em.mv.visitInsn(Opcodes.SALOAD);
+		em.cb.saload();
 		return (Emitter) em;
 	}
 
@@ -3680,7 +3672,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: sastore");
 		}
-		em.mv.visitInsn(Opcodes.SASTORE);
+		em.cb.sastore();
 		return (Emitter) em;
 	}
 
@@ -3702,7 +3694,7 @@ public interface Op {
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: swap");
 		}
-		em.mv.visitInsn(Opcodes.SWAP);
+		em.cb.swap();
 		return (Emitter) em;
 	}
 
@@ -3721,7 +3713,6 @@ public interface Op {
 		N1 extends Next,
 		N0 extends Ent<N1, TInt>>
 			Emitter<Dead> tableswitch(Emitter<N0> em, int low, Lbl<N1> dflt, List<Lbl<N1>> cases) {
-		int high = low + cases.size() - 1; // inclusive
 		if (DEEP_TRACE) {
 			System.err.println("    jvm: tableswitch     default=%s cases=[".formatted(dflt));
 			for (int i = 0; i < cases.size(); i++) {
@@ -3729,8 +3720,11 @@ public interface Op {
 			}
 			System.err.println("         ]");
 		}
-		em.mv.visitTableSwitchInsn(low, high, dflt.label(),
-			cases.stream().map(Lbl::label).toArray(Label[]::new));
+		List<SwitchCase> switchCases = new ArrayList<>();
+		for (int i = 0; i < cases.size(); i++) {
+			switchCases.add(SwitchCase.of(low + i, cases.get(i).label()));
+		}
+		em.cb.tableswitch(dflt.label(), switchCases);
 		return (Emitter) em;
 	}
 }

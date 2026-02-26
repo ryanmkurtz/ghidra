@@ -15,7 +15,7 @@
  */
 package ghidra.pcode.emu.jit.gen;
 
-import static ghidra.lifecycle.Unfinished.TODO;
+import static ghidra.lifecycle.Unfinished.*;
 import static org.junit.Assert.*;
 
 import java.util.List;

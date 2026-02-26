@@ -214,7 +214,7 @@ public enum BranchOpGen implements OpGen<JitBranchOp> {
 				Local<TRef<THIS>> localThis, RetReq<TRef<EntryPoint>> retReq,
 				JitCodeGenerator<THIS> gen, JitOp op, RIntBranch branch, JitBlock block) {
 			BlockFlow flow = block.flowsFrom().get(branch);
-			Lbl<Bot> label = gen.labelForBlock(flow.to());
+			Lbl<Bot> label = gen.labelForBlock(flow.to(), em);
 			return em
 					.emit(VarGen.computeBlockTransition(localThis, gen, flow)::genFwd)
 					.emit(Op::goto_, label);

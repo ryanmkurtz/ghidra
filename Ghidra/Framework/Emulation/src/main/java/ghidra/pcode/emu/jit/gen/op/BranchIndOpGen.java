@@ -120,7 +120,7 @@ public enum BranchIndOpGen implements OpGen<JitBranchIndOp> {
 				Local<TLong> localTarget = ss.decl(Types.T_LONG, "target");
 				PcGen missGen = PcGen.loadLocal(localTarget);
 				BlockFlow flow = block.flowsFrom().get(branch);
-				Lbl<Bot> intTargetLabel = gen.labelForBlock(flow.to());
+				Lbl<Bot> intTargetLabel = gen.labelForBlock(flow.to(), em);
 				var lblHit = em
 						.emit(targetGen::gen)
 						.emit(Op::lstore, localTarget)

@@ -311,8 +311,8 @@ public enum CallOtherOpGen implements OpGen<JitCallOtherOpIf> {
 			}
 		};
 
-		var tryCatchBlock = Misc.tryCatch(em, Lbl.create(),
-			gen.requestExceptionHandler((DecodedPcodeOp) op.op(), block).lbl(),
+		var tryCatchBlock = Misc.tryCatch(em, Lbl.create(em),
+			gen.requestExceptionHandler((DecodedPcodeOp) op.op(), block, em).lbl(),
 			GenConsts.T_THROWABLE);
 		em = tryCatchBlock.em();
 

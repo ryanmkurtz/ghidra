@@ -18,13 +18,15 @@ package ghidra.app.plugin.core.datamgr.util;
 import java.util.*;
 
 import generic.jar.ResourceFile;
-import ghidra.app.plugin.core.analysis.rust.RustConstants;
 import ghidra.app.plugin.core.datamgr.archive.DataTypeManagerHandler;
 import ghidra.app.util.opinion.*;
+import ghidra.app.util.sourcelanguage.*;
 import ghidra.framework.Application;
 import ghidra.program.model.data.FileDataTypeManager;
 import ghidra.program.model.listing.Program;
 import ghidra.util.Msg;
+import ghidra.util.exception.CancelledException;
+import ghidra.util.task.TaskMonitor;
 
 public class DataTypeArchiveUtility {
 
@@ -143,8 +145,17 @@ public class DataTypeArchiveUtility {
 			list.add("generic_clib");
 		}
 
-		if (program.getCompiler().contains(RustConstants.RUST_COMPILER)) {
-			list.add("rust-common");
+		try {
+			for (SourceLanguage lang : SourceLanguageService.getSourceLanguages(program,
+				TaskMonitor.DUMMY)) {
+				for (SourceLanguageDataArchive archive : SourceLanguageService
+						.getSourceLanguageDataArchives(lang.getName())) {
+					list.addAll(archive.getDataArchives(program));
+				}
+			}
+		}
+		catch (CancelledException e) {
+			// do nothing
 		}
 
 		return list;

@@ -15,8 +15,8 @@
  */
 package ghidra.app.plugin.core.analysis.rust.demangler;
 
-import ghidra.app.plugin.core.analysis.rust.RustUtilities;
 import ghidra.app.util.demangler.*;
+import ghidra.app.util.sourcelanguage.RustSourceLanguageUtils;
 import ghidra.program.model.lang.CompilerSpec;
 import ghidra.program.model.listing.Program;
 
@@ -36,7 +36,8 @@ public class RustDemangler implements Demangler {
 
 	@Override
 	public boolean canDemangle(Program program) {
-		return RustUtilities.isRustProgram(program);
+		String name = program.getCompiler();
+		return name != null && name.contains(RustSourceLanguageUtils.RUST_SOURCE_LANGUAGE_NAME);
 	}
 
 	@Override

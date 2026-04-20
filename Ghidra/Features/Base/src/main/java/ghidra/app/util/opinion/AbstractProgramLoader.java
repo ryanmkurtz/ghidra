@@ -25,6 +25,8 @@ import ghidra.app.util.Option;
 import ghidra.app.util.OptionUtils;
 import ghidra.app.util.bin.ByteProvider;
 import ghidra.app.util.importer.MessageLog;
+import ghidra.app.util.sourcelanguage.SourceLanguage;
+import ghidra.app.util.sourcelanguage.SourceLanguageService;
 import ghidra.formats.gfilesystem.FSRL;
 import ghidra.framework.model.DomainObject;
 import ghidra.framework.store.LockException;
@@ -106,6 +108,7 @@ public abstract class AbstractProgramLoader implements Loader {
 				Program program = loadedProgram.getDomainObject(this);
 				try {
 					applyProcessorLabels(settings.options(), program);
+					setSourceLanguage(program, settings.log(), settings.monitor());
 					program.setEventsEnabled(true);
 				}
 				finally {
@@ -485,6 +488,32 @@ public abstract class AbstractProgramLoader implements Loader {
 			}
 
 			GhidraProgramUtilities.resetAnalysisFlags(program);
+		}
+		finally {
+			program.endTransaction(id, true);
+		}
+	}
+
+	protected void setSourceLanguage(Program program, MessageLog log, TaskMonitor monitor)
+			throws CancelledException {
+		int id = program.startTransaction("Set source languages");
+		try {
+			for (SourceLanguage lang : SourceLanguageService.getSourceLanguages(program, monitor)) {
+				program.setCompiler(lang.getName()); // TODO: this is currently wrong for Rust (rustc)
+
+				String name = lang.getName();
+				try {
+					int count =
+						SourceLanguageService.addSpecExtensions(program, lang, log, monitor);
+					if (count > 0) {
+						log.appendMsg("%s: installed %d %s SpecExtensions"
+								.formatted(program.getName(), count, name));
+					}
+				}
+				catch (IOException e) {
+					log.appendMsg("%s error - %s".formatted(name, e.getMessage()));
+				}
+			}
 		}
 		finally {
 			program.endTransaction(id, true);

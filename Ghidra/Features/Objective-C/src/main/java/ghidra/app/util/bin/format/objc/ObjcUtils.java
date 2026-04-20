@@ -15,32 +15,25 @@
  */
 package ghidra.app.util.bin.format.objc;
 
-import java.io.*;
+import java.io.IOException;
 import java.math.BigInteger;
 import java.util.*;
 
-import org.xml.sax.SAXException;
-
-import generic.jar.ResourceFile;
 import ghidra.app.cmd.data.CreateDataCmd;
 import ghidra.app.cmd.disassemble.DisassembleCommand;
 import ghidra.app.cmd.function.CreateFunctionCmd;
 import ghidra.app.cmd.register.SetRegisterCmd;
-import ghidra.app.plugin.processors.sleigh.SleighException;
 import ghidra.app.util.bin.BinaryReader;
 import ghidra.app.util.bin.format.objc.objc2.Objc2Constants;
 import ghidra.app.util.importer.MessageLog;
-import ghidra.framework.Application;
 import ghidra.framework.cmd.BackgroundCommand;
 import ghidra.framework.cmd.Command;
-import ghidra.framework.store.LockException;
-import ghidra.program.database.SpecExtension;
-import ghidra.program.database.SpecExtension.DocInfo;
 import ghidra.program.database.symbol.ClassSymbol;
 import ghidra.program.model.address.*;
 import ghidra.program.model.data.*;
 import ghidra.program.model.data.DataUtilities.ClearDataMode;
-import ghidra.program.model.lang.*;
+import ghidra.program.model.lang.Processor;
+import ghidra.program.model.lang.Register;
 import ghidra.program.model.listing.Data;
 import ghidra.program.model.listing.Program;
 import ghidra.program.model.mem.Memory;
@@ -51,7 +44,6 @@ import ghidra.util.Msg;
 import ghidra.util.exception.DuplicateNameException;
 import ghidra.util.exception.InvalidInputException;
 import ghidra.util.task.TaskMonitor;
-import ghidra.xml.XmlParseException;
 
 /**
  * Objective-C utilities
@@ -445,57 +437,5 @@ public final class ObjcUtils {
 			return name.substring(ObjcUtils.OBJC_META_CLASS_SYMBOL_PREFIX.length());
 		}
 		return name;
-	}
-
-	/**
-	 * Adds Objective-C processor extensions to the {@link Program}, which include:
-	 * <ul>
-	 * <li>A special calling convention used by objc_msgSend stubs</li>
-	 * <li>Call fixups to clear out a lot of Objective-C Automatic Reference Counting (ARC) clutter</li>
-	 * </ul>
-	 * 
-	 * @param program The {@link Program} to add the extensions to
-	 * @param monitor A cancelable task monitor
-	 * @return The number of extensions successfully added
-	 * @throws IOException if an IO-related error occurred
-	 * @see <a href="https://doi.org/10.1109/STATIC66697.2025.00005">Heros in Action: Analyzing Objective-C Binaries through Decompilation and IFDS</a>
-	 * @see <a href="https://youtu.be/ojXI7Gio8Pg?si=zcAaZ2KGeBFcAabn">RE//verse 2025: Langs Beyond The C</a>
-	 */
-	public static int addExtensions(Program program, TaskMonitor monitor) throws IOException {
-		Language language = program.getLanguageCompilerSpecPair().getLanguage();
-		Processor processor = language.getProcessor();
-		String spath = "extensions/" + OBJC_COMPILER;
-
-		int extensionCount = 0;
-
-		try {
-			ResourceFile module =
-				Application.getModuleDataSubDirectory(processor.toString(), spath);
-			ResourceFile[] files = module.listFiles();
-			if (files != null) {
-				for (ResourceFile file : files) {
-					InputStream stream = file.getInputStream();
-					byte[] bytes = stream.readAllBytes();
-					String xml = new String(bytes);
-					try {
-						SpecExtension extension = new SpecExtension(program);
-						DocInfo docInfo = extension.testExtensionDocument(xml);
-						if (SpecExtension.getCompilerSpecExtension(program, docInfo) == null) {
-							extension.addReplaceCompilerSpecExtension(xml, monitor);
-							extensionCount++;
-						}
-					}
-					catch (SleighException | SAXException | XmlParseException | LockException e) {
-						Msg.error(ObjcUtils.class,
-							"Failed to load Objective-C cspec extension: " + file, e);
-					}
-				}
-			}
-		}
-		catch (FileNotFoundException e) {
-			// fall thru
-		}
-
-		return extensionCount;
 	}
 }

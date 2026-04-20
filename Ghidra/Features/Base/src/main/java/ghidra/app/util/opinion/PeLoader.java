@@ -23,8 +23,6 @@ import org.apache.commons.io.FilenameUtils;
 
 import com.google.common.primitives.Bytes;
 
-import ghidra.app.plugin.core.analysis.rust.RustConstants;
-import ghidra.app.plugin.core.analysis.rust.RustUtilities;
 import ghidra.app.util.MemoryBlockUtils;
 import ghidra.app.util.Option;
 import ghidra.app.util.bin.BinaryReader;
@@ -925,7 +923,6 @@ public class PeLoader extends AbstractPeDebugLoader {
 			BorlandCpp("borland:c++", "borlandcpp"),
 			BorlandUnk("borland:unknown", "borlandcpp"),
 			CLI("cli", "cli"),
-			Rustc(RustConstants.RUST_COMPILER, RustConstants.RUST_COMPILER),
 			GOLANG("golang", "golang"),
 			Swift(SwiftUtils.SWIFT_COMPILER, SwiftUtils.SWIFT_COMPILER),
 			Unknown("unknown", "unknown"),
@@ -980,25 +977,6 @@ public class PeLoader extends AbstractPeDebugLoader {
 			BinaryReader br = new BinaryReader(provider, true);
 
 			DOSHeader dh = pe.getDOSHeader();
-
-			// Check for Rust.  Program object is required, which may be null.
-			try {
-				if (program != null && RustUtilities.isRust(program,
-					program.getMemory().getBlock(".rdata"), monitor)) {
-					try {
-						int extensionCount = RustUtilities.addExtensions(program, monitor,
-							RustConstants.RUST_EXTENSIONS_WINDOWS);
-						log.appendMsg("Installed " + extensionCount + " Rust cspec extensions");
-					}
-					catch (IOException e) {
-						log.appendMsg("Rust error: " + e.getMessage());
-					}
-					return CompilerEnum.Rustc;
-				}
-			}
-			catch (CancelledException e) {
-				// Move on
-			}
 
 			// Check for Swift
 			List<String> sectionNames =

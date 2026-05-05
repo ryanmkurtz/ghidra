@@ -66,6 +66,8 @@ allprojects {
 	tasks.withType(JavaForkOptions) {
 		jvmArgs '-Djava.awt.headless=true'
 	}
+	
+	dependencyLocking { lockAllConfigurations() }
 }
 
 /*********************************************************************************

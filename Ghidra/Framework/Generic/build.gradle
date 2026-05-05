@@ -48,7 +48,7 @@ dependencies {
 	api "org.bouncycastle:bcutil-jdk18on:1.84"
 
 	compileOnly "junit:junit:4.13.2"
-	compileOnly "org.hamcrest:hamcrest:2.2"
+	compileOnly "org.hamcrest:hamcrest:3.0"
 
 	constraints {
 		api("com.google.guava:guava") {

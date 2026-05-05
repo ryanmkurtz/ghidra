@@ -7,6 +7,6 @@ version: 2
 updates:
   - package-ecosystem: "gradle" # See documentation for possible values
     directories:
-      - "/Ghidra/Features/*"
+      - "**/*"
     schedule:
       interval: "daily"

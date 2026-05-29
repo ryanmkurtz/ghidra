@@ -647,12 +647,6 @@ task assembleAll() {
 	dependsOn assembleMarkdownToHtml
 	dependsOn "assembleDistribution_$currentPlatform"
 
-	if (project.hasProperty("allPlatforms")) {
-		project.PLATFORMS.each { platform ->
-			dependsOn ":assembleDistribution_${platform.name}"
-		}
-	}
-
 	doFirst {
 		// We always want the extensions directory to exist in the zip, even if there's nothing
 		// installed there.
@@ -681,12 +675,8 @@ task createInstallationZip(type: Zip) { t ->
 
 	dependsOn assembleAll
 
-	if (project.hasProperty("allPlatforms")) {
-		archiveFileName = "${ZIP_NAME_PREFIX}.zip"
-	}
-	else {
-		archiveFileName = "${ZIP_NAME_PREFIX}_${currentPlatform}.zip"
-	}
+	archiveFileName = "${ZIP_NAME_PREFIX}.zip"
+
 	destinationDirectory = DISTRIBUTION_DIR
 
 	// Make sure that we don't try to copy the same file with the same path.

@@ -70,9 +70,9 @@ task yajswDevUnpack(type:Copy) {
  * The basic conops is this:
  *		1. Loop over each lib in the runGhidraServer configuration.
  *		2. For each, find the location of that library in our distribution.
- *			a. 	Search the artifacts in the parent project (GhidraServer)
- *			b. 	If not found, loop over all dependent projects, searching their
- *				artifacts.
+ *			a. 	If it is the GhidraServer jar, it lives in the GhidraServer's lib
+ *			b. 	Otherwise, search GhidraServer's runtimeClasspath, recursing into
+ *				the runtimeClasspath of each dependent project.
  *		3. Put the path in the output file.
  *********************************************************************************/
 task generateGhidraServerClasspath {
@@ -90,16 +90,19 @@ task generateGhidraServerClasspath {
 		outfile.parentFile.mkdirs()
 		outfile.withPrintWriter { out ->
 			int idx = 0
-			configurations.runGhidraServer.each { jarFile ->	
-				File distPath = file("/")
+			File projectJar = p.tasks.jar.archiveFile.get().asFile
+			configurations.runGhidraServer.each { jarFile ->
 				String resPath
-				for (Configuration conf : p.getConfigurations()) {
-					resPath = findJarInDistribution(p, conf, jarFile)
-					if (resPath != null) {
-						out.println("wrapper.java.classpath.${++idx}=\${ghidra_home}/${resPath}")
-						break
-					}
-				}						
+				// The GhidraServer jar itself is not on its own runtime classpath
+				if (jarFile.equals(projectJar)) {
+					resPath = rootProject.relativePath(p.projectDir) + "/lib/" + jarFile.name
+				}
+				else {
+					resPath = findJarInDistribution(p, p.configurations.runtimeClasspath, jarFile)
+				}
+				if (resPath != null) {
+					out.println("wrapper.java.classpath.${++idx}=\${ghidra_home}/${resPath}")
+				}
 			}
 		}
 	}

@@ -24,7 +24,7 @@ eclipse.project.name = 'Xtra SymbolicSummaryZ3'
 dependencies {
 	api project(':Debugger')
 	api project(':SystemEmulation')
-	api ":com.microsoft.z3:"
+	api "com.microsoft:z3:4.13.0"
 
 	// Oof. Apparently, this doesn't work transitively....
 	testImplementation project(path: ':Generic', configuration: 'testArtifacts')

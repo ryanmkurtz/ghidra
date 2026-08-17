@@ -49,7 +49,6 @@ ext.REPO_DIR = ((Script)this).buildscript.getSourceFile().getParentFile().getPar
 ext.DEPS_DIR = file("${REPO_DIR}/dependencies")
 ext.DOWNLOADS_DIR = file("${DEPS_DIR}/downloads")
 ext.FID_DIR = file("${DEPS_DIR}/fidb")
-ext.FLAT_REPO_DIR = file("${DEPS_DIR}/flatRepo")
 ext.OFFLINE = System.properties["offline"] != null
 ext.HIDE_DOWNLOAD_PROGRESS = System.properties["hideDownloadProgress"] != null
 ext.NO_ECLIPSE = System.properties["noEclipse"] != null
@@ -73,22 +72,10 @@ ext.Z3_X64_GLIBC_VER = "2.31"
 
 ext.deps = [
 	[
-		name: "java-sarif-2.1-modified.jar",
-		url: "https://github.com/NationalSecurityAgency/ghidra-data/raw/Ghidra_${RELEASE_VERSION}/lib/java-sarif-2.1-modified.jar",
-		sha256: "7f736566494756d271aa5e4b1af6c89dc50d074ab1c6374a47df822264226b01",
-		destination: FLAT_REPO_DIR
-	],
-	[
 		name: "dbgmodel.tlb",
 		url: "https://github.com/NationalSecurityAgency/ghidra-data/raw/Ghidra_${RELEASE_VERSION}/Debugger/dbgmodel.tlb",
 		sha256: "8cf5f3a2eb81160aa349056a5ca4c2c726b1b6e98bf3097cd4135147163343c7",
 		destination: file("${DEPS_DIR}/Debugger-agent-dbgeng/")
-	],
-	[
-		name: "AXMLPrinter2.jar",
-		url: "https://storage.googleapis.com/google-code-archive-downloads/v2/code.google.com/android4me/AXMLPrinter2.jar",
-		sha256: "00ed038eb6abaf6ddec8d202a3ed7a81b521458f4cd459948115cfd02ff59d6d",
-		destination: FLAT_REPO_DIR
 	],
 	[
 		name: "yajsw-stable-13.18.zip",
@@ -177,14 +164,12 @@ ext.deps = [
 		destination: FID_DIR
 	],
 	[
-		name: "z3-${Z3_VER}-x64-glibc-${Z3_X64_GLIBC_VER}.zip", // Linux on 64-bit Intel (use this one for the Java jar)
+		name: "z3-${Z3_VER}-x64-glibc-${Z3_X64_GLIBC_VER}.zip", // Linux on 64-bit Intel
 		url: "https://github.com/Z3Prover/z3/releases/download/z3-${Z3_VER}/z3-${Z3_VER}-x64-glibc-${Z3_X64_GLIBC_VER}.zip",
 		sha256: "bc31ad12446d7db1bd9d0ac82dec9d7b5129b8b8dd6e44b571a83ac6010d2f9b",
 		destination: {
-			def name = "z3-${Z3_VER}-x64-glibc-${Z3_X64_GLIBC_VER}"
-			unzip(DOWNLOADS_DIR, DOWNLOADS_DIR, "${name}.zip")
-			copyDirectory(new File(DOWNLOADS_DIR, "${name}/bin/"), file("${DEPS_DIR}/SymbolicSummaryZ3/os/linux_x86_64"), new WildcardFileFilter("libz3*.so"))
-			copyDirectory(new File(DOWNLOADS_DIR, "${name}/bin/"), FLAT_REPO_DIR, new WildcardFileFilter("*.jar"))
+			unzip(DOWNLOADS_DIR, DOWNLOADS_DIR, "z3-${Z3_VER}-x64-glibc-${Z3_X64_GLIBC_VER}.zip")
+			copyDirectory(new File(DOWNLOADS_DIR, "z3-${Z3_VER}-x64-glibc-${Z3_X64_GLIBC_VER}/bin/"), file("${DEPS_DIR}/SymbolicSummaryZ3/os/linux_x86_64"), new WildcardFileFilter("libz3*.so"))
 		}
 	],
 	[

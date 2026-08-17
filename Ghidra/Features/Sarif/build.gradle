@@ -26,5 +26,5 @@ dependencies {
 	api project(':Base')
 	api project(':Debugger-isf')
 	//api "javax.activation:activation-1.1.1"
-	api "com.contrastsecurity.sarif:java-sarif-2.1-modified"
+	api "com.contrastsecurity:java-sarif:2.1-modified"
 }

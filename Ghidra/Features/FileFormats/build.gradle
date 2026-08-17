@@ -49,7 +49,7 @@ dependencies {
 	api 'org.smali:util:2.5.2'     // requires guava-27.1-android or later
 
 	// Used by "Android XML" file system
-	api ':AXMLPrinter2'
+	api 'com.google.code.android4me:axmlprinter2:1.0'
 
 	// Used by Zip file system
 	api 'net.lingala.zip4j:zip4j:2.11.6'

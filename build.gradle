@@ -86,15 +86,16 @@ allprojects {
 /*********************************************************************************
  *  Use flat directory-style repository if flatRepo directory is present.
  *********************************************************************************/
-def flatRepo = file("${DEPS_DIR}/flatRepo") 
-if (flatRepo.isDirectory()) {
+if (DEPS_DIR.isDirectory()) {
 	allprojects {
 		repositories {
 			mavenLocal()
 			mavenCentral()
-			flatDir {
-				name = "flat"
-				dirs flatRepo
+			maven {
+				url = uri("https://github.com/NationalSecurityAgency/ghidra-data/raw/maven/maven")
+				metadataSources() {
+					artifact() // allowing missing POM files
+				}
 			}
 		}
 	}
@@ -102,8 +103,8 @@ if (flatRepo.isDirectory()) {
 else {
 	File f = file("ghidra.repos.config")
 	if (!f.exists()) {
-		throw new GradleException("\n\n\n\tUnable to find the local maven repo." +
-			"  Ensure you have created the ${flatRepo.getName()} directory or ${f.getName()} file.\n\n\n");
+		throw new GradleException("\nUnable to find the 'dependencies/' directory.\n\n" +  
+			"Run './gradlew(.bat) -I gradle/support/fetchDependencies.gradle'.\n");
 	}
 }
 

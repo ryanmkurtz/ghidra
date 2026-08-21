@@ -1,0 +1,52 @@
+name: Ghidra Build (All Platforms)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        platform: [ubuntu-latest, macos-latest, windows-latest]
+
+    runs-on: ${{ matrix.platform }}
+    steps:
+
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Read Ghidra JDK Version
+        run: echo "JDK_VER=$(awk -F'=' '$1=="application.java.min" {print $2}' Ghidra/application.properties)" >> $GITHUB_ENV 
+
+      - name: Setup JDK
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: '${{ env.JDK_VER }}'
+
+      - name: Fetch Dependencies
+        run: ./gradlew -I gradle/support/fetchDependencies.gradle -DhideDownloadProgress -DnoEclipse
+
+      - name: Build Ghidra
+        run: ./gradlew buildGhidra --parallel
+
+      - name: Upload Linux Release
+        uses: actions/upload-artifact@v7
+        if: matrix.platform == 'ubuntu-latest'
+        with:
+          name: ghidra-linux
+          path: build/dist/ghidra_*_linux_*.zip
+
+      - name: Upload Windows Release
+        uses: actions/upload-artifact@v7
+        if: matrix.platform == 'windows-latest'
+        with:
+          name: ghidra-windows
+          path: build/dist/ghidra_*_win_*.zip
+
+      - name: Upload macOS Release
+        uses: actions/upload-artifact@v7      
+        if: matrix.platform == 'macos-latest'
+        with:
+          name: ghidra-macos
+          path: build/dist/ghidra_*_mac_*.zip

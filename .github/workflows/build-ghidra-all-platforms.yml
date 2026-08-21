@@ -16,6 +16,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Read Ghidra JDK Version
+	    shell: bash
         run: echo "JDK_VER=$(awk -F'=' '$1=="application.java.min" {print $2}' Ghidra/application.properties)" >> $GITHUB_ENV 
 
       - name: Setup JDK

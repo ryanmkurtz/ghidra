@@ -36,18 +36,18 @@ jobs:
         if: matrix.platform == 'ubuntu-latest'
         with:
           name: ghidra-linux
-          path: build/dist/ghidra_*_linux_*.zip
+          path: build/dist/ghidra_*.zip
 
       - name: Upload Windows Release
         uses: actions/upload-artifact@v7
         if: matrix.platform == 'windows-latest'
         with:
           name: ghidra-windows
-          path: build/dist/ghidra_*_win_*.zip
+          path: build/dist/ghidra_*.zip
 
       - name: Upload macOS Release
         uses: actions/upload-artifact@v7      
         if: matrix.platform == 'macos-latest'
         with:
           name: ghidra-macos
-          path: build/dist/ghidra_*_mac_*.zip
+          path: build/dist/ghidra_*.zip

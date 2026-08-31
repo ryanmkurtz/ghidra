@@ -1799,15 +1799,17 @@ bool SplitFlow::addOp(PcodeOp *op,TransformVar *rvn,int4 slot)
   if (outvn->getDef() != (TransformOp *)0)
     return true;	// Already traversed
 
-  TransformOp *loOp = newOpReplace(op->numInput(), op->code(), op);
-  TransformOp *hiOp = newOpReplace(op->numInput(), op->code(), op);
+  TransformOp *loOp;
+  TransformOp *hiOp;
   int4 numParam = op->numInput();
   if (op->code() == CPUI_INDIRECT) {
-    opSetInput(loOp,newIop(op->getIn(1)),1);
-    opSetInput(hiOp,newIop(op->getIn(1)),1);
-    loOp->inheritIndirect(op);
-    hiOp->inheritIndirect(op);
+    loOp = newIndirectReplace(op);
+    hiOp = newIndirectReplace(op);
     numParam = 1;
+  }
+  else {
+    loOp = newOpReplace(op->numInput(), op->code(), op);
+    hiOp = newOpReplace(op->numInput(), op->code(), op);
   }
   for(int4 i=0;i<numParam;++i) {
     TransformVar *invn;
@@ -3716,11 +3718,9 @@ bool LaneDivide::buildIndirect(PcodeOp *op,TransformVar *outVars,int4 numLanes,i
   TransformVar *inVn = setReplacement(op->getIn(0), numLanes, skipLanes);
   if (inVn == (TransformVar *)0) return false;
   for(int4 i=0;i<numLanes;++i) {
-    TransformOp *rop = newOpReplace(2, CPUI_INDIRECT, op);
+    TransformOp *rop = newIndirectReplace(op);
     opSetOutput(rop, outVars + i);
     opSetInput(rop,inVn + i, 0);
-    opSetInput(rop,newIop(op->getIn(1)),1);
-    rop->inheritIndirect(op);
   }
   return true;
 }

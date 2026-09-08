@@ -622,7 +622,6 @@ ParamListStandard::~ParamListStandard(void)
 
 /// \param tiles will contain the set of matching entries
 /// \param type is the storage class
-/// \return the first matching iterator
 void ParamListStandard::extractTiles(vector<const ParamEntry *> &tiles,type_class type) const
 
 {
@@ -4997,7 +4996,6 @@ int4 FuncCallSpecs::transferLockedInputParam(ProtoParameter *param)
 ///    - The Varnode properly contains the parameter
 /// \param param is the given paramter (return value)
 /// \param newoutput will hold any overlapping output Varnodes
-/// \return the matching PcodeOp or NULL
 void FuncCallSpecs::transferLockedOutputParam(ProtoParameter *param,vector<Varnode *> &newoutput)
 
 {

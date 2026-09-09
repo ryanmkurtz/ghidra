@@ -15,12 +15,11 @@
  */
 package ghidra.pcode.emu.jit.gen.tgt;
 
+import java.lang.classfile.CodeBuilder;
 import java.math.BigInteger;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-
-import org.objectweb.asm.Opcodes;
 
 import ghidra.pcode.emu.jit.JitCompiler;
 import ghidra.pcode.emu.jit.JitPassage.*;
@@ -1176,7 +1175,7 @@ public interface JitCompiledPassage {
 	/**
 	 * The implementation of {@link PcodeOp#INT_LEFT int_left} on multi-precision ints.
 	 * <p>
-	 * The semantics here are subtly different than the JVM's {@link Opcodes#ISHL ishl}: 1) The
+	 * The semantics here are subtly different than the JVM's {@link CodeBuilder#ishl ishl}: 1) The
 	 * amount must be treated as unsigned. 2) Shifts in excess of val's size clear the register.
 	 * 
 	 * @param out the array to receive the output, in little-endian order
@@ -1202,7 +1201,7 @@ public interface JitCompiledPassage {
 	 * The implementation of {@link PcodeOp#INT_LEFT int_left} on an mp-int with a JVM long shift
 	 * amount.
 	 * <p>
-	 * The semantics here are subtly different than the JVM's {@link Opcodes#ISHL ishl}: 1) The
+	 * The semantics here are subtly different than the JVM's {@link CodeBuilder#ishl ishl}: 1) The
 	 * amount must be treated as unsigned. 2) Shifts in excess of val's size clear the register.
 	 * 
 	 * @param out the array to receive the output, in little-endian order
@@ -1222,7 +1221,7 @@ public interface JitCompiledPassage {
 	 * The implementation of {@link PcodeOp#INT_LEFT int_left} on an mp-int with a JVM int shift
 	 * amount.
 	 * <p>
-	 * The semantics here are subtly different than the JVM's {@link Opcodes#ISHL ishl}: 1) The
+	 * The semantics here are subtly different than the JVM's {@link CodeBuilder#ishl ishl}: 1) The
 	 * amount must be treated as unsigned. 2) Shifts in excess of val's size clear the register.
 	 * 
 	 * @param out the array to receive the output, in little-endian order
@@ -1242,7 +1241,7 @@ public interface JitCompiledPassage {
 	 * The implementation of {@link PcodeOp#INT_LEFT int_left} on a JVM long with an mp-int shift
 	 * amount.
 	 * <p>
-	 * The semantics here are subtly different than the JVM's {@link Opcodes#ISHL ishl}: 1) The
+	 * The semantics here are subtly different than the JVM's {@link CodeBuilder#ishl ishl}: 1) The
 	 * amount must be treated as unsigned. 2) Shifts in excess of val's size clear the register.
 	 * 
 	 * @param val the value as in {@code val << amt}
@@ -1264,7 +1263,7 @@ public interface JitCompiledPassage {
 	/**
 	 * The implementation of {@link PcodeOp#INT_LEFT int_left} on JVM longs.
 	 * <p>
-	 * The semantics here are subtly different than the JVM's {@link Opcodes#ISHL ishl}: 1) The
+	 * The semantics here are subtly different than the JVM's {@link CodeBuilder#ishl ishl}: 1) The
 	 * amount must be treated as unsigned. 2) Shifts in excess of val's size clear the register.
 	 * 
 	 * @param val the value as in {@code val << amt}
@@ -1281,7 +1280,7 @@ public interface JitCompiledPassage {
 	/**
 	 * The implementation of {@link PcodeOp#INT_LEFT int_left} on JVM long with int amt.
 	 * <p>
-	 * The semantics here are subtly different than the JVM's {@link Opcodes#ISHL ishl}: 1) The
+	 * The semantics here are subtly different than the JVM's {@link CodeBuilder#ishl ishl}: 1) The
 	 * amount must be treated as unsigned. 2) Shifts in excess of val's size clear the register.
 	 * 
 	 * @param val the value as in {@code val << amt}
@@ -1299,7 +1298,7 @@ public interface JitCompiledPassage {
 	 * The implementation of {@link PcodeOp#INT_LEFT int_left} on a JVM int with an mp-int shift
 	 * amount.
 	 * <p>
-	 * The semantics here are subtly different than the JVM's {@link Opcodes#ISHL ishl}: 1) The
+	 * The semantics here are subtly different than the JVM's {@link CodeBuilder#ishl ishl}: 1) The
 	 * amount must be treated as unsigned. 2) Shifts in excess of val's size clear the register.
 	 * 
 	 * @param val the value as in {@code val << amt}
@@ -1321,7 +1320,7 @@ public interface JitCompiledPassage {
 	/**
 	 * The implementation of {@link PcodeOp#INT_LEFT int_left} on JVM int with long amt.
 	 * <p>
-	 * The semantics here are subtly different than the JVM's {@link Opcodes#ISHL ishl}: 1) The
+	 * The semantics here are subtly different than the JVM's {@link CodeBuilder#ishl ishl}: 1) The
 	 * amount must be treated as unsigned. 2) Shifts in excess of val's size clear the register.
 	 * 
 	 * @param val the value as in {@code val << amt}
@@ -1338,7 +1337,7 @@ public interface JitCompiledPassage {
 	/**
 	 * The implementation of {@link PcodeOp#INT_LEFT int_left} on JVM ints.
 	 * <p>
-	 * The semantics here are subtly different than the JVM's {@link Opcodes#ISHL ishl}: 1) The
+	 * The semantics here are subtly different than the JVM's {@link CodeBuilder#ishl ishl}: 1) The
 	 * amount must be treated as unsigned. 2) Shifts in excess of val's size clear the register.
 	 * 
 	 * @param val the value as in {@code val << amt}
@@ -1355,8 +1354,8 @@ public interface JitCompiledPassage {
 	/**
 	 * The implementation of {@link PcodeOp#INT_RIGHT int_right} on multi-precision ints.
 	 * <p>
-	 * The semantics here are subtly different than the JVM's {@link Opcodes#IUSHR iushr}: 1) The
-	 * amount must be treated as unsigned. 2) Shifts in excess of val's size clear the register.
+	 * The semantics here are subtly different than the JVM's {@link CodeBuilder#iushr iushr}: 1)
+	 * The amount must be treated as unsigned. 2) Shifts in excess of val's size clear the register.
 	 * 
 	 * @param out the array to receive the output, in little-endian order
 	 * @param outBytes the actual size in bytes of the output operand
@@ -1381,8 +1380,8 @@ public interface JitCompiledPassage {
 	 * The implementation of {@link PcodeOp#INT_RIGHT int_right} on an mp-int with a JVM long shift
 	 * amount.
 	 * <p>
-	 * The semantics here are subtly different than the JVM's {@link Opcodes#IUSHR iushr}: 1) The
-	 * amount must be treated as unsigned. 2) Shifts in excess of val's size clear the register.
+	 * The semantics here are subtly different than the JVM's {@link CodeBuilder#iushr iushr}: 1)
+	 * The amount must be treated as unsigned. 2) Shifts in excess of val's size clear the register.
 	 * 
 	 * @param out the array to receive the output, in little-endian order
 	 * @param outBytes the actual size in bytes of the output operand
@@ -1401,8 +1400,8 @@ public interface JitCompiledPassage {
 	 * The implementation of {@link PcodeOp#INT_RIGHT int_right} on an mp-int with a JVM int shift
 	 * amount.
 	 * <p>
-	 * The semantics here are subtly different than the JVM's {@link Opcodes#IUSHR iushr}: 1) The
-	 * amount must be treated as unsigned. 2) Shifts in excess of val's size clear the register.
+	 * The semantics here are subtly different than the JVM's {@link CodeBuilder#iushr iushr}: 1)
+	 * The amount must be treated as unsigned. 2) Shifts in excess of val's size clear the register.
 	 * 
 	 * @param out the array to receive the output, in little-endian order
 	 * @param outBytes the actual size in bytes of the output operand
@@ -1421,8 +1420,8 @@ public interface JitCompiledPassage {
 	 * The implementation of {@link PcodeOp#INT_RIGHT int_right} on a JVM long with an mp-int shift
 	 * amount.
 	 * <p>
-	 * The semantics here are subtly different than the JVM's {@link Opcodes#IUSHR iushr}: 1) The
-	 * amount must be treated as unsigned. 2) Shifts in excess of val's size clear the register.
+	 * The semantics here are subtly different than the JVM's {@link CodeBuilder#iushr iushr}: 1)
+	 * The amount must be treated as unsigned. 2) Shifts in excess of val's size clear the register.
 	 * 
 	 * @param val the value as in {@code val >> amt}
 	 * @param amt the amt as in {@code val >> amt}, in little-endian order
@@ -1443,8 +1442,8 @@ public interface JitCompiledPassage {
 	/**
 	 * The implementation of {@link PcodeOp#INT_RIGHT int_right} on JVM longs.
 	 * <p>
-	 * The semantics here are subtly different than the JVM's {@link Opcodes#IUSHR iushr}: 1) The
-	 * amount must be treated as unsigned. 2) Shifts in excess of val's size clear the register.
+	 * The semantics here are subtly different than the JVM's {@link CodeBuilder#iushr iushr}: 1)
+	 * The amount must be treated as unsigned. 2) Shifts in excess of val's size clear the register.
 	 * 
 	 * @param val the value as in {@code val >> amt}
 	 * @param amt the amt as in {@code val >> amt}
@@ -1460,8 +1459,8 @@ public interface JitCompiledPassage {
 	/**
 	 * The implementation of {@link PcodeOp#INT_RIGHT int_right} on JVM long with int amt.
 	 * <p>
-	 * The semantics here are subtly different than the JVM's {@link Opcodes#IUSHR iushr}: 1) The
-	 * amount must be treated as unsigned. 2) Shifts in excess of val's size clear the register.
+	 * The semantics here are subtly different than the JVM's {@link CodeBuilder#iushr iushr}: 1)
+	 * The amount must be treated as unsigned. 2) Shifts in excess of val's size clear the register.
 	 * 
 	 * @param val the value as in {@code val >> amt}
 	 * @param amt the amt as in {@code val >> amt}
@@ -1478,8 +1477,8 @@ public interface JitCompiledPassage {
 	 * The implementation of {@link PcodeOp#INT_RIGHT int_right} on a JVM int with an mp-int shift
 	 * amount.
 	 * <p>
-	 * The semantics here are subtly different than the JVM's {@link Opcodes#IUSHR iushr}: 1) The
-	 * amount must be treated as unsigned. 2) Shifts in excess of val's size clear the register.
+	 * The semantics here are subtly different than the JVM's {@link CodeBuilder#iushr iushr}: 1)
+	 * The amount must be treated as unsigned. 2) Shifts in excess of val's size clear the register.
 	 * 
 	 * @param val the value as in {@code val >> amt}
 	 * @param amt the amt as in {@code val >> amt}, in little-endian order
@@ -1500,8 +1499,8 @@ public interface JitCompiledPassage {
 	/**
 	 * The implementation of {@link PcodeOp#INT_RIGHT int_right} on JVM int with long amt.
 	 * <p>
-	 * The semantics here are subtly different than the JVM's {@link Opcodes#IUSHR iushr}: 1) The
-	 * amount must be treated as unsigned. 2) Shifts in excess of val's size clear the register.
+	 * The semantics here are subtly different than the JVM's {@link CodeBuilder#iushr iushr}: 1)
+	 * The amount must be treated as unsigned. 2) Shifts in excess of val's size clear the register.
 	 * 
 	 * @param val the value as in {@code val >> amt}
 	 * @param amt the amt as in {@code val >> amt}
@@ -1517,8 +1516,8 @@ public interface JitCompiledPassage {
 	/**
 	 * The implementation of {@link PcodeOp#INT_RIGHT int_right} on JVM ints.
 	 * <p>
-	 * The semantics here are subtly different than the JVM's {@link Opcodes#IUSHR iushr}: 1) The
-	 * amount must be treated as unsigned. 2) Shifts in excess of val's size clear the register.
+	 * The semantics here are subtly different than the JVM's {@link CodeBuilder#iushr iushr}: 1)
+	 * The amount must be treated as unsigned. 2) Shifts in excess of val's size clear the register.
 	 * 
 	 * @param val the value as in {@code val >> amt}
 	 * @param amt the amt as in {@code val >> amt}
@@ -1534,7 +1533,7 @@ public interface JitCompiledPassage {
 	/**
 	 * The implementation of {@link PcodeOp#INT_RIGHT int_sright} on multi-precision ints.
 	 * <p>
-	 * The semantics here are subtly different than the JVM's {@link Opcodes#ISHR ishr}: 1) The
+	 * The semantics here are subtly different than the JVM's {@link CodeBuilder#ishr ishr}: 1) The
 	 * amount must be treated as unsigned. 2) Shifts in excess of val's size fill the register with
 	 * the sign bit.
 	 * 
@@ -1561,7 +1560,7 @@ public interface JitCompiledPassage {
 	/**
 	 * The implementation of {@link PcodeOp#INT_SRIGHT int_sright} on JVM longs.
 	 * <p>
-	 * The semantics here are subtly different than the JVM's {@link Opcodes#ISHR ishr}: 1) The
+	 * The semantics here are subtly different than the JVM's {@link CodeBuilder#ishr ishr}: 1) The
 	 * amount must be treated as unsigned. 2) Shifts in excess of val's size fill the register with
 	 * the sign bit.
 	 * 
@@ -1579,7 +1578,7 @@ public interface JitCompiledPassage {
 	/**
 	 * The implementation of {@link PcodeOp#INT_SRIGHT int_sright} on JVM long with int amt.
 	 * <p>
-	 * The semantics here are subtly different than the JVM's {@link Opcodes#ISHR ishr}: 1) The
+	 * The semantics here are subtly different than the JVM's {@link CodeBuilder#ishr ishr}: 1) The
 	 * amount must be treated as unsigned. 2) Shifts in excess of val's size fill the register with
 	 * the sign bit.
 	 * 
@@ -1597,7 +1596,7 @@ public interface JitCompiledPassage {
 	/**
 	 * The implementation of {@link PcodeOp#INT_SRIGHT int_sright} on JVM int with long amt.
 	 * <p>
-	 * The semantics here are subtly different than the JVM's {@link Opcodes#ISHR ishr}: 1) The
+	 * The semantics here are subtly different than the JVM's {@link CodeBuilder#ishr ishr}: 1) The
 	 * amount must be treated as unsigned. 2) Shifts in excess of val's size fill the register with
 	 * the sign bit.
 	 * 
@@ -1615,7 +1614,7 @@ public interface JitCompiledPassage {
 	/**
 	 * The implementation of {@link PcodeOp#INT_SRIGHT int_sright} on JVM ints.
 	 * <p>
-	 * The semantics here are subtly different than the JVM's {@link Opcodes#ISHR ishr}: 1) The
+	 * The semantics here are subtly different than the JVM's {@link CodeBuilder#ishr ishr}: 1) The
 	 * amount must be treated as unsigned. 2) Shifts in excess of val's size fill the register with
 	 * the sign bit.
 	 * 

@@ -16,6 +16,7 @@
 package ghidra.pcode.emu.jit;
 
 import java.lang.invoke.MethodHandles.Lookup;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -23,7 +24,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 import org.apache.commons.lang3.exception.ExceptionUtils;
-import org.objectweb.asm.MethodTooLargeException;
 
 import ghidra.pcode.emu.*;
 import ghidra.pcode.emu.jit.JitPassage.AddrCtx;
@@ -296,7 +296,10 @@ public class JitPcodeEmulator extends PcodeEmulator {
 			try {
 				return compiler.compilePassage(lookup, decoded);
 			}
-			catch (MethodTooLargeException e) {
+			catch (IllegalArgumentException e) {
+				if (!isMethodTooLargeException(e)) {
+					throw e;
+				}
 				Msg.warn(this, "Method too large for " + pcCtx + " with maxOps=" + maxOps +
 					". Retrying with half.");
 				maxOps >>= 1;
@@ -415,5 +418,23 @@ public class JitPcodeEmulator extends PcodeEmulator {
 	@Override
 	public void addAccessBreakpoint(AddressRange range, AccessKind kind) {
 		throw new UnsupportedOperationException();
+	}
+
+	/**
+	 * Check if the given exception is a "method too large" error from the ClassFile API.
+	 *
+	 * @param e the exception to check
+	 * @return true if the exception indicates a method-too-large condition
+	 */
+	private static boolean isMethodTooLargeException(IllegalArgumentException e) {
+		String msg = e.getMessage();
+		if (msg == null) {
+			return false;
+		}
+		// FRAGILE: ClassFile API throws IAE with "too large" for oversized methods.
+		// No typed exception exists (as of JDK 25). Also check stack origin.
+		return msg.toLowerCase().contains("too large")
+			&& Arrays.stream(e.getStackTrace())
+				.anyMatch(f -> f.getClassName().startsWith("java.lang.classfile"));
 	}
 }

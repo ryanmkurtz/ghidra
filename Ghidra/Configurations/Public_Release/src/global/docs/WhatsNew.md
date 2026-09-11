@@ -156,6 +156,29 @@ use are outlined below:
 - [Scoped Values](https://openjdk.org/jeps/506)
 - [Flexible Constructor Bodies](https://openjdk.org/jeps/513)
 
+## Beta support for "Timeless Debugging"
+We've completed several enhancements to the Debugger to better support "timeless" or "time-travel" 
+debugging. This includes a native tool, based on Intel PIN, to capture execution traces in a format 
+based on TENET. This format has a corresponding importer to load it into Ghidra's Debugger for 
+further analysis. Three new UI components are included to aide in that analysis:
+
+1. A breakpoint timeline, which displays hits for each breakpoint, color coded by kind (Execute, 
+   Read, Write). Clicking a colored box navigates to the snapshot of the hit.
+2. A dynamic call tree, which displays the execution history as a series of function calls, each 
+   subroutine displayed as a child of its run-time parent. Call, Returns, and Tail Calls are 
+   displayed, as observed. Clicking an item navigates to the snapshot of the observed call or 
+   return.
+3. A variable viewer, which tabulates all local variables known to the Listing and Decompiler along 
+   with their storage, values, types, and typed-values.
+
+These views can also be used with live Debugger targets, but with some caveats.
+- To record a trace using PIN, see `Ghidra/Debug/Debugger-importers/data/TenetPlusPlus_PinTool`
+- To enable the UI components, use **File &rarr; Configure** from the Debugger tool and open the 
+  Experimental category.
+- To import the Trace, use **File &rarr; Import** from the Debugger tool. You must first import the
+  program image in the usual fashion, if you have not already. When importing the Trace, click
+  Options and associate it with the image.
+
 ## Additional Bug Fixes and Enhancements
 Numerous other new features, improvements, and bug fixes are fully listed in the 
 [Change History](ChangeHistory.md) file.

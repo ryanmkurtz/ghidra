@@ -1232,8 +1232,8 @@ public abstract class AbstractLibrarySupportLoader extends AbstractProgramLoader
 	}
 
 	/**
-	 * {@return whether or not the given {@link LanguageID#getIdAsString() language ID strings are
-	 * equal, not taking the variant into account}
+	 * {@return whether or not the given language ID strings are equal, not taking the variant into 
+	 * account}
 	 * 
 	 * @param id1 The first language ID to compare
 	 * @param id2 The second language ID to compare

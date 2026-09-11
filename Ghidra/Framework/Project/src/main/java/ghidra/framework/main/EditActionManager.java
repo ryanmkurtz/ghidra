@@ -117,7 +117,7 @@ class EditActionManager {
 					.menuPath(ToolConstants.MENU_EDIT, "Clear Server Allow List...")
 					.helpLocation(new HelpLocation("FrontEndPlugin", "Clear_Server_Allow_List"))
 					.onAction(c -> clearServerAllowList())
-					.enabledWhen(c -> DefaultKeyManagerFactory.getKeyStore() != null)
+					.enabledWhen(c -> !UrlAllowListManager.getAccessMap().isEmpty())
 					.enabled(true)
 					.build();
 		tool.addAction(clearServerAllowList);

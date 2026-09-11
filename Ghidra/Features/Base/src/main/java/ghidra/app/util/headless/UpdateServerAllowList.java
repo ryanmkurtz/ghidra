@@ -122,7 +122,6 @@ public class UpdateServerAllowList implements GhidraLaunchable {
 		catch (Exception e) {
 			Msg.error("Exception processing Allow List updates", e);
 		}
-		System.out.println("Done");
 	}
 
 	private static void usage(String[] args) {

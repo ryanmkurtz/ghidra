@@ -1,3 +1,3 @@
-MODULE FILE LICENSE: os/linux64/demangler_gnu GPL 3
-MODULE FILE LICENSE: os/osx64/demangler_gnu GPL 3
-MODULE FILE LICENSE: os/win64/demangler_gnu.exe GPL 3
+MODULE FILE INFO: os/linux64/demangler_gnu NO_HASH GPL 3
+MODULE FILE INFO: os/osx64/demangler_gnu NO_HASH GPL 3
+MODULE FILE INFO: os/win64/demangler_gnu.exe NO_HASH GPL 3

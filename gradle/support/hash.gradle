@@ -17,11 +17,8 @@
  * hash.gradle
  *
  * This file verifies the SHA-256 hashes recorded in the "MODULE FILE INFO:" lines of
- * each module's Module.manifest file.  Each such line has the form:
- *
- *     MODULE FILE INFO: <path> <sha256> <license>
- *
- * where <sha256> may be NO_HASH if the file's hash is not tracked.
+ * each module's Module.manifest file (see moduleManifest.gradle).  Files whose hash is
+ * NO_HASH are not verified.
  *
  * External jar dependencies ("lib/<name>.jar" entries) are verified whenever the
  * project's compile or runtime classpath is resolved.  All other entries (python wheels,
@@ -72,7 +69,7 @@ plugins.withType(JavaPlugin) {
  * the Module.manifest file
  *********************************************************************************/
 def checkExternalLibHashes(Project project, ResolvableDependencies rd) {
-	Map<String, String> hashes = getModuleManifestHashes(project)
+	Map<String, String> hashes = project.getModuleFileHashes()
 	List<String> errors = new ArrayList<>()
 	rd.artifacts.artifacts.each { artifact ->
 		if (!(artifact.id.componentIdentifier instanceof ModuleComponentIdentifier)) {
@@ -99,7 +96,7 @@ task hash {
 	def p = project
 
 	doLast {
-		Map<String, String> hashes = getModuleManifestHashes(p)
+		Map<String, String> hashes = p.getModuleFileHashes()
 		List<String> errors = new ArrayList<>()
 		hashes.each { path, expected ->
 			if (expected == "NO_HASH" || isExternalJar(path)) {
@@ -120,39 +117,6 @@ task hash {
 }
 rootProject.prepDev.dependsOn hash
 rootProject.assembleDistribution.dependsOn hash
-
-/*********************************************************************************
- * Reads the Module.manifest file and creates a mapping of path to sha256 hash
- *********************************************************************************/
-def Map<String, String> getModuleManifestHashes(Project project) {
-	Map<String, String> map = new HashMap<String, String>()
-	File moduleManifest = new File(project.projectDir, "Module.manifest")
-	if (!moduleManifest.exists()) {
-		return map
-	}
-
-	String key = "MODULE FILE INFO:"
-	for (line in moduleManifest.readLines()) {
-		if (line.startsWith(key)) {
-			String[] parts = line.substring(key.length()).trim().split("\\s+", 3)
-			if (parts.length != 3) {
-				throw new GradleException("Invalid Module.manifest entry (expected <path> <sha256> <license>): " +
-					line + " in module " + project.projectDir)
-			}
-			String hash = parts[1]
-			if (hash != "NO_HASH" && !(hash ==~ /[0-9a-f]{64}/)) {
-				throw new GradleException("Invalid sha256 hash '" + hash + "' for Module.manifest entry: " +
-					parts[0] + " in module " + project.projectDir)
-			}
-			String previous = map.put(parts[0], hash)
-			if (previous != null && previous != hash) {
-				throw new GradleException("Conflicting sha256 hashes for Module.manifest entry: " +
-					parts[0] + " in module " + project.projectDir)
-			}
-		}
-	}
-	return map
-}
 
 /*********************************************************************************
  * Returns true if the given Module.manifest path refers to an external jar dependency

@@ -13,6 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+apply from: "$rootProject.projectDir/gradle/support/moduleManifest.gradle"
 apply from: "$rootProject.projectDir/gradle/support/ip.gradle"
 apply from: "$rootProject.projectDir/gradle/support/hash.gradle"
 

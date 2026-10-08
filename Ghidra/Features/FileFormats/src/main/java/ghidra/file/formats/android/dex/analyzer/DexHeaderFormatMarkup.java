@@ -315,9 +315,9 @@ public class DexHeaderFormatMarkup {
 	private String getParameterName(DexHeader header, CodeItem codeItem, int parameterOrdinal) {
 		try {
 			DebugInfoItem debugInfo = codeItem.getDebugInfo();
-			int[] debugParameterNames = debugInfo.getParameterNames();
+			List<Integer> debugParameterNames = debugInfo.getParameterNames();
 			List<StringIDItem> strings = header.getStrings();
-			StringIDItem stringIDItem = strings.get(debugParameterNames[parameterOrdinal]);
+			StringIDItem stringIDItem = strings.get(debugParameterNames.get(parameterOrdinal));
 			StringDataItem stringDataItem = stringIDItem.getStringDataItem();
 			return stringDataItem.getString();
 		}

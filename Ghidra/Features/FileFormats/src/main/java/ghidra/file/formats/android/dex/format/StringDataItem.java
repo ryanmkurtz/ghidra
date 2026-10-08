@@ -30,7 +30,6 @@ import ghidra.util.exception.DuplicateNameException;
 public class StringDataItem implements StructConverter {
 	private static final int MAX_STRING_LEN = 0x200000; // 2Mb'ish
 
-	private int stringLength;
 	private int lebLength;
 	private int actualLength;
 	private String string;
@@ -41,7 +40,6 @@ public class StringDataItem implements StructConverter {
 		reader = reader.clone(DexUtil.adjustOffset(stringItem.getStringDataOffset(), dexHeader));
 
 		LEB128Info leb128 = reader.readNext(LEB128Info::unsigned);
-		stringLength = leb128.asUInt32();
 		lebLength = leb128.getLength();
 
 		long nullTermIndex =
@@ -49,11 +47,8 @@ public class StringDataItem implements StructConverter {
 		actualLength = (int) (nullTermIndex - reader.getPointerIndex() + 1);
 		byte[] stringBytes = reader.readNextByteArray(actualLength);
 
-		ByteArrayInputStream in = new ByteArrayInputStream(stringBytes);
-
-		char[] out = new char[stringLength];
-
-		string = ModifiedUTF8.decode(in, out);
+		string = ModifiedUTF8.decode(new ByteArrayInputStream(stringBytes));
+		IO.println(string);
 	}
 
 	/**
